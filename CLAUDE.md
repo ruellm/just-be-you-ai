@@ -79,14 +79,14 @@ Build order: **candidate side first**, then business side, then admin. Demo data
 
 ```
 app/
-  (auth)/login, (auth)/signup          ← public
-  (candidate)/dashboard, /profile, /jobs, /applications
-  (business)/dashboard, /jobs, /candidates
-  (admin)/users, /companies, /ai-config
+  (auth)/login, (auth)/signup          ← public, route group (shared auth layout)
+  candidate/dashboard, /profile, /jobs, /applications   → /candidate/*
+  business/dashboard, /jobs, /candidates                → /business/*
+  admin/users, /companies, /ai-config                   → /admin/*
   api/                                  ← only when a route handler is strictly required
 ```
 
-Use route groups (parentheses) for role-scoped sections. Protect them with a layout-level auth check.
+**Routing decision (locked):** role sections use **real path segments** (`/candidate/*`, `/business/*`, `/admin/*`), NOT parenthesized route groups. Route groups don't add to the URL, so `(candidate)/dashboard` and `(business)/dashboard` would both resolve to `/dashboard` and collide. Only `(auth)` stays a route group (its `/login` and `/signup` don't collide and share a layout). Each role folder (`candidate/`, `business/`, `admin/`) gets its own `layout.tsx` enforcing role at the layout level and redirecting on mismatch.
 
 ### Components
 
@@ -160,7 +160,7 @@ When building a feature, **re-read the relevant section** of these docs — don'
 ## Current status
 
 - [x] Schema designed and locked
-- [ ] Project scaffolded (Next.js + Supabase + Prisma + shadcn)
+- [x] Project scaffolded (Next.js + Supabase + Prisma + shadcn)
 - [ ] Auth working (Google OAuth via Supabase)
 - [ ] Candidate profile (basic info, education, skills, work experience, projects, summary)
 - [ ] Resume upload (store only, no parsing)

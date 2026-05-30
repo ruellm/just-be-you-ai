@@ -1,0 +1,333 @@
+// Just Be You — Prisma schema
+// Phase 1: full platform with MOCKED AI interview results.
+// The interview is ON-DEMAND / ASYNCHRONOUS — no scheduling, no human
+// interviewer, no calendar. Application status reflects this:
+// "interview_completed", never "interview_scheduled".
+//
+// SCOPE NOTES (Phase 2, intentionally NOT modeled here):
+//   - payments / subscription tiers (seat counts, trial seats)
+//   - liveness / face verification
+//   - audio recordings, AI question banks, embeddings-based matching
+// Matching in Phase 1 is a simple skill-overlap count computed at query time,
+// so it needs no tables of its own.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // Supabase: pooled connection for the app, direct connection for migrations.
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum Role {
+  candidate
+  business
+  admin
+}
+
+enum EmploymentType {
+  full_time
+  part_time
+  freelance
+  self_employed
+  contract
+  internship
+  other
+}
+
+enum WorkMode {
+  onsite
+  remote
+  hybrid
+}
+
+// Used for both a Job's required level and an InterviewResult's achieved tier.
+// Pass/fail is derived: InterviewResult.tier (a Level) must be >= Job.level.
+enum Level {
+  entry
+  novice
+  advanced
+  expert
+}
+
+enum ApplicationStatus {
+  draft
+  submitted
+  interview_completed // on-demand interview finished; NOT "scheduled"
+  passed
+  failed
+  archived
+}
+
+enum JobStatus {
+  open
+  closed
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Identity
+// ─────────────────────────────────────────────────────────────────────────────
+
+// One row per Supabase Auth user. `id` is supplied by Supabase Auth (auth.users
+// UUID) — we do NOT generate it here. Email + role + created_at live alongside it.
+model User {
+  id        String   @id @db.Uuid
+  email     String   @unique
+  role      Role
+  createdAt DateTime @default(now())
+
+  // Exactly one of these is populated, depending on role.
+  candidateProfile CandidateProfile?
+  company          Company?
+
+  @@map("users")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Business side
+// ─────────────────────────────────────────────────────────────────────────────
+
+// One business user → one company (Phase 1). userId is unique to enforce 1:1.
+model Company {
+  id          String   @id @default(cuid())
+  userId      String   @unique @db.Uuid
+  name        String
+  description String?
+  website     String?
+  logoUrl     String?
+  createdAt   DateTime @default(now())
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs Job[]
+
+  @@map("companies")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Candidate side
+// ─────────────────────────────────────────────────────────────────────────────
+
+model CandidateProfile {
+  id     String @id @default(cuid())
+  userId String @unique @db.Uuid
+
+  // Basic info
+  firstName      String?
+  lastName       String?
+  country        String? // country of residence
+  city           String? // optional per spec
+  phone          String?
+  linkedinUrl    String?
+  expectedSalary Int? // amount only; currency assumed PHP for now
+  nationality    String?
+
+  // Profile summary + resume (stored file only, not parsed)
+  summary   String?
+  resumeUrl String? // Supabase Storage object URL
+
+  // Languages spoken (e.g. ["English", "Filipino"])
+  languages String[]
+
+  // Skills-page header fields (from the UX spec). See judgment-call note in the
+  // explanation: these come from the doc, not the explicit field list.
+  totalYearsExperience Int?
+  preferredRole        String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  educations      Education[]
+  workExperiences WorkExperience[]
+  skills          CandidateSkill[]
+  applications    Application[]
+
+  @@map("candidate_profiles")
+}
+
+model Education {
+  id                 String    @id @default(cuid())
+  candidateProfileId String
+  school             String
+  country            String?
+  degree             String?
+  fieldOfStudy       String?
+  startDate          DateTime?
+  endDate            DateTime?
+  currentlyStudying  Boolean   @default(false)
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+
+  @@index([candidateProfileId])
+  @@map("educations")
+}
+
+model WorkExperience {
+  id                 String         @id @default(cuid())
+  candidateProfileId String
+  position           String
+  companyName        String
+  startDate          DateTime?
+  endDate            DateTime?
+  currentlyWorking   Boolean        @default(false)
+  employmentType     EmploymentType
+  description        String?
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  projects         Project[]
+
+  @@index([candidateProfileId])
+  @@map("work_experiences")
+}
+
+// Projects belong to a specific work experience (per the UX spec — the
+// "Add project" button lives inside a work-experience panel).
+model Project {
+  id               String    @id @default(cuid())
+  workExperienceId String
+  name             String
+  url              String?
+  startDate        DateTime?
+  endDate          DateTime?
+  ongoing          Boolean   @default(false)
+  description      String?
+  screenshots      String[] // Supabase Storage object URLs
+
+  workExperience WorkExperience @relation(fields: [workExperienceId], references: [id], onDelete: Cascade)
+  skills         ProjectSkill[]
+
+  @@index([workExperienceId])
+  @@map("projects")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Skills taxonomy (seeded with ~50 common IT + non-IT skills)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Skill {
+  id       String  @id @default(cuid())
+  name     String  @unique
+  category String? // optional grouping (e.g. "IT", "Healthcare") — aids seeding/filtering
+
+  candidateSkills CandidateSkill[]
+  projectSkills   ProjectSkill[]
+  jobSkills       JobSkill[]
+
+  @@map("skills")
+}
+
+// Candidate ↔ Skill, with self-rated years of experience.
+model CandidateSkill {
+  id                 String @id @default(cuid())
+  candidateProfileId String
+  skillId            String
+  yearsOfExperience  Int    @default(0)
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  skill            Skill            @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateProfileId, skillId])
+  @@index([skillId])
+  @@map("candidate_skills")
+}
+
+// Project ↔ Skill (skills used on a project).
+model ProjectSkill {
+  id        String @id @default(cuid())
+  projectId String
+  skillId   String
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  skill   Skill   @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, skillId])
+  @@index([skillId])
+  @@map("project_skills")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Jobs
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Job {
+  id            String    @id @default(cuid())
+  companyId     String
+  title         String
+  description   String
+  roleOverview  String?
+  requirements  String?
+  dayToDay      String? // "What does day-to-day look like"
+  level        Level
+  location     String?
+  workMode     WorkMode
+  salaryMin    Int? // optional salary range
+  salaryMax    Int?
+  status       JobStatus @default(open)
+  createdAt    DateTime  @default(now())
+
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  skills       JobSkill[]
+  applications Application[]
+
+  @@index([companyId])
+  @@map("jobs")
+}
+
+// Job ↔ Skill (required skills for a job).
+model JobSkill {
+  id      String @id @default(cuid())
+  jobId   String
+  skillId String
+
+  job   Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, skillId])
+  @@index([skillId])
+  @@map("job_skills")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Applications + (mocked) interview results
+// ─────────────────────────────────────────────────────────────────────────────
+
+// A candidate applies to a job at most once. status starts at `draft`.
+model Application {
+  id                 String            @id @default(cuid())
+  candidateProfileId String
+  jobId              String
+  status             ApplicationStatus @default(draft)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  interviewResult  InterviewResult?
+
+  @@unique([candidateProfileId, jobId])
+  @@index([jobId])
+  @@map("applications")
+}
+
+// One mocked result per application (Phase 1: seeded fake score/tier/transcript).
+// completedAt is when the on-demand interview finished. `tier` reuses the Level
+// enum; the candidate passes a job when tier >= Job.level.
+model InterviewResult {
+  id            String   @id @default(cuid())
+  applicationId String   @unique
+  score         Float
+  tier          Level
+  transcript    String
+  completedAt   DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@map("interview_results")
+}

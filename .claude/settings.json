@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir \"c:\\\\repository\\\\just-be-you\\\\docs\")",
+      "Read(//tmp/**)",
+      "Bash(sed -e 's/<w:p[ >]/\\\\n/g' -e 's/<[^>]*>//g' word/document.xml)",
+      "Bash(grep -v '^[[:space:]]*$')",
+      "Bash(npm install *)",
+      "Bash(npx --yes shadcn@latest init -b neutral --yes)",
+      "Bash(npx --yes shadcn@latest init --help)",
+      "Bash(npx --yes shadcn@latest init -b radix --css-variables --yes)",
+      "Bash(npx --yes shadcn@latest init -b radix -p nova --css-variables --yes)",
+      "Bash(npx --yes shadcn@latest add button input label card form select textarea dialog dropdown-menu avatar badge sonner --yes)",
+      "Bash(node -e \"const p=require\\('./package.json'\\);console.log\\(JSON.stringify\\(p.dependencies,null,2\\)\\)\")",
+      "Bash(npx --yes shadcn@latest add form --yes)",
+      "Bash(npx --yes shadcn@latest view form --yes)",
+      "Bash(npx --yes shadcn@latest view form)",
+      "Bash(npx prisma *)",
+      "Bash(node -e \"console.log\\('prisma', require\\('prisma/package.json'\\).version\\); console.log\\('@prisma/client', require\\('@prisma/client/package.json'\\).version\\)\")",
+      "Bash(npx next *)",
+      "Bash(mkdir -p candidate business admin)",
+      "Bash(mv \"\\(candidate\\)/dashboard\" \"\\(candidate\\)/profile\" \"\\(candidate\\)/jobs\" \"\\(candidate\\)/applications\" candidate/)",
+      "Bash(mv \"\\(business\\)/dashboard\" \"\\(business\\)/jobs\" \"\\(business\\)/candidates\" business/)",
+      "Bash(mv \"\\(admin\\)/users\" \"\\(admin\\)/companies\" \"\\(admin\\)/ai-config\" admin/)",
+      "Bash(rmdir \"\\(candidate\\)\" \"\\(business\\)\" \"\\(admin\\)\")"
+    ]
+  }
+}
