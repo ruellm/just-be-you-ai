@@ -1,0 +1,63 @@
+Admin:
+1. Create Company Profile (account)
+2. number of job posting (based on tiering natin)
+- tier 1: 10 job posting per year
+- tier 2: 11 to 50 job posting per year
+- tier 3: enterprise level, talk to our sales account
+3. Select type of candidates for the AI knowledge based
+- skilled workers
+- IT (dev, cybersec, ai, networking, etc)
+- medical
+- etc
+4. Maybe a few settings for
+- based scoring per seat and job (itrigger natin ito sa ai side)
+- maybe a trial for 1 to 2 seats (future na siguro ito)
+5. Payment gateway (for the MVP di natin need ito)
+6. Managed Users and profile (multi tenancy with RBAC)
+
+B2B:
+1. users are able to create job posting
+- job descriptions, requirements (certification, tech skills needed)
+- level of skills (entry, novice, advance, expert)
+- company profile
+- any basic details like, onsite/remote work, salary range (optional), work location (if needed)
+- rating needed to pass 
+
+2. View Interview results
+- Score/rating
+- listen to recording (future if kaya natin with open camera)
+- transcript of the interview
+- view candidate profile
+
+3. Match (ito kahit hindi nag apply directly yung candidate sa company but there is a match of skills)
+- view candidate profile
+- view score/rating
+- listen to recording and transcript
+
+4. Once ok na, they can get candidate details
+- if they select to get candidate details, dito pa lang lalabas yung name, email address and contact information of the candidate.
+- so dapat meron prompt ito na by selecting to get the candidate info, this will deduct your business seat (from the tiered subscription nila)
+- then magsesend yung system natin ng email to the candidated selected that x company will be reaching out to you for the next interview.
+
+5. Feedback option:
+- not sure if needed natin ito but pede naman feedback from b2b side for improvement of the system
+
+Candidate:
+1. Free Account:
+- max of 2 job interview
+- basic status details
+   - passed/failed (entry, novice, advance, expert)
+   - number of matched and viewed (pero no details just number of match/views lang) they need to subscribe to see these
+   - to retake the interview they need to wait for 1 month before taking retake interview
+- create account and upload CV (including email and contact info)
+- for the user validation, need nila magopen ng camera and do the same authentication ni Gcash like blink eyes, move head, etc
+- i suggest yung field ng skills nya separate para pag nagmatching tayo sa b2b side mabilis mahanap yung skills
+
+2. Subscribe Account
+- everything from free account
+- max of 10 job interviews
+- detailed matched companies (then pede nila i-select if they have a preferred company, so sa b2b side lalabas yung matched with candidate - parang tinder) on top ito sa matched candidate meron sya siguro icon that says candidate is also interested sa company nila
+- list ng companies who viewed his/her profile
+- retake of interviews can be done every 1 week
+- ok sana if meron “tips” for improvement si AI natin sa candidate (like study networking to increase your status to intermediate)
+- basically if we can build an analytics based on the interview ni candidate. the goal is to improve that persons chances of hiring and passing/improving their interviews
