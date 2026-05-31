@@ -1,8 +1,21 @@
-export default function BusinessDashboardPage() {
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getCurrentUser, getCurrentUserRole } from "@/lib/auth";
+
+export default async function BusinessDashboardPage() {
+  const user = await getCurrentUser();
+  const role = await getCurrentUserRole();
+
   return (
-    <div className="p-8">
-      <h1 className="text-2xl font-semibold">Business Dashboard</h1>
-      <p className="text-muted-foreground mt-2">TODO: Business Dashboard</p>
+    <div className="mx-auto max-w-4xl space-y-6 p-8">
+      <h1 className="text-2xl font-semibold">Welcome, {user?.email}</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>Role: {role}</CardTitle>
+        </CardHeader>
+        <CardContent className="text-muted-foreground">
+          Coming soon: post jobs, view applicants, and review AI interview results.
+        </CardContent>
+      </Card>
     </div>
   );
 }

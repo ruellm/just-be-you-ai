@@ -25,18 +25,20 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 2 — Project scaffold.**
+**We are at: Step 4 — Candidate profile pages.**
 
-The schema is **LOCKED** (see `prisma/schema.prisma`). Do not modify it without explicit approval.
+The schema is **LOCKED** (see `prisma/schema.prisma`). The project is scaffolded, Supabase is connected, and the first migration has been applied (tables exist in the database). Do not modify the schema without explicit approval.
 
-Next up: install dependencies, set up the Prisma client, the Supabase client, auth helpers, an `.env.local` template, initialize shadcn/ui, and create empty stub pages for all routes. Do NOT run `prisma migrate` yet — the user will create the Supabase project and provide env vars first.
+Auth is working: Google OAuth via Supabase, separate candidate (`/signup`) and business (`/signup/business`) signup URLs, a shared `/login`, an `/auth/callback` route that provisions the `users` row (+ empty `CandidateProfile` or `Company`) and redirects by role, role-enforcing `layout.tsx` files for `candidate/`, `business/`, `admin/`, and a logout action. Session refresh runs in `middleware.ts`.
+
+Next up: build the candidate profile pages — basic info → education → skills → work experience → projects → summary. Read each profile section off the `CandidateProfile` (and its related tables) through Prisma; save via Server Actions validated with Zod.
 
 The build order we follow, one step at a time:
 
 1. ✅ Schema design — **DONE**
-2. **Project scaffold** ← we are here
-3. Auth (Google OAuth via Supabase, role-aware layouts)
-4. Candidate profile pages (basic info → education → skills → work experience → projects → summary)
+2. ✅ Project scaffold — **DONE**
+3. ✅ Auth (Google OAuth via Supabase, role-aware layouts) — **DONE**
+4. **Candidate profile pages (basic info → education → skills → work experience → projects → summary)** ← we are here
 5. Resume upload (store only, no parsing)
 6. Job listing + job detail pages (seeded jobs)
 7. Apply flow + fake interview screen + result screen
@@ -161,7 +163,7 @@ When building a feature, **re-read the relevant section** of these docs — don'
 
 - [x] Schema designed and locked
 - [x] Project scaffolded (Next.js + Supabase + Prisma + shadcn)
-- [ ] Auth working (Google OAuth via Supabase)
+- [x] Auth working (Google OAuth via Supabase)
 - [ ] Candidate profile (basic info, education, skills, work experience, projects, summary)
 - [ ] Resume upload (store only, no parsing)
 - [ ] Job listing + job detail pages

@@ -38,3 +38,42 @@ export async function getCurrentUserRole(): Promise<Role | null> {
 
   return dbUser?.role ?? null;
 }
+
+// Where each role lands after auth.
+export function getDashboardPath(role: Role): string {
+  switch (role) {
+    case "candidate":
+      return "/candidate/dashboard";
+    case "business":
+      return "/business/dashboard";
+    case "admin":
+      return "/admin/users";
+  }
+}
+
+// Ensure a `users` row exists for a freshly-authenticated Supabase user.
+// First-time sign-ins also get an empty CandidateProfile (candidate) or an
+// empty Company (business) so later steps have something to fill in.
+// Idempotent: if the row already exists we just return it (handles the
+// "tried to sign up but already has an account" case → treated as a login).
+export async function ensureUserRow(
+  authUser: { id: string; email?: string | null },
+  intendedRole: Role
+) {
+  const existing = await prisma.user.findUnique({ where: { id: authUser.id } });
+  if (existing) return existing;
+
+  return prisma.user.create({
+    data: {
+      id: authUser.id,
+      email: authUser.email ?? "",
+      role: intendedRole,
+      ...(intendedRole === "candidate"
+        ? { candidateProfile: { create: {} } }
+        : {}),
+      ...(intendedRole === "business"
+        ? { company: { create: { name: "" } } }
+        : {}),
+    },
+  });
+}
