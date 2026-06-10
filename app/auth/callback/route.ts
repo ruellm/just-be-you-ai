@@ -18,6 +18,12 @@ export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
   const roleParam = searchParams.get("role");
+  // Optional relative redirect target (used by the password-reset link).
+  const nextParam = searchParams.get("next");
+  const safeNext =
+    nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+      ? nextParam
+      : null;
 
   if (!code) {
     return NextResponse.redirect(`${origin}/login?error=missing_code`);
@@ -29,6 +35,11 @@ export async function GET(request: Request) {
   );
   if (exchangeError) {
     return NextResponse.redirect(`${origin}/login?error=auth`);
+  }
+
+  // Password recovery (or any explicit next): session is set; go straight there.
+  if (safeNext) {
+    return NextResponse.redirect(`${origin}${safeNext}`);
   }
 
   const {

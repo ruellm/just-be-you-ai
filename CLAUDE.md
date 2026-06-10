@@ -25,7 +25,11 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 10 — Seed data: realistic fake jobs + "passed" candidates with mock interview results.**
+**We are at: Step 10B — Seed data + polish.**
+
+(Step 10A — the auth-model refactor — is **DONE**: candidates use Google OAuth; businesses/admins are admin-provisioned email+password with a forced first-login password change; combined `/login`; `/forgot-password` + `/reset-password`; `/admin/users/new`; `/signup/business` removed. See the User roles section. Migration `20260610151543_add_requires_password_change`.)
+
+Next up (Step 10B): seed realistic demo data — fake jobs + "passed" candidates with mock interview results — and general polish so the two demo north-star flows are populated.
 
 The schema is **LOCKED** (see `prisma/schema.prisma`). Do not modify existing models without explicit approval. (Step 9 added two **new** models — `QuestionSet` + `Question` — with approval; migration `20260610145559_add_question_sets`. No existing models were changed.)
 
@@ -87,11 +91,13 @@ The reason for this stack is one-language, one-repo, free-tier-friendly, and Cla
 
 ## User roles
 
-Three roles, stored on the `users.role` column:
+Three roles, stored on the `users.role` column. **Auth model (post-Step-10A refactor):**
 
-1. **`candidate`** — signs up with Google, builds a profile (basic info, education, skills, work experience, projects, summary), browses jobs, applies. (Build this first.)
-2. **`business`** — represents a company; posts jobs, views applicants and interview results, browses matched candidates.
-3. **`admin`** — platform owner; manages users and companies, configures AI question banks (placeholder UI now, used in Phase 2).
+1. **`candidate`** — **self-signs-up with Google OAuth only** (`/signup`). Builds a profile, browses jobs, applies.
+2. **`business`** — represents a company; posts jobs, views applicants/results. **No self-signup** — an admin provisions the account (email + temp password) at `/admin/users/new`; the business logs in via **email + password** and is forced to set a new password on first login.
+3. **`admin`** — platform owner; manages users/companies, configures AI question sets. **No self-signup** — same admin-provisioned email/password flow as business. The very first admin is bootstrapped by manually flipping `users.role` in the DB.
+
+Login (`/login`) is combined: a **Google** button for candidates + an **email/password** form for businesses & admins (with **Forgot password** → `/forgot-password` → reset email → `/reset-password`). Provisioned users get `requiresPasswordChange=true`; the role layouts + home redirect force them to `/change-password` until they set their own password (then it flips to false). Legacy business/admin users created via the old Google flow can still log in with Google (backward compatible), but no new business/admin can be acquired that way. Migration: `20260610151543_add_requires_password_change`.
 
 Build order: **candidate side first**, then business side, then admin. Demo data fills the gaps until each side is built.
 

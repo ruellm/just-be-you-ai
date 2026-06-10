@@ -1,28 +1,23 @@
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
-import {
-  getCurrentUser,
-  getCurrentUserRole,
-  getDashboardPath,
-} from "@/lib/auth";
+import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 
 export default async function BusinessLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  const role = await getCurrentUserRole();
-  if (role !== "business") {
-    redirect(role ? getDashboardPath(role) : "/login");
+  const dbUser = await getCurrentDbUser();
+  if (!dbUser) redirect("/login");
+  if (dbUser.requiresPasswordChange) redirect("/change-password");
+  if (dbUser.role !== "business") {
+    redirect(getDashboardPath(dbUser.role));
   }
 
   return (
     <div className="flex min-h-screen flex-col">
       <AppNav
-        email={user.email ?? ""}
+        email={dbUser.email}
         links={[
           { label: "Dashboard", href: "/business/dashboard" },
           { label: "Jobs", href: "/business/jobs" },

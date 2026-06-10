@@ -39,6 +39,27 @@ export async function getCurrentUserRole(): Promise<Role | null> {
   return dbUser?.role ?? null;
 }
 
+// The current user joined with our DB row (role + password-change flag).
+// Returns null if not signed in or no DB row exists. Used by role layouts to
+// gate access and force the first-login password change.
+export async function getCurrentDbUser() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { role: true, requiresPasswordChange: true },
+  });
+  if (!dbUser) return null;
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    role: dbUser.role,
+    requiresPasswordChange: dbUser.requiresPasswordChange,
+  };
+}
+
 // Where each role lands after auth.
 export function getDashboardPath(role: Role): string {
   switch (role) {

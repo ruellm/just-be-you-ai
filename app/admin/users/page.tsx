@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Prisma, type Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -98,7 +100,14 @@ export default async function AdminUsersPage({
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-      <h1 className="text-2xl font-semibold">Users</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Users</h1>
+        <Button asChild>
+          <Link href="/admin/users/new">
+            <Plus /> Create user
+          </Link>
+        </Button>
+      </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <AdminSearch placeholder="Search by name or email…" />
@@ -154,7 +163,17 @@ export default async function AdminUsersPage({
                     {u.email}
                   </TableCell>
                   <TableCell>
-                    <RoleBadge role={u.role} />
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <RoleBadge role={u.role} />
+                      {u.requiresPasswordChange ? (
+                        <Badge
+                          variant="outline"
+                          className="text-amber-700 dark:text-amber-300"
+                        >
+                          Pending password change
+                        </Badge>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(u.createdAt)}

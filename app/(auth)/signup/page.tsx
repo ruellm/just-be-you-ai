@@ -20,12 +20,16 @@ export default function CandidateSignupPage() {
         <GoogleAuthButton role="candidate" label="Sign up with Google" />
       </CardContent>
       <CardFooter className="text-muted-foreground flex-col gap-2 text-sm">
-        <Link href="/signup/business" className="hover:underline">
-          Are you a business? Sign up here
-        </Link>
         <Link href="/login" className="hover:underline">
           Already have an account? Log in
         </Link>
+        <p className="text-center">
+          Are you a business? Contact us at{" "}
+          <a href="mailto:hello@justbeyou.ai" className="underline">
+            hello@justbeyou.ai
+          </a>{" "}
+          to get started.
+        </p>
       </CardFooter>
     </Card>
   );

@@ -83,6 +83,10 @@ model User {
   role      Role
   createdAt DateTime @default(now())
 
+  // Set true when an admin provisions a business/admin account; flipped to
+  // false after the user sets their own password on first login.
+  requiresPasswordChange Boolean @default(false)
+
   // Exactly one of these is populated, depending on role.
   candidateProfile CandidateProfile?
   company          Company?

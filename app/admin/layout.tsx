@@ -1,28 +1,23 @@
 import { redirect } from "next/navigation";
 import { AppNav } from "@/components/AppNav";
-import {
-  getCurrentUser,
-  getCurrentUserRole,
-  getDashboardPath,
-} from "@/lib/auth";
+import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const user = await getCurrentUser();
-  if (!user) redirect("/login");
-
-  const role = await getCurrentUserRole();
-  if (role !== "admin") {
-    redirect(role ? getDashboardPath(role) : "/login");
+  const dbUser = await getCurrentDbUser();
+  if (!dbUser) redirect("/login");
+  if (dbUser.requiresPasswordChange) redirect("/change-password");
+  if (dbUser.role !== "admin") {
+    redirect(getDashboardPath(dbUser.role));
   }
 
   return (
     <div className="flex min-h-screen flex-col">
       <AppNav
-        email={user.email ?? ""}
+        email={dbUser.email}
         links={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Users", href: "/admin/users" },

@@ -1,19 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import {
-  getCurrentUser,
-  getCurrentUserRole,
-  getDashboardPath,
-} from "@/lib/auth";
+import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 
 export default async function HomePage() {
-  // If already signed in, skip the landing page and go straight to the
-  // role-based dashboard.
-  const user = await getCurrentUser();
-  if (user) {
-    const role = await getCurrentUserRole();
-    if (role) redirect(getDashboardPath(role));
+  // If already signed in, skip the landing page. Force a pending password
+  // change first; otherwise go straight to the role-based dashboard.
+  const dbUser = await getCurrentDbUser();
+  if (dbUser) {
+    if (dbUser.requiresPasswordChange) redirect("/change-password");
+    redirect(getDashboardPath(dbUser.role));
   }
 
   return (
@@ -35,10 +31,15 @@ export default async function HomePage() {
         <Button asChild size="lg">
           <Link href="/signup">I&apos;m a candidate, sign up</Link>
         </Button>
-        <Button asChild size="lg" variant="secondary">
-          <Link href="/signup/business">I&apos;m a business, sign up</Link>
-        </Button>
       </div>
+
+      <p className="text-muted-foreground text-sm">
+        Are you a business? Contact us at{" "}
+        <a href="mailto:hello@justbeyou.ai" className="underline">
+          hello@justbeyou.ai
+        </a>{" "}
+        to get started.
+      </p>
     </main>
   );
 }
