@@ -2,8 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/auth";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { applicationPath } from "@/lib/applications";
 import {
   LEVEL_LABELS,
   WORK_MODE_LABELS,
@@ -38,6 +41,26 @@ export default async function JobDetailPage({
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const closed = job.status === "closed";
+
+  // Application state for the current candidate (drives the CTA).
+  const user = await getCurrentUser();
+  const profile = user
+    ? await prisma.candidateProfile.findUnique({
+        where: { userId: user.id },
+        select: { id: true },
+      })
+    : null;
+  const existing = profile
+    ? await prisma.application.findUnique({
+        where: {
+          candidateProfileId_jobId: {
+            candidateProfileId: profile.id,
+            jobId: job.id,
+          },
+        },
+        select: { id: true, status: true },
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8">
@@ -86,7 +109,37 @@ export default async function JobDetailPage({
         {salary ? <p className="font-medium">{salary}</p> : null}
         <p className="text-muted-foreground text-xs">{postedAgo(job.createdAt)}</p>
 
-        <ApplyButton disabled={closed} />
+        {closed ? (
+          <Button size="lg" disabled>
+            Apply
+          </Button>
+        ) : !profile ? (
+          <div className="space-y-2">
+            <Button size="lg" disabled>
+              Apply
+            </Button>
+            <p className="text-muted-foreground text-sm">
+              Complete your{" "}
+              <Link
+                href="/candidate/profile/basic-info"
+                className="underline"
+              >
+                basic info
+              </Link>{" "}
+              before applying.
+            </p>
+          </div>
+        ) : existing ? (
+          <Button asChild size="lg" variant="outline">
+            <Link href={applicationPath(existing.id, existing.status)}>
+              {existing.status === "submitted"
+                ? "Continue your interview"
+                : "View your result"}
+            </Link>
+          </Button>
+        ) : (
+          <ApplyButton jobId={job.id} />
+        )}
       </div>
 
       <div className="space-y-8">

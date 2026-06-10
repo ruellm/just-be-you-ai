@@ -26,6 +26,7 @@ export default async function CandidateLayout({
         links={[
           { label: "Dashboard", href: "/candidate/dashboard" },
           { label: "Browse jobs", href: "/candidate/jobs" },
+          { label: "My Applications", href: "/candidate/applications" },
           { label: "Profile", href: "/candidate/profile/basic-info" },
         ]}
       />

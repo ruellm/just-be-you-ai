@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import { applicationPath } from "@/lib/applications";
 
 type ProfileFields = {
   firstName: string | null;
@@ -71,6 +73,18 @@ export default async function CandidateDashboardPage() {
 
   const percent = completionPercent(profile, counts);
 
+  const recentApplications = profile
+    ? await prisma.application.findMany({
+        where: { candidateProfileId: profile.id },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        include: {
+          job: { select: { title: true, company: { select: { name: true } } } },
+          interviewResult: { select: { tier: true } },
+        },
+      })
+    : [];
+
   return (
     <div className="mx-auto max-w-4xl space-y-6 p-8">
       <h1 className="text-2xl font-semibold">Welcome, {user?.email}</h1>
@@ -93,6 +107,54 @@ export default async function CandidateDashboardPage() {
           <p className="text-muted-foreground text-sm">
             Profile completion: {percent}%
           </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-center justify-between space-y-0">
+          <CardTitle>Recent applications</CardTitle>
+          <Link
+            href="/candidate/applications"
+            className="text-muted-foreground hover:text-foreground text-sm"
+          >
+            View all
+          </Link>
+        </CardHeader>
+        <CardContent>
+          {recentApplications.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              No applications yet.{" "}
+              <Link href="/candidate/jobs" className="underline">
+                Browse jobs
+              </Link>
+              .
+            </p>
+          ) : (
+            <div className="divide-y">
+              {recentApplications.map((app) => (
+                <Link
+                  key={app.id}
+                  href={applicationPath(app.id, app.status)}
+                  className="hover:bg-muted/40 -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      {app.job.title}
+                    </p>
+                    <p className="text-muted-foreground truncate text-xs">
+                      {app.job.company.name}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {app.interviewResult ? (
+                      <TierBadge tier={app.interviewResult.tier} />
+                    ) : null}
+                    <StatusBadge status={app.status} />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

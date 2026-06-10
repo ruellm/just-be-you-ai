@@ -25,7 +25,7 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 7 — Apply flow + fake interview screen + result screen.**
+**We are at: Step 8 — Business: post job, view applicants, view candidate detail.**
 
 The schema is **LOCKED** (see `prisma/schema.prisma`). The project is scaffolded, Supabase is connected, and the first migration has been applied (tables exist in the database). Do not modify the schema without explicit approval.
 
@@ -37,9 +37,13 @@ Seeding is consolidated in **`prisma/seed.ts`** (run `npm run db:seed`; `package
 
 **Resume upload — DONE.** Own sidebar section `/candidate/profile/resume`: shadcn drop zone (PDF/DOCX, ≤5MB, validated client + server), uploads via a Server Action to the private Supabase Storage `resumes` bucket at `{userId}/{timestamp}-{filename}`, stores that **path** (not a public URL) in `CandidateProfile.resumeUrl`. View opens a fresh 60s signed URL (generated on click); Replace re-opens the uploader and deletes the old file; Remove deletes from Storage + clears `resumeUrl`. Storage ops use a **service-role admin client** (`lib/supabase/admin.ts`, server-only). Filename/upload-date are parsed back from the stored path (no extra DB columns). Server Action body limit raised to 6MB in `next.config.ts`. Dashboard completion counts "has resume".
 
-**Jobs (browse) — DONE.** `/candidate/jobs` lists job cards with SSR filters/search/pagination driven entirely by URL params (`q`, `mode`, `level`, `skill` CSVs, `page`; 10/page): left-sidebar filters (`JobFilters`), debounced search (`JobSearch`), result count, Prev/Next. `/candidate/jobs/[id]` shows the full detail (hero, description, role overview, day-to-day, requirements, required-skill badges, evaluation-process note), 404s on bad id, and shows a "no longer accepting applications" banner + disabled Apply when `status === "closed"`. The **Apply** button only toasts "coming soon" (no `Application` row yet — that's Step 7). Candidate top nav (`AppNav` now takes `links`) has Dashboard / Browse jobs / Profile; dashboard has a Browse-jobs CTA.
+**Jobs (browse) — DONE.** `/candidate/jobs` lists job cards with SSR filters/search/pagination driven entirely by URL params (`q`, `mode`, `level`, `skill` CSVs, `page`; 10/page): left-sidebar filters (`JobFilters`), debounced search (`JobSearch`), result count, Prev/Next. `/candidate/jobs/[id]` shows the full detail (hero, description, role overview, day-to-day, requirements, required-skill badges, evaluation-process note), 404s on bad id, and shows a "no longer accepting applications" banner + disabled Apply when `status === "closed"`. Candidate top nav (`AppNav` takes `links`) has Dashboard / Browse jobs / My Applications / Profile; dashboard has a Browse-jobs CTA.
 
-Next up (Step 7): **apply flow + fake interview screen + result screen** — Apply creates an `Application` (status `submitted`); a mocked on-demand interview screen → "Finish" generates a mocked `InterviewResult` (random score/tier, lorem transcript), marks the application `interview_completed`, and shows a result screen. On-demand/async — no scheduling.
+**Apply + interview + result — DONE (candidate side complete end-to-end).** On `/candidate/jobs/[id]`, the CTA is application-aware: Apply (creates a `submitted` Application via `applyToJob` → redirects to the interview), or "Continue your interview" / "View your result" if one exists, or disabled + a profile link / closed state. `/candidate/applications/[id]/interview` is a client screen with mocked flair (pulsing mic, auto question counter, typing transcript) + a always-clickable **Finish Interview** → `finishInterview` generates a mocked `InterviewResult` (score 0.3–0.95, weighted-random tier, varied lorem Q&A transcript) and sets the application **straight to `passed`/`failed`** via the rule **`LEVEL_RANK[tier] >= LEVEL_RANK[job.level]`** (entry<novice<advanced<expert). `/candidate/applications/[id]/result` shows tier badge (gray/blue/green/gold), score %, pass/fail banner, "shared with company", collapsible transcript (native `<details>`), recap + CTAs. `/candidate/applications` lists all applications with a status-filter tab row + status/tier badges. All ownership-checked (404/redirect on mismatch). Mock generators in `lib/mock-interview.ts`; status/tier labels + colors + pass rule + `applicationPath()` in `lib/applications.ts`.
+
+NOTE on lifecycle: per the Step-7 spec, finishing sets the final status directly to `passed`/`failed` (the `interview_completed` enum value is transient and not persisted by this flow); the applications "Completed" filter therefore typically shows nothing. The presence of an `InterviewResult` marks an application as interviewed.
+
+Next up (Step 8): **business side** — post a job (form → `Job` for the logged-in business's company), view applicants per job, view a candidate's full profile + interview result (score/tier/transcript).
 
 Forms convention: shadcn `Form` primitives backed by **react-hook-form** + `@hookform/resolvers` with `zodResolver`; the SAME Zod schema also re-validates inside the Server Action. Zod schemas live in a plain `schemas.ts` (not the `"use server"` file) so client and server can both import them. Mutations are colocated `actions.ts` Server Actions scoped by `candidateProfileId`; client lists call `router.refresh()` after success.
 
@@ -51,8 +55,8 @@ The build order we follow, one step at a time:
 4. ✅ Candidate profile pages (basic info → education → skills → work experience → projects → summary) — **DONE**
 5. ✅ Resume upload (store only, no parsing) — **DONE**
 6. ✅ Job listing + job detail pages (seeded jobs) — **DONE**
-7. **Apply flow + fake interview screen + result screen** ← we are here
-8. Business: post job, view applicants, view candidate detail
+7. ✅ Apply flow + fake interview screen + result screen — **DONE**
+8. **Business: post job, view applicants, view candidate detail** ← we are here
 9. Admin: manage users/companies, AI-config placeholder
 10. Seed data: realistic fake jobs + "passed" candidates with mock interview results
 
@@ -177,7 +181,7 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Candidate profile (basic info, education, skills, work experience, projects, summary)
 - [x] Resume upload (store only, no parsing)
 - [x] Job listing + job detail pages
-- [ ] Apply flow + fake interview screen + result screen
+- [x] Apply flow + fake interview screen + result screen
 - [ ] Business: post job, view applicants, view candidate detail
 - [ ] Admin: manage users/companies, AI-config placeholder page
 - [ ] Seed data: realistic fake jobs + "passed" candidates with mock interview results
