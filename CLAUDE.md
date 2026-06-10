@@ -25,22 +25,30 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 4 — Candidate profile pages.**
+**We are at: Step 6 — Job listing + job detail pages.**
 
 The schema is **LOCKED** (see `prisma/schema.prisma`). The project is scaffolded, Supabase is connected, and the first migration has been applied (tables exist in the database). Do not modify the schema without explicit approval.
 
 Auth is working: Google OAuth via Supabase, separate candidate (`/signup`) and business (`/signup/business`) signup URLs, a shared `/login`, an `/auth/callback` route that provisions the `users` row (+ empty `CandidateProfile` or `Company`) and redirects by role, role-enforcing `layout.tsx` files for `candidate/`, `business/`, `admin/`, and a logout action. Session refresh runs in `middleware.ts`.
 
-Next up: build the candidate profile pages — basic info → education → skills → work experience → projects → summary. Read each profile section off the `CandidateProfile` (and its related tables) through Prisma; save via Server Actions validated with Zod.
+**Candidate profile — DONE.** Shell (`app/candidate/profile/layout.tsx` sidebar/tab nav; `/candidate/profile` → `/basic-info`) plus all six sections: **Basic Info**, **Profile Summary**, **Education** (cards + add/edit Dialog + delete confirm), **Skills** (chips + searchable `SkillCombobox` over the seeded `Skill` taxonomy, per-skill years, unique-constraint handled), **Work Experience** (cards + EmploymentType `Select`), and **Projects** nested under each work experience (own Dialog, `ProjectSkillsPicker` multi-select; screenshots stored as `[]` until Step 5+). The sidebar "Projects" link redirects to Work Experience (projects have no standalone page). Dashboard completion percent now also counts having ≥1 education / skill / work experience.
+
+The `Skill` taxonomy is seeded via `prisma/seed.mjs` (`npx prisma db seed`, ~54 skills, idempotent) — this is reference data the pickers need, distinct from the Step-10 demo data.
+
+**Resume upload — DONE.** Own sidebar section `/candidate/profile/resume`: shadcn drop zone (PDF/DOCX, ≤5MB, validated client + server), uploads via a Server Action to the private Supabase Storage `resumes` bucket at `{userId}/{timestamp}-{filename}`, stores that **path** (not a public URL) in `CandidateProfile.resumeUrl`. View opens a fresh 60s signed URL (generated on click); Replace re-opens the uploader and deletes the old file; Remove deletes from Storage + clears `resumeUrl`. Storage ops use a **service-role admin client** (`lib/supabase/admin.ts`, server-only). Filename/upload-date are parsed back from the stored path (no extra DB columns). Server Action body limit raised to 6MB in `next.config.ts`. Dashboard completion counts "has resume".
+
+Next up (Step 6): **job listing + job detail pages** reading seeded jobs (jobs are seeded in Step 10; may need a few sample rows to build against).
+
+Forms convention: shadcn `Form` primitives backed by **react-hook-form** + `@hookform/resolvers` with `zodResolver`; the SAME Zod schema also re-validates inside the Server Action. Zod schemas live in a plain `schemas.ts` (not the `"use server"` file) so client and server can both import them. Mutations are colocated `actions.ts` Server Actions scoped by `candidateProfileId`; client lists call `router.refresh()` after success.
 
 The build order we follow, one step at a time:
 
 1. ✅ Schema design — **DONE**
 2. ✅ Project scaffold — **DONE**
 3. ✅ Auth (Google OAuth via Supabase, role-aware layouts) — **DONE**
-4. **Candidate profile pages (basic info → education → skills → work experience → projects → summary)** ← we are here
-5. Resume upload (store only, no parsing)
-6. Job listing + job detail pages (seeded jobs)
+4. ✅ Candidate profile pages (basic info → education → skills → work experience → projects → summary) — **DONE**
+5. ✅ Resume upload (store only, no parsing) — **DONE**
+6. **Job listing + job detail pages (seeded jobs)** ← we are here
 7. Apply flow + fake interview screen + result screen
 8. Business: post job, view applicants, view candidate detail
 9. Admin: manage users/companies, AI-config placeholder
@@ -164,8 +172,8 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Schema designed and locked
 - [x] Project scaffolded (Next.js + Supabase + Prisma + shadcn)
 - [x] Auth working (Google OAuth via Supabase)
-- [ ] Candidate profile (basic info, education, skills, work experience, projects, summary)
-- [ ] Resume upload (store only, no parsing)
+- [x] Candidate profile (basic info, education, skills, work experience, projects, summary)
+- [x] Resume upload (store only, no parsing)
 - [ ] Job listing + job detail pages
 - [ ] Apply flow + fake interview screen + result screen
 - [ ] Business: post job, view applicants, view candidate detail

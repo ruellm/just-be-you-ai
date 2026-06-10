@@ -22,7 +22,9 @@
       "Bash(mv \"\\(candidate\\)/dashboard\" \"\\(candidate\\)/profile\" \"\\(candidate\\)/jobs\" \"\\(candidate\\)/applications\" candidate/)",
       "Bash(mv \"\\(business\\)/dashboard\" \"\\(business\\)/jobs\" \"\\(business\\)/candidates\" business/)",
       "Bash(mv \"\\(admin\\)/users\" \"\\(admin\\)/companies\" \"\\(admin\\)/ai-config\" admin/)",
-      "Bash(rmdir \"\\(candidate\\)\" \"\\(business\\)\" \"\\(admin\\)\")"
+      "Bash(rmdir \"\\(candidate\\)\" \"\\(business\\)\" \"\\(admin\\)\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('react-hook-form', p['react-hook-form']\\); console.log\\('@hookform/resolvers', p['@hookform/resolvers']\\); console.log\\('zod', p['zod']\\)\")",
+      "Bash(npx --yes shadcn@latest add command popover checkbox alert-dialog --yes)"
     ]
   }
 }
