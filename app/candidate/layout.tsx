@@ -21,7 +21,14 @@ export default async function CandidateLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AppNav email={user.email ?? ""} />
+      <AppNav
+        email={user.email ?? ""}
+        links={[
+          { label: "Dashboard", href: "/candidate/dashboard" },
+          { label: "Browse jobs", href: "/candidate/jobs" },
+          { label: "Profile", href: "/candidate/profile/basic-info" },
+        ]}
+      />
       <div className="flex-1">{children}</div>
     </div>
   );

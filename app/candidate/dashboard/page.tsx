@@ -80,11 +80,16 @@ export default async function CandidateDashboardPage() {
           <CardTitle>Your profile</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button asChild>
-            <Link href="/candidate/profile/basic-info">
-              Complete your profile
-            </Link>
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href="/candidate/profile/basic-info">
+                Complete your profile
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/candidate/jobs">Browse jobs</Link>
+            </Button>
+          </div>
           <p className="text-muted-foreground text-sm">
             Profile completion: {percent}%
           </p>
