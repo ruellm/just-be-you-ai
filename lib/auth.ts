@@ -51,6 +51,26 @@ export function getDashboardPath(role: Role): string {
   }
 }
 
+// The Company owned by the current business user (or null).
+export async function getCurrentCompany() {
+  const user = await getCurrentUser();
+  if (!user) return null;
+  return prisma.company.findUnique({ where: { userId: user.id } });
+}
+
+// Authorization gate for the business side: a business may view a candidate's
+// profile only if that candidate has applied to at least one of the company's
+// jobs.
+export async function candidateAppliedToCompany(
+  companyId: string,
+  candidateProfileId: string
+): Promise<boolean> {
+  const count = await prisma.application.count({
+    where: { candidateProfileId, job: { companyId } },
+  });
+  return count > 0;
+}
+
 // Ensure a `users` row exists for a freshly-authenticated Supabase user.
 // First-time sign-ins also get an empty CandidateProfile (candidate) or an
 // empty Company (business) so later steps have something to fill in.

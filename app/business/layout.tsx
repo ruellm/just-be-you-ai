@@ -21,7 +21,14 @@ export default async function BusinessLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AppNav email={user.email ?? ""} />
+      <AppNav
+        email={user.email ?? ""}
+        links={[
+          { label: "Dashboard", href: "/business/dashboard" },
+          { label: "Jobs", href: "/business/jobs" },
+          { label: "Company", href: "/business/company" },
+        ]}
+      />
       <div className="flex-1">{children}</div>
     </div>
   );

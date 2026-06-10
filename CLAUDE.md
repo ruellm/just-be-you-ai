@@ -25,7 +25,7 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 8 — Business: post job, view applicants, view candidate detail.**
+**We are at: Step 9 — Admin: manage users/companies, AI-config placeholder.**
 
 The schema is **LOCKED** (see `prisma/schema.prisma`). The project is scaffolded, Supabase is connected, and the first migration has been applied (tables exist in the database). Do not modify the schema without explicit approval.
 
@@ -43,7 +43,11 @@ Seeding is consolidated in **`prisma/seed.ts`** (run `npm run db:seed`; `package
 
 NOTE on lifecycle: per the Step-7 spec, finishing sets the final status directly to `passed`/`failed` (the `interview_completed` enum value is transient and not persisted by this flow); the applications "Completed" filter therefore typically shows nothing. The presence of an `InterviewResult` marks an application as interviewed.
 
-Next up (Step 8): **business side** — post a job (form → `Job` for the logged-in business's company), view applicants per job, view a candidate's full profile + interview result (score/tier/transcript).
+**Business side — DONE.** Business top nav (`NavLinks` adds active highlighting to `AppNav`): Dashboard / Jobs / Company. `/business/company` form (name required, description, website, logoUrl — URL only). `/business/jobs/new` + `/business/jobs/[id]/edit` share `JobForm` (all Job fields, level/workMode/status `Select`s, skills via `ProjectSkillsPicker`); create redirects to the applicants view, edit toasts in place; `createJob` blocks + redirects to `/business/company` (with toast) if the company name is empty. `/business/jobs` lists the company's jobs (level/mode/status badges, applicant count, View applicants / Edit / Close-Reopen). `/business/jobs/[id]` is the applicants view — All/Passed/Failed/In-progress tabs, sorted by score desc, each row → `/business/candidates/[id]?from=job:[jobId]`. `/business/candidates/[candidateProfileId]` is the read-only full profile + this-company interview results (collapsible transcript) + resume via signed URL. Dashboard has stats (jobs / applicants / passed), recent applicants, company notice. Phase-1: businesses see all candidate info by default (no pay-per-reveal gate yet).
+
+Authorization helpers in `lib/auth.ts`: **`getCurrentCompany()`** and **`candidateAppliedToCompany(companyId, candidateProfileId)`** — every business read page verifies ownership (job belongs to the company; candidate applied to one of the company's jobs) and 404s/redirects otherwise. Job mutations re-check ownership server-side.
+
+Next up (Step 9): **admin** — manage users/companies + an AI-config placeholder page.
 
 Forms convention: shadcn `Form` primitives backed by **react-hook-form** + `@hookform/resolvers` with `zodResolver`; the SAME Zod schema also re-validates inside the Server Action. Zod schemas live in a plain `schemas.ts` (not the `"use server"` file) so client and server can both import them. Mutations are colocated `actions.ts` Server Actions scoped by `candidateProfileId`; client lists call `router.refresh()` after success.
 
@@ -56,8 +60,8 @@ The build order we follow, one step at a time:
 5. ✅ Resume upload (store only, no parsing) — **DONE**
 6. ✅ Job listing + job detail pages (seeded jobs) — **DONE**
 7. ✅ Apply flow + fake interview screen + result screen — **DONE**
-8. **Business: post job, view applicants, view candidate detail** ← we are here
-9. Admin: manage users/companies, AI-config placeholder
+8. ✅ Business: post job, view applicants, view candidate detail — **DONE**
+9. **Admin: manage users/companies, AI-config placeholder** ← we are here
 10. Seed data: realistic fake jobs + "passed" candidates with mock interview results
 
 Update this section when a step is complete and we're moving to the next.
@@ -182,7 +186,7 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Resume upload (store only, no parsing)
 - [x] Job listing + job detail pages
 - [x] Apply flow + fake interview screen + result screen
-- [ ] Business: post job, view applicants, view candidate detail
+- [x] Business: post job, view applicants, view candidate detail
 - [ ] Admin: manage users/companies, AI-config placeholder page
 - [ ] Seed data: realistic fake jobs + "passed" candidates with mock interview results
 

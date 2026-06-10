@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { signOut } from "@/lib/actions/auth";
 import { Button } from "@/components/ui/button";
+import { NavLinks } from "@/components/NavLinks";
 
 // Top navigation shown inside every role-scoped section. Server component:
 // the logout form posts to the signOut server action. `links` are optional
@@ -19,19 +20,7 @@ export function AppNav({
           <Link href="/" className="text-lg font-semibold tracking-tight">
             Just Be You
           </Link>
-          {links.length > 0 ? (
-            <nav className="flex items-center gap-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-md px-3 py-1.5 text-sm font-medium transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          ) : null}
+          {links.length > 0 ? <NavLinks links={links} /> : null}
         </div>
         <div className="flex items-center gap-4">
           {email ? (
