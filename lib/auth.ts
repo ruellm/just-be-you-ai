@@ -47,7 +47,7 @@ export function getDashboardPath(role: Role): string {
     case "business":
       return "/business/dashboard";
     case "admin":
-      return "/admin/users";
+      return "/admin/dashboard";
   }
 }
 

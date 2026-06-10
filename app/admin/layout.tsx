@@ -21,7 +21,15 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen flex-col">
-      <AppNav email={user.email ?? ""} />
+      <AppNav
+        email={user.email ?? ""}
+        links={[
+          { label: "Dashboard", href: "/admin/dashboard" },
+          { label: "Users", href: "/admin/users" },
+          { label: "Companies", href: "/admin/companies" },
+          { label: "AI Config", href: "/admin/ai-config" },
+        ]}
+      />
       <div className="flex-1">{children}</div>
     </div>
   );

@@ -25,9 +25,9 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 9 — Admin: manage users/companies, AI-config placeholder.**
+**We are at: Step 10 — Seed data: realistic fake jobs + "passed" candidates with mock interview results.**
 
-The schema is **LOCKED** (see `prisma/schema.prisma`). The project is scaffolded, Supabase is connected, and the first migration has been applied (tables exist in the database). Do not modify the schema without explicit approval.
+The schema is **LOCKED** (see `prisma/schema.prisma`). Do not modify existing models without explicit approval. (Step 9 added two **new** models — `QuestionSet` + `Question` — with approval; migration `20260610145559_add_question_sets`. No existing models were changed.)
 
 Auth is working: Google OAuth via Supabase, separate candidate (`/signup`) and business (`/signup/business`) signup URLs, a shared `/login`, an `/auth/callback` route that provisions the `users` row (+ empty `CandidateProfile` or `Company`) and redirects by role, role-enforcing `layout.tsx` files for `candidate/`, `business/`, `admin/`, and a logout action. Session refresh runs in `middleware.ts`.
 
@@ -47,7 +47,11 @@ NOTE on lifecycle: per the Step-7 spec, finishing sets the final status directly
 
 Authorization helpers in `lib/auth.ts`: **`getCurrentCompany()`** and **`candidateAppliedToCompany(companyId, candidateProfileId)`** — every business read page verifies ownership (job belongs to the company; candidate applied to one of the company's jobs) and 404s/redirects otherwise. Job mutations re-check ownership server-side.
 
-Next up (Step 9): **admin** — manage users/companies + an AI-config placeholder page.
+**Admin side — DONE.** Admin top nav: Dashboard / Users / Companies / AI Config (active-highlighted). `/admin` → `/admin/dashboard` (stats by role + companies/jobs/applications/passed, recent signups + jobs). `/admin/users` — searchable (email/name), role-filtered, paginated (20) `Table`; row dropdown → "Change role" Dialog (`changeUserRole` also upserts the matching Company/CandidateProfile so the role stays consistent) + "View" → `/admin/users/[id]` (read-only summary). `/admin/companies` table → `/admin/companies/[id]` (info + jobs w/ applicant counts + owner). `/admin/ai-config` lists `QuestionSet` cards (edit/delete); `/admin/ai-config/new` + `/[id]/edit` share `QuestionSetForm` (name, vertical Select, description, dynamic questions via `useFieldArray` with up/down reorder + remove; blank rows dropped, `order` assigned server-side). All admin write actions re-check `getCurrentUserRole() === "admin"`. Admins are still created by manually flipping `users.role` (no admin signup).
+
+`getDashboardPath("admin")` now returns `/admin/dashboard` (was `/admin/users`).
+
+Next up (Step 10): **seed realistic demo data** — fake jobs + "passed" candidates with mock interview results, so the two demo north-star flows are populated. (Skills + 4 companies + 10 jobs already seed via `prisma/seed.ts`; Step 10 extends this with candidate profiles + applications + interview results.)
 
 Forms convention: shadcn `Form` primitives backed by **react-hook-form** + `@hookform/resolvers` with `zodResolver`; the SAME Zod schema also re-validates inside the Server Action. Zod schemas live in a plain `schemas.ts` (not the `"use server"` file) so client and server can both import them. Mutations are colocated `actions.ts` Server Actions scoped by `candidateProfileId`; client lists call `router.refresh()` after success.
 
@@ -61,8 +65,8 @@ The build order we follow, one step at a time:
 6. ✅ Job listing + job detail pages (seeded jobs) — **DONE**
 7. ✅ Apply flow + fake interview screen + result screen — **DONE**
 8. ✅ Business: post job, view applicants, view candidate detail — **DONE**
-9. **Admin: manage users/companies, AI-config placeholder** ← we are here
-10. Seed data: realistic fake jobs + "passed" candidates with mock interview results
+9. ✅ Admin: manage users/companies, AI-config placeholder — **DONE**
+10. **Seed data: realistic fake jobs + "passed" candidates with mock interview results** ← we are here
 
 Update this section when a step is complete and we're moving to the next.
 
@@ -187,7 +191,7 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Job listing + job detail pages
 - [x] Apply flow + fake interview screen + result screen
 - [x] Business: post job, view applicants, view candidate detail
-- [ ] Admin: manage users/companies, AI-config placeholder page
+- [x] Admin: manage users/companies, AI-config placeholder page
 - [ ] Seed data: realistic fake jobs + "passed" candidates with mock interview results
 
 Tick boxes as we go.
