@@ -1,75 +1,97 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { signInWithPassword } from "./actions";
 
-function isRedirect(error: unknown): boolean {
-  return (
-    !!error &&
-    typeof error === "object" &&
-    "digest" in error &&
-    String((error as { digest?: string }).digest).startsWith("NEXT_REDIRECT")
-  );
-}
+const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+  password: z.string().min(1, "Enter your password"),
+});
+
+type LoginValues = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
+  const router = useRouter();
+  const form = useForm<LoginValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: { email: "", password: "" },
+  });
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    startTransition(async () => {
-      try {
-        const result = await signInWithPassword(email, password);
-        if (result?.error) setError(result.error);
-      } catch (err) {
-        if (isRedirect(err)) throw err;
-        setError("Something went wrong. Please try again.");
-      }
-    });
+  async function onSubmit(values: LoginValues) {
+    const result = await signInWithPassword(values.email, values.password);
+    if ("redirectTo" in result) {
+      router.push(result.redirectTo);
+      return;
+    }
+    form.setError("root", { message: result.error });
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" autoComplete="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="password">Password</Label>
-        <Input
-          id="password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Signing in…" : "Sign in"}
-      </Button>
-      <Link
-        href="/forgot-password"
-        className="text-muted-foreground hover:text-foreground block text-center text-sm"
-      >
-        Forgot password?
-      </Link>
-    </form>
+        {form.formState.errors.root ? (
+          <p className="text-destructive text-sm">
+            {form.formState.errors.root.message}
+          </p>
+        ) : null}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+        </Button>
+        <Link
+          href="/forgot-password"
+          className="text-muted-foreground hover:text-foreground block text-center text-sm"
+        >
+          Forgot password?
+        </Link>
+      </form>
+    </Form>
   );
 }

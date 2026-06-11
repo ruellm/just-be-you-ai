@@ -1,8 +1,10 @@
 import Link from "next/link";
+import { SearchX } from "lucide-react";
 import { Prisma, type Level, type WorkMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { JobCard } from "@/components/jobs/JobCard";
+import { EmptyState } from "@/components/EmptyState";
 import { LEVELS, WORK_MODES } from "@/lib/jobs";
 import { JobFilters } from "./JobFilters";
 import { JobSearch } from "./JobSearch";
@@ -94,9 +96,19 @@ export default async function JobsPage({
           </p>
 
           {jobs.length === 0 ? (
-            <p className="text-muted-foreground py-12 text-center text-sm">
-              No jobs match your filters.
-            </p>
+            <EmptyState
+              icon={SearchX}
+              title={
+                q || modes.length || levels.length || skillIds.length
+                  ? "No jobs match your filters"
+                  : "No jobs posted yet"
+              }
+              description={
+                q || modes.length || levels.length || skillIds.length
+                  ? "Try removing a filter or searching for something else."
+                  : "Check back soon — new roles are added regularly."
+              }
+            />
           ) : (
             <div className="grid gap-4 md:grid-cols-2">
               {jobs.map((job) => (

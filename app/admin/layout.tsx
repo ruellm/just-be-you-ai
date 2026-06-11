@@ -18,6 +18,7 @@ export default async function AdminLayout({
     <div className="flex min-h-screen flex-col">
       <AppNav
         email={dbUser.email}
+        logoHref={getDashboardPath(dbUser.role)}
         links={[
           { label: "Dashboard", href: "/admin/dashboard" },
           { label: "Users", href: "/admin/users" },

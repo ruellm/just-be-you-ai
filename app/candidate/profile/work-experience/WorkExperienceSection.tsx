@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Dialog,
   DialogContent,
@@ -85,9 +86,16 @@ export function WorkExperienceSection({
       </Dialog>
 
       {experiences.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No work experience added yet.
-        </p>
+        <EmptyState
+          icon={Briefcase}
+          title="No work experience added yet"
+          description="Add roles you've held and the projects you worked on."
+          action={
+            <Button variant="outline" onClick={openAdd}>
+              <Plus /> Add work experience
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {experiences.map((w) => (

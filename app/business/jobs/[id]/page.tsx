@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Users } from "lucide-react";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import { EmptyState } from "@/components/EmptyState";
 import { scoreToPercent } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 
@@ -121,9 +122,19 @@ export default async function JobApplicantsPage({
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground py-12 text-center text-sm">
-          No applicants in this category yet.
-        </p>
+        <EmptyState
+          icon={Users}
+          title={
+            applications.length === 0
+              ? "No applicants yet"
+              : "No applicants in this category"
+          }
+          description={
+            applications.length === 0
+              ? "Your job appears on the candidates' job board automatically — applicants will show up here once they apply."
+              : "Try a different tab to see other applicants."
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {filtered.map((app) => {

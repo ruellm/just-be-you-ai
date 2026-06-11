@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Pencil, Plus, Trash2 } from "lucide-react";
+import { GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Dialog,
   DialogContent,
@@ -80,9 +81,16 @@ export function EducationSection({
       </Dialog>
 
       {educations.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No education added yet.
-        </p>
+        <EmptyState
+          icon={GraduationCap}
+          title="No education added yet"
+          description="Add your schools, degrees, and fields of study."
+          action={
+            <Button variant="outline" onClick={openAdd}>
+              <Plus /> Add education
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {educations.map((e) => (

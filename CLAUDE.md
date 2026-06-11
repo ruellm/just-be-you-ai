@@ -25,11 +25,11 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**We are at: Step 10B — Seed data + polish.**
+**Phase 1 COMPLETE. Awaiting planning session for Phase 2 (real AI voice interview + AI grading).**
 
-(Step 10A — the auth-model refactor — is **DONE**: candidates use Google OAuth; businesses/admins are admin-provisioned email+password with a forced first-login password change; combined `/login`; `/forgot-password` + `/reset-password`; `/admin/users/new`; `/signup/business` removed. See the User roles section. Migration `20260610151543_add_requires_password_change`.)
+The auth-model refactor (Step 10A) is done: candidates use Google OAuth; businesses/admins are admin-provisioned email+password with a forced first-login password change; combined `/login`; `/forgot-password` + `/reset-password`; `/admin/users/new`; `/signup/business` removed. See the User roles section. Migration `20260610151543_add_requires_password_change`.
 
-Next up (Step 10B): seed realistic demo data — fake jobs + "passed" candidates with mock interview results — and general polish so the two demo north-star flows are populated.
+The polish pass (Step 10B) is done: branded `app/not-found.tsx` (404) + `app/error.tsx` (500); a shared `components/EmptyState.tsx` applied to the candidate jobs/applications, business jobs/applicants, admin ai-config, and the candidate profile Education/Skills/Work-Experience sections; loading/disabled states confirmed on every Server-Action submit button; the nav normalized (fixed `h-14`, logo links to the role dashboard via `AppNav logoHref`); landing page tightened (value prop + "How it works" strip); `LoginForm` + `ForgotPasswordForm` converted to shadcn `Form`. The realistic-demo **seed was intentionally skipped** — the user decided existing real test data is sufficient (the `prisma/seed.ts` skills + 4 companies + 10 jobs remain).
 
 The schema is **LOCKED** (see `prisma/schema.prisma`). Do not modify existing models without explicit approval. (Step 9 added two **new** models — `QuestionSet` + `Question` — with approval; migration `20260610145559_add_question_sets`. No existing models were changed.)
 
@@ -70,7 +70,7 @@ The build order we follow, one step at a time:
 7. ✅ Apply flow + fake interview screen + result screen — **DONE**
 8. ✅ Business: post job, view applicants, view candidate detail — **DONE**
 9. ✅ Admin: manage users/companies, AI-config placeholder — **DONE**
-10. **Seed data: realistic fake jobs + "passed" candidates with mock interview results** ← we are here
+10. ✅ Seed data + polish — **DONE** (seed skipped per user; polish pass complete) — **Phase 1 complete**
 
 Update this section when a step is complete and we're moving to the next.
 
@@ -198,6 +198,6 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Apply flow + fake interview screen + result screen
 - [x] Business: post job, view applicants, view candidate detail
 - [x] Admin: manage users/companies, AI-config placeholder page
-- [ ] Seed data: realistic fake jobs + "passed" candidates with mock interview results
+- [x] Seed data: realistic fake jobs + "passed" candidates with mock interview results (skipped — existing real test data sufficient for demo)
 
-Tick boxes as we go.
+All Phase 1 boxes are checked. **Phase 1 is complete.**

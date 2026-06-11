@@ -18,6 +18,7 @@ export default async function BusinessLayout({
     <div className="flex min-h-screen flex-col">
       <AppNav
         email={dbUser.email}
+        logoHref={getDashboardPath(dbUser.role)}
         links={[
           { label: "Dashboard", href: "/business/dashboard" },
           { label: "Jobs", href: "/business/jobs" },

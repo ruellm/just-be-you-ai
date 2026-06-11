@@ -1,29 +1,42 @@
 "use client";
 
-import { useState, useTransition, type FormEvent } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { requestPasswordReset } from "./actions";
 
-export function ForgotPasswordForm() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [sent, setSent] = useState(false);
-  const [pending, startTransition] = useTransition();
+const schema = z.object({
+  email: z.string().trim().email("Enter a valid email"),
+});
 
-  function onSubmit(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    startTransition(async () => {
-      const result = await requestPasswordReset(email, window.location.origin);
-      if ("error" in result) {
-        setError(result.error);
-        return;
-      }
-      setSent(true);
-    });
+type Values = z.infer<typeof schema>;
+
+export function ForgotPasswordForm() {
+  const [sent, setSent] = useState(false);
+  const form = useForm<Values>({
+    resolver: zodResolver(schema),
+    defaultValues: { email: "" },
+  });
+
+  async function onSubmit(values: Values) {
+    const result = await requestPasswordReset(values.email, window.location.origin);
+    if ("error" in result) {
+      form.setError("email", { message: result.error });
+      return;
+    }
+    setSent(true);
   }
 
   if (sent) {
@@ -41,28 +54,35 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
-      <div className="space-y-1.5">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                <Input type="email" autoComplete="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      {error ? <p className="text-destructive text-sm">{error}</p> : null}
-      <Button type="submit" className="w-full" disabled={pending}>
-        {pending ? "Sending…" : "Send reset link"}
-      </Button>
-      <Link
-        href="/login"
-        className="text-muted-foreground hover:text-foreground block text-center text-sm"
-      >
-        Back to login
-      </Link>
-    </form>
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={form.formState.isSubmitting}
+        >
+          {form.formState.isSubmitting ? "Sending…" : "Send reset link"}
+        </Button>
+        <Link
+          href="/login"
+          className="text-muted-foreground hover:text-foreground block text-center text-sm"
+        >
+          Back to login
+        </Link>
+      </form>
+    </Form>
   );
 }

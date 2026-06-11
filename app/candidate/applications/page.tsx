@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { Inbox } from "lucide-react";
 import type { ApplicationStatus } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import { EmptyState } from "@/components/EmptyState";
 import { applicationPath } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 
@@ -78,16 +80,24 @@ export default async function ApplicationsPage({
       </div>
 
       {applications.length === 0 ? (
-        <div className="space-y-3 py-12 text-center">
-          <p className="text-muted-foreground text-sm">
-            {active.status
-              ? "No applications with this status."
-              : "You haven't applied to any jobs yet."}
-          </p>
-          <Button asChild>
-            <Link href="/candidate/jobs">Browse jobs</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title={
+            active.status
+              ? "No applications with this status"
+              : "No applications yet"
+          }
+          description={
+            active.status
+              ? "Try a different filter, or browse jobs to apply."
+              : "Browse open roles and apply to get started."
+          }
+          action={
+            <Button asChild>
+              <Link href="/candidate/jobs">Browse jobs</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {applications.map((app) => (

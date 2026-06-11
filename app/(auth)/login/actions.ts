@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
@@ -11,13 +10,13 @@ const schema = z.object({
   password: z.string().min(1),
 });
 
-// Email/password sign-in for businesses + admins. On success, redirects to
-// /change-password (if a first-login password change is pending) or the
-// role-based dashboard. Returns an error object on failure.
+// Email/password sign-in for businesses + admins. Sets the session cookies and
+// returns where to navigate: /change-password (if a first-login password change
+// is pending) or the role-based dashboard. Returns an error object on failure.
 export async function signInWithPassword(
   email: string,
   password: string
-): Promise<{ error: string } | void> {
+): Promise<{ error: string } | { redirectTo: string }> {
   const parsed = schema.safeParse({ email, password });
   if (!parsed.success) return { error: "Enter your email and password." };
 
@@ -36,6 +35,9 @@ export async function signInWithPassword(
   });
   if (!dbUser) return { error: "No account found for this user." };
 
-  if (dbUser.requiresPasswordChange) redirect("/change-password");
-  redirect(getDashboardPath(dbUser.role));
+  return {
+    redirectTo: dbUser.requiresPasswordChange
+      ? "/change-password"
+      : getDashboardPath(dbUser.role),
+  };
 }

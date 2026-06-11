@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { FileText, Plus } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDelete } from "@/components/profile/ConfirmDelete";
+import { EmptyState } from "@/components/EmptyState";
 import { deleteQuestionSet } from "./actions";
 
 export default async function AiConfigPage() {
@@ -30,12 +31,16 @@ export default async function AiConfigPage() {
       </div>
 
       {sets.length === 0 ? (
-        <div className="space-y-3 py-12 text-center">
-          <p className="text-muted-foreground text-sm">No question sets yet.</p>
-          <Button asChild>
-            <Link href="/admin/ai-config/new">Create a question set</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="No question sets yet"
+          description="Create a question set to power the AI interview in Phase 2."
+          action={
+            <Button asChild>
+              <Link href="/admin/ai-config/new">Create question set</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {sets.map((set) => (

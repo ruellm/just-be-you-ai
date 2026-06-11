@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Plus, X } from "lucide-react";
+import { Plus, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EmptyState } from "@/components/EmptyState";
 import {
   Dialog,
   DialogContent,
@@ -146,7 +147,16 @@ export function SkillsSection({
 
       {/* Current skills */}
       {candidateSkills.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No skills added yet.</p>
+        <EmptyState
+          icon={Sparkles}
+          title="No skills added yet"
+          description="Add the skills you have and your years of experience with each."
+          action={
+            <Button variant="outline" onClick={() => setAddOpen(true)}>
+              <Plus /> Add skill
+            </Button>
+          }
+        />
       ) : (
         <div className="flex flex-wrap gap-2">
           {candidateSkills.map((cs) => (

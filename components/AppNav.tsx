@@ -9,15 +9,20 @@ import { NavLinks } from "@/components/NavLinks";
 export function AppNav({
   email,
   links = [],
+  logoHref = "/",
 }: {
   email: string;
   links?: { label: string; href: string }[];
+  logoHref?: string;
 }) {
   return (
     <header className="border-b">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-3">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-6">
         <div className="flex items-center gap-6">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
+          <Link
+            href={logoHref}
+            className="text-lg font-semibold tracking-tight"
+          >
             Just Be You
           </Link>
           {links.length > 0 ? <NavLinks links={links} /> : null}

@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Plus } from "lucide-react";
+import { Briefcase, Plus } from "lucide-react";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { EmptyState } from "@/components/EmptyState";
 import { LEVEL_LABELS, WORK_MODE_LABELS } from "@/lib/jobs";
 import { JobStatusToggle } from "./JobStatusToggle";
 
@@ -39,14 +40,16 @@ export default async function BusinessJobsPage() {
       </div>
 
       {jobs.length === 0 ? (
-        <div className="space-y-3 py-12 text-center">
-          <p className="text-muted-foreground text-sm">
-            You haven&apos;t posted any jobs yet.
-          </p>
-          <Button asChild>
-            <Link href="/business/jobs/new">Post a job</Link>
-          </Button>
-        </div>
+        <EmptyState
+          icon={Briefcase}
+          title="You haven't posted any jobs yet"
+          description="Post your first role to start receiving applicants."
+          action={
+            <Button asChild>
+              <Link href="/business/jobs/new">Post a job</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="grid gap-3">
           {jobs.map((job) => (
