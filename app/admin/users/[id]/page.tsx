@@ -120,6 +120,18 @@ export default async function AdminUserDetailPage({
         </Card>
       ) : null}
 
+      {/* Admin debug surface: extracted resume text (Phase 1.5). */}
+      {user.role === "candidate" && profile?.parsedResumeText ? (
+        <details className="rounded-lg border">
+          <summary className="text-muted-foreground cursor-pointer px-4 py-3 text-sm font-medium">
+            Parsed resume text ({profile.parsedResumeText.length} chars) — debug
+          </summary>
+          <pre className="text-muted-foreground max-h-96 overflow-auto border-t px-4 py-3 font-mono text-xs whitespace-pre-wrap">
+            {profile.parsedResumeText}
+          </pre>
+        </details>
+      ) : null}
+
       {user.role === "business" && user.company ? (
         <Card>
           <CardHeader>

@@ -25,7 +25,9 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**Phase 1 COMPLETE. Awaiting planning session for Phase 2 (real AI voice interview + AI grading).**
+**Phase 1.5 COMPLETE. Next: Phase 2.1 — job-side AI fields and question generation pipeline.**
+
+Phase 1.5 (resume text extraction) is done: `CandidateProfile` gained `parsedResumeText String?` + `resumeParsedAt DateTime?` (migration `20260614130122_add_parsed_resume_text`). `lib/resume-parse.ts` extracts text (PDF via **pdf-parse v2** `new PDFParse({data}).getText()`; DOCX via **mammoth** `extractRawText`), normalizes whitespace, and truncates to 30000 chars. The resume upload action parses the in-memory bytes after a successful Storage upload (never fails the upload; logs + stores null on error/empty); replace overwrites and remove clears the parsed fields. `scripts/backfill-resume-text.ts` (`npm run backfill:resumes`) re-parses any resume with text still null — run manually. `/admin/users/[id]` has a collapsible "Parsed resume text" debug block for candidates. `next.config.ts` lists `pdf-parse` + `mammoth` in `serverExternalPackages`. No AI yet.
 
 The auth-model refactor (Step 10A) is done: candidates use Google OAuth; businesses/admins are admin-provisioned email+password with a forced first-login password change; combined `/login`; `/forgot-password` + `/reset-password`; `/admin/users/new`; `/signup/business` removed. See the User roles section. Migration `20260610151543_add_requires_password_change`.
 
@@ -199,5 +201,6 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Business: post job, view applicants, view candidate detail
 - [x] Admin: manage users/companies, AI-config placeholder page
 - [x] Seed data: realistic fake jobs + "passed" candidates with mock interview results (skipped — existing real test data sufficient for demo)
+- [x] Phase 1.5: Resume text extraction (PDF + DOCX)
 
-All Phase 1 boxes are checked. **Phase 1 is complete.**
+All Phase 1 boxes are checked. **Phase 1 is complete.** Phase 1.5 (resume text extraction) is also complete.

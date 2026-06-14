@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { extractResumeText } from "@/lib/resume-parse";
 import {
   RESUME_ALLOWED_TYPES,
   RESUME_MAX_BYTES,
@@ -69,10 +70,35 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
     select: { resumeUrl: true },
   });
 
+  // Extract text from the bytes we already have in memory (no need to
+  // re-download from Storage). Parsing must NEVER fail the upload — on any
+  // error/empty result we store null. On a replace this also overwrites (i.e.
+  // clears) any previously parsed text.
+  let parsedText: string | null = null;
+  try {
+    const text = await extractResumeText(buffer, meta.data.ext);
+    parsedText = text.length > 0 ? text : null;
+    if (!parsedText) {
+      console.warn(`[resume-parse] No text extracted from ${path}`);
+    }
+  } catch (parseError) {
+    console.error("[resume-parse] Failed to parse uploaded resume:", parseError);
+    parsedText = null;
+  }
+
   await prisma.candidateProfile.upsert({
     where: { userId: user.id },
-    update: { resumeUrl: path },
-    create: { userId: user.id, resumeUrl: path },
+    update: {
+      resumeUrl: path,
+      parsedResumeText: parsedText,
+      resumeParsedAt: parsedText ? new Date() : null,
+    },
+    create: {
+      userId: user.id,
+      resumeUrl: path,
+      parsedResumeText: parsedText,
+      resumeParsedAt: parsedText ? new Date() : null,
+    },
   });
 
   // Best-effort delete of the previous file (replace flow).
@@ -98,7 +124,7 @@ export async function deleteResume(): Promise<ActionResult> {
     await admin.storage.from(BUCKET).remove([profile.resumeUrl]);
     await prisma.candidateProfile.update({
       where: { userId: user.id },
-      data: { resumeUrl: null },
+      data: { resumeUrl: null, parsedResumeText: null, resumeParsedAt: null },
     });
   }
 

@@ -132,9 +132,13 @@ model CandidateProfile {
   expectedSalary Int? // amount only; currency assumed PHP for now
   nationality    String?
 
-  // Profile summary + resume (stored file only, not parsed)
+  // Profile summary + resume
   summary   String?
-  resumeUrl String? // Supabase Storage object URL
+  resumeUrl String? // Supabase Storage object path (private bucket)
+
+  // Extracted resume text (Phase 1.5) — for the Phase 2 AI interview.
+  parsedResumeText String? // null when no resume or parsing failed
+  resumeParsedAt   DateTime? // null when not yet parsed
 
   // Languages spoken (e.g. ["English", "Filipino"])
   languages String[]
