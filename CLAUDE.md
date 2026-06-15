@@ -25,7 +25,9 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**Phase 1.5 COMPLETE. Next: Phase 2.1 — job-side AI fields and question generation pipeline.**
+**Phase 2.1 COMPLETE. Next: Phase 2.2 — Python voice agent service (LiveKit + Deepgram + GPT-4o + ElevenLabs).**
+
+Phase 2.1 (job AI fields + question generation) is done. Schema (additive, migration `20260614132910_add_ai_question_fields`): `Job` gained `interviewHints` / `idealCandidateProfile` / `passingCriteria` (`@db.Text`); new enum `QuestionCategory { core, personalized, behavioral }`; new model `GeneratedQuestion` (per-application, `order`/`category`/`text`/`rationale`, cascade); `Application.questions`. The business job form (`new` + `edit`) has an optional "AI Interview Configuration" section saving those three fields. `lib/ai/anthropic.ts` lazily builds the Anthropic client (`QUESTION_MODEL = "claude-sonnet-4-6"`). `lib/ai/generate-questions.ts#generateQuestionsForApplication(applicationId)` loads the application (job + candidate profile + skills + work experience + `parsedResumeText`, truncated to 8000), calls Claude with a **forced tool** (`submit_questions`) for structured JSON, validates with Zod (exactly 6: core/personalized/behavioral ×2), retries once, then deletes + recreates `GeneratedQuestion` rows (idempotent). The static system prompt carries `cache_control` (note: it's below Sonnet's 2048-token cache minimum, so caching is effectively a no-op until the prompt grows — kept for correctness). The candidate **apply** action calls generation in try/catch before redirecting (never blocks the candidate; the Apply button shows "Preparing your interview…"). Admin debug page `/admin/applications/[id]/questions` lists the questions (category-colored badges + rationale) with a confirm-gated **Regenerate** button; `/admin/users/[id]` links to it per application. The mock interview screen is **unchanged**. `ANTHROPIC_API_KEY` is server-only (added to `.env.local.example`). No voice/Python yet.
 
 Phase 1.5 (resume text extraction) is done: `CandidateProfile` gained `parsedResumeText String?` + `resumeParsedAt DateTime?` (migration `20260614130122_add_parsed_resume_text`). `lib/resume-parse.ts` extracts text (PDF via **pdf-parse v2** `new PDFParse({data}).getText()`; DOCX via **mammoth** `extractRawText`), normalizes whitespace, and truncates to 30000 chars. The resume upload action parses the in-memory bytes after a successful Storage upload (never fails the upload; logs + stores null on error/empty); replace overwrites and remove clears the parsed fields. `scripts/backfill-resume-text.ts` (`npm run backfill:resumes`) re-parses any resume with text still null — run manually. `/admin/users/[id]` has a collapsible "Parsed resume text" debug block for candidates. `next.config.ts` lists `pdf-parse` + `mammoth` in `serverExternalPackages`. No AI yet.
 
@@ -157,6 +159,17 @@ app/
 
 ---
 
+## Phase 2 LLM choices (locked unless changed)
+
+- Question generation + evaluation: Claude Sonnet via Anthropic SDK
+- Voice agent conversation: GPT-4o via OpenAI (set up in Phase 2.2)
+- STT: Deepgram (set up in Phase 2.2)
+- TTS: ElevenLabs Turbo v2.5 (set up in Phase 2.2)
+- Voice orchestration: LiveKit Agents Python SDK (Phase 2.2)
+- Structured AI output: Zod (TypeScript), Pydantic (Python in 2.2)
+
+---
+
 ## Hard rules (do NOT do these without asking)
 
 - ❌ Do **not** change the Prisma schema after we lock it. If a change is needed, stop and ask.
@@ -202,5 +215,6 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Admin: manage users/companies, AI-config placeholder page
 - [x] Seed data: realistic fake jobs + "passed" candidates with mock interview results (skipped — existing real test data sufficient for demo)
 - [x] Phase 1.5: Resume text extraction (PDF + DOCX)
+- [x] Phase 2.1: Job AI fields + question generation pipeline
 
 All Phase 1 boxes are checked. **Phase 1 is complete.** Phase 1.5 (resume text extraction) is also complete.

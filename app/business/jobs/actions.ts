@@ -28,6 +28,9 @@ function jobData(d: JobValues) {
     salaryMin: toIntOrNull(d.salaryMin),
     salaryMax: toIntOrNull(d.salaryMax),
     status: d.status,
+    interviewHints: nullify(d.interviewHints),
+    idealCandidateProfile: nullify(d.idealCandidateProfile),
+    passingCriteria: nullify(d.passingCriteria),
   };
 }
 

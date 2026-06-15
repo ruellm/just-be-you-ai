@@ -41,6 +41,9 @@ export const EMPTY_JOB: JobValues = {
   salaryMax: "",
   status: "open",
   skillIds: [],
+  interviewHints: "",
+  idealCandidateProfile: "",
+  passingCriteria: "",
 };
 
 export function JobForm({
@@ -285,6 +288,72 @@ export function JobForm({
             </FormItem>
           )}
         />
+
+        {/* AI Interview Configuration (optional) */}
+        <div className="space-y-4 border-t pt-6">
+          <div>
+            <h2 className="text-sm font-semibold">
+              AI Interview Configuration (optional)
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              These fields guide the AI interviewer to produce better, more
+              relevant questions. They&apos;re optional — the AI will still
+              generate questions without them, but providing detail here
+              significantly improves quality.
+            </p>
+          </div>
+          <FormField
+            control={form.control}
+            name="interviewHints"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Interview hints</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={3}
+                    placeholder="What questions or topics should the AI cover? Provide examples or topics. e.g. 'Ask about state management in React. Probe for understanding of when to use Redux vs Context. A strong candidate explains tradeoffs.'"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="idealCandidateProfile"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Ideal candidate profile</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={3}
+                    placeholder="Describe the kind of person you want — skills, traits, work ethic, values. e.g. 'Someone who explains tradeoffs, admits gaps, and asks clarifying questions.'"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="passingCriteria"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Passing criteria</FormLabel>
+                <FormControl>
+                  <Textarea
+                    rows={3}
+                    placeholder="In your own words, what does a passing candidate look like? e.g. 'Can explain at least one past project in technical depth and demonstrates curiosity by asking thoughtful questions back.'"
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting

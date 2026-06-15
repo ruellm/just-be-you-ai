@@ -280,6 +280,12 @@ model Job {
   status       JobStatus @default(open)
   createdAt    DateTime  @default(now())
 
+  // AI interview configuration (Phase 2.1) — optional guidance that improves
+  // generated-question quality. Consumed by the question generation pipeline.
+  interviewHints        String? @db.Text
+  idealCandidateProfile String? @db.Text
+  passingCriteria       String? @db.Text
+
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   skills       JobSkill[]
   applications Application[]
@@ -318,6 +324,7 @@ model Application {
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
   job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?
+  questions        GeneratedQuestion[]
 
   @@unique([candidateProfileId, jobId])
   @@index([jobId])
@@ -368,4 +375,29 @@ model Question {
 
   @@index([questionSetId])
   @@map("questions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AI-generated interview questions per application (Phase 2.1)
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum QuestionCategory {
+  core
+  personalized
+  behavioral
+}
+
+model GeneratedQuestion {
+  id            String           @id @default(cuid())
+  applicationId String
+  order         Int
+  category      QuestionCategory
+  text          String           @db.Text
+  rationale     String?          @db.Text // why this question was chosen (LLM-generated, debug)
+  createdAt     DateTime         @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("generated_questions")
 }

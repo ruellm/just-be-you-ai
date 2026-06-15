@@ -56,6 +56,15 @@ export default async function AdminUserDetailPage({
         })
       : 0;
 
+  const candidateApplications =
+    user.role === "candidate" && user.candidateProfile
+      ? await prisma.application.findMany({
+          where: { candidateProfileId: user.candidateProfile.id },
+          orderBy: { createdAt: "desc" },
+          select: { id: true, job: { select: { title: true } } },
+        })
+      : [];
+
   const profile = user.candidateProfile;
   const candidateName = profile
     ? [profile.firstName, profile.lastName].filter(Boolean).join(" ")
@@ -130,6 +139,32 @@ export default async function AdminUserDetailPage({
             {profile.parsedResumeText}
           </pre>
         </details>
+      ) : null}
+
+      {user.role === "candidate" && candidateApplications.length > 0 ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Applications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y">
+              {candidateApplications.map((app) => (
+                <div
+                  key={app.id}
+                  className="flex items-center justify-between gap-3 py-2"
+                >
+                  <span className="truncate text-sm">{app.job.title}</span>
+                  <Link
+                    href={`/admin/applications/${app.id}/questions`}
+                    className="text-muted-foreground hover:text-foreground shrink-0 text-sm underline"
+                  >
+                    View generated questions
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       ) : null}
 
       {user.role === "business" && user.company ? (

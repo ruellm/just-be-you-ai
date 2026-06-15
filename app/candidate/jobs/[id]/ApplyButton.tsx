@@ -35,7 +35,7 @@ export function ApplyButton({ jobId }: { jobId: string }) {
         })
       }
     >
-      {pending ? "Applying…" : "Apply"}
+      {pending ? "Preparing your interview…" : "Apply"}
     </Button>
   );
 }

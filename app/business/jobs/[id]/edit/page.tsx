@@ -37,6 +37,9 @@ export default async function EditJobPage({
     salaryMax: job.salaryMax != null ? String(job.salaryMax) : "",
     status: job.status,
     skillIds: job.skills.map((s) => s.skillId),
+    interviewHints: job.interviewHints ?? "",
+    idealCandidateProfile: job.idealCandidateProfile ?? "",
+    passingCriteria: job.passingCriteria ?? "",
   };
 
   return (

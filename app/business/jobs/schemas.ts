@@ -18,6 +18,10 @@ export const jobSchema = z
     salaryMax: z.string().trim().regex(/^\d*$/, "Enter a whole number"),
     status: jobStatusSchema,
     skillIds: z.array(z.string()).max(50),
+    // AI interview configuration (optional)
+    interviewHints: z.string().trim().max(5000),
+    idealCandidateProfile: z.string().trim().max(5000),
+    passingCriteria: z.string().trim().max(5000),
   })
   .refine(
     (d) =>

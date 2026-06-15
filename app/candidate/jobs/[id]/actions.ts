@@ -5,6 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { applicationPath } from "@/lib/applications";
+import { generateQuestionsForApplication } from "@/lib/ai/generate-questions";
 
 const idSchema = z.string().min(1);
 
@@ -45,6 +46,17 @@ export async function applyToJob(rawJobId: string) {
     data: { candidateProfileId: profile.id, jobId, status: "submitted" },
     select: { id: true },
   });
+
+  // Generate the AI interview questions up front (3–8s). Never block the
+  // candidate: on failure we log and continue — an admin can regenerate later.
+  try {
+    await generateQuestionsForApplication(application.id);
+  } catch (error) {
+    console.error(
+      `[generate-questions] Failed for application ${application.id}:`,
+      error
+    );
+  }
 
   redirect(`/candidate/applications/${application.id}/interview`);
 }
