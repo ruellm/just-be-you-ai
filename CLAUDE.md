@@ -25,7 +25,9 @@ If those two flows work with seeded data, Phase 1 is done.
 
 ## 🎯 Current task (read me first)
 
-**Phase 2.1 COMPLETE. Next: Phase 2.2 — Python voice agent service (LiveKit + Deepgram + GPT-4o + ElevenLabs).**
+**Phase 2.2a COMPLETE. Next: Phase 2.2b — Supabase integration in Python agent (load candidate context + questions).**
+
+Phase 2.2a (hello-world voice agent) is done. A new standalone **Python** service lives at `voice-agent/` in the repo root — a separate process, NOT part of Next.js. `voice-agent/agent.py` is a minimal LiveKit Agents 1.x worker (`entrypoint(ctx: JobContext)` + `cli.run_app(WorkerOptions(...))`) wiring Deepgram STT (`nova-3`), OpenAI LLM (`gpt-4o`), ElevenLabs TTS (`eleven_turbo_v2_5`, voice id from env), and Silero VAD; it connects to a LiveKit room and greets a user named "tester". `requirements.txt` pins the LiveKit packages to `>=1.0,<2.0` (livekit-agents + deepgram/openai/elevenlabs/silero plugins) plus python-dotenv. `voice-agent/.env.example` templates LiveKit/Deepgram/OpenAI/ElevenLabs keys (no real values); `voice-agent/.gitignore` + root `.gitignore` ignore `venv/`, `.env`, `__pycache__`, `*.pyc`. `README.md` documents Windows venv setup + LiveKit Playground testing. NO Supabase, NO candidate context, NO real interview, NO Next.js changes.
 
 Phase 2.1 (job AI fields + question generation) is done. Schema (additive, migration `20260614132910_add_ai_question_fields`): `Job` gained `interviewHints` / `idealCandidateProfile` / `passingCriteria` (`@db.Text`); new enum `QuestionCategory { core, personalized, behavioral }`; new model `GeneratedQuestion` (per-application, `order`/`category`/`text`/`rationale`, cascade); `Application.questions`. The business job form (`new` + `edit`) has an optional "AI Interview Configuration" section saving those three fields. `lib/ai/anthropic.ts` lazily builds the Anthropic client (`QUESTION_MODEL = "claude-sonnet-4-6"`). `lib/ai/generate-questions.ts#generateQuestionsForApplication(applicationId)` loads the application (job + candidate profile + skills + work experience + `parsedResumeText`, truncated to 8000), calls Claude with a **forced tool** (`submit_questions`) for structured JSON, validates with Zod (exactly 6: core/personalized/behavioral ×2), retries once, then deletes + recreates `GeneratedQuestion` rows (idempotent). The static system prompt carries `cache_control` (note: it's below Sonnet's 2048-token cache minimum, so caching is effectively a no-op until the prompt grows — kept for correctness). The candidate **apply** action calls generation in try/catch before redirecting (never blocks the candidate; the Apply button shows "Preparing your interview…"). Admin debug page `/admin/applications/[id]/questions` lists the questions (category-colored badges + rationale) with a confirm-gated **Regenerate** button; `/admin/users/[id]` links to it per application. The mock interview screen is **unchanged**. `ANTHROPIC_API_KEY` is server-only (added to `.env.local.example`). No voice/Python yet.
 
@@ -216,5 +218,6 @@ When building a feature, **re-read the relevant section** of these docs — don'
 - [x] Seed data: realistic fake jobs + "passed" candidates with mock interview results (skipped — existing real test data sufficient for demo)
 - [x] Phase 1.5: Resume text extraction (PDF + DOCX)
 - [x] Phase 2.1: Job AI fields + question generation pipeline
+- [x] Phase 2.2a: Python voice agent setup (hello-world)
 
 All Phase 1 boxes are checked. **Phase 1 is complete.** Phase 1.5 (resume text extraction) is also complete.

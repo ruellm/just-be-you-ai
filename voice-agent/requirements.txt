@@ -1,0 +1,13 @@
+# Just Be You — Phase 2.2 voice agent dependencies
+#
+# Version policy: pin to the LiveKit Agents 1.x line. The plugins share a
+# unified version with the core framework, so keeping them all on the same
+# major (1.x) avoids the API breakage expected at 2.0. Re-pin deliberately
+# when you bump.
+
+livekit-agents>=1.0,<2.0
+livekit-plugins-deepgram>=1.0,<2.0
+livekit-plugins-openai>=1.0,<2.0
+livekit-plugins-elevenlabs>=1.0,<2.0
+livekit-plugins-silero>=1.0,<2.0
+python-dotenv>=1.0,<2.0

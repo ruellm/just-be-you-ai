@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# python voice-agent (Phase 2.2)
+voice-agent/venv/
+voice-agent/.env
+voice-agent/__pycache__/
+**/__pycache__/
+*.pyc
