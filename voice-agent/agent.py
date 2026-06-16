@@ -27,7 +27,7 @@ from livekit.plugins import deepgram, elevenlabs, openai, silero
 from openai import AsyncOpenAI
 
 from lib.context import InterviewContext
-from lib.interview_flow import InterviewFlow
+from lib.interview_flow import InterviewAgent, InterviewFlow, _resolve_first_name
 from lib.load_context import load_interview_context
 from lib.save_result import save_interview_result
 
@@ -84,9 +84,13 @@ def _build_interview_prompt(ctx: InterviewContext) -> str:
     generate_reply and makes the follow-up DECISION with a separate model — this
     prompt only governs HOW the agent reads what it's handed.
     """
-    candidate = ctx.candidate
     job = ctx.job
-    first_name = candidate.full_name.split()[0] if candidate.full_name else "there"
+    first_name = _resolve_first_name(ctx.candidate.full_name)
+    name_line = (
+        f"The candidate's name is {first_name}."
+        if first_name
+        else "You do not know the candidate's name; do not use a name."
+    )
 
     return (
         f"You are an AI interviewer for {job.company_name} for the {job.title} "
@@ -95,7 +99,7 @@ def _build_interview_prompt(ctx: InterviewContext) -> str:
         "spoken lines under 2 sentences. Do NOT improvise your own questions — "
         "only ask what the orchestrator gives you. When acknowledging an answer, "
         "be brief ('thanks', 'got it', 'noted' — vary your wording). You are "
-        f"warm but professional. The candidate's name is {first_name}."
+        f"warm but professional. {name_line}"
     )
 
 
@@ -118,15 +122,16 @@ async def _run_interview(
             interview_ctx.application_id,
         )
 
-    await session.start(
-        agent=Agent(instructions=_build_interview_prompt(interview_ctx)),
-        room=ctx.room,
-    )
-
     flow = InterviewFlow(
         session,
         interview_ctx,
         followup_client=AsyncOpenAI(),  # reads OPENAI_API_KEY; gpt-4o-mini for decisions
+    )
+    # InterviewAgent suppresses the session's automatic reply so the orchestrator
+    # drives every utterance (otherwise each candidate turn triggers an
+    # unsolicited reply — the back-to-back-questions bug).
+    agent = InterviewAgent(
+        instructions=_build_interview_prompt(interview_ctx), flow=flow
     )
 
     # Resolve the candidate's silence-wait promptly when they leave the room.
@@ -136,6 +141,7 @@ async def _run_interview(
     ctx.room.on("participant_disconnected", _on_disconnect)
 
     try:
+        await session.start(agent=agent, room=ctx.room)
         await flow.run()
     finally:
         ctx.room.off("participant_disconnected", _on_disconnect)
