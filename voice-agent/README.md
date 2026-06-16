@@ -3,22 +3,43 @@
 A standalone **Python** service that runs the AI voice interview. It runs as a
 separate process from the Next.js app — it is **not** part of the web server.
 
-This is **Phase 2.2b**: the agent now loads real candidate + job + question
-context from Supabase given an `application_id` passed via LiveKit room
-metadata, greets the candidate by name, mentions the job, and ends. It still
-does **not** run the real interview (that's Phase 2.2c) — this step proves the
-data flow only. With no metadata it falls back to the Phase 2.2a hello-world
-greeting, so the toolchain stays testable on its own.
+This is **Phase 2.2c**: given an `application_id` in the LiveKit room metadata,
+the agent loads the candidate + job + question context from Supabase (2.2b) and
+then **conducts the real interview** — it greets the candidate, works through
+each generated question one at a time (with an optional single follow-up per
+question), captures the full transcript, and on close saves the transcript plus
+a **mocked** score/tier to Supabase so the existing dashboards keep working.
+Real LLM grading arrives in Phase 2.3. With no metadata (or on a context-load
+error) it falls back to the Phase 2.2a hello-world greeting, so the toolchain
+stays testable on its own.
+
+> **Not yet integrated with the Next.js UI.** Testing is via the LiveKit
+> Playground + room metadata (below). Replacing the fake interview screen with a
+> real browser room is Phase 2.2d.
 
 ## What it does
 
 - **With** room metadata `{"application_id": "<id>"}`: loads the interview
-  context from Supabase, logs it, and gives a short test greeting using the
-  candidate's real name and the job title, then ends. No interview questions
-  are asked yet.
+  context from Supabase, then runs the full interview — greeting → wait for the
+  candidate to acknowledge → ask each question in order (one follow-up max when
+  the answer is short/vague/off-topic) → closing → save transcript + mocked
+  result.
 - **Without** usable metadata: connects to a LiveKit room, greets a user named
   "tester", explains it's a test agent, listens for a reply, responds once,
   and politely ends (Phase 2.2a behavior).
+
+### How a turn works
+
+- Questions are read by the **voice LLM** (gpt-4o) so they sound natural.
+- The greeting, closing, acknowledgements and the silence nudge are spoken
+  **verbatim** (`session.say`) — exact wording, no extra LLM call.
+- After each answer, a **separate fast LLM call** (gpt-4o-mini, JSON mode)
+  decides `move_on` vs `follow_up`. This is never the voice LLM.
+- Transcript capture rides LiveKit's `conversation_item_added` event.
+- Silence handling: no response for 30s → one "are you still there?" nudge;
+  another 30s of silence → end gracefully. A disconnect ends immediately. A
+  20-minute time cap wraps the interview up early. In all cases the transcript +
+  mocked result are saved on close.
 
 - **STT** — Deepgram (`nova-3`)
 - **LLM** — OpenAI `gpt-4o`
@@ -133,11 +154,43 @@ and watch the console) to see the full pretty-printed context that gets loaded.
 If you connect **without** room metadata (or with invalid JSON), you get the
 2.2a hello-world "tester" greeting instead — that's the intended fallback.
 
+## Testing 2.2c — Full interview end-to-end
+
+Same setup as 2.2b (start the worker, set room metadata `{"application_id":
+"<id>"}` in the Playground, connect with mic). For a meaningful run, pick an
+application that **already has generated questions** (check the
+`generated_questions` table for rows matching `applicationId`; if there are
+none, generate them from the Next.js admin debug page first).
+
+What to expect:
+
+1. The agent greets you by the candidate's real first name and states the job,
+   company, and number of questions, then says "Ready when you are."
+2. **Say anything** (e.g. "Yes, I'm ready") to begin.
+3. It asks each question in order. Answer out loud. If your answer is very
+   short or vague it may ask one follow-up; otherwise it gives a brief
+   acknowledgement and moves on.
+4. After the last question it thanks you and ends.
+5. **Verify the save:** open Supabase → `interview_results` and find the row
+   for your `applicationId` (score, tier, and the full `AI:/Candidate:`
+   transcript). The matching `applications` row's `status` flips to `passed` or
+   `failed`. The worker console logs `Interview saved for application <id>`.
+
+Re-running on the same `application_id` is fine — any prior `interview_results`
+row is cleared first, so the new run overwrites it.
+
+> The score and tier are **mocked** (random, weighted) in 2.2c — only the
+> transcript is real. Real grading is Phase 2.3.
+
 ## Files
 
-- `agent.py` — the agent: metadata → context load → greeting, with hello-world fallback
+- `agent.py` — LiveKit entrypoint + system-prompt construction; metadata →
+  context load → run interview (or hello-world fallback)
 - `lib/supabase_client.py` — configured service-role Supabase client
 - `lib/context.py` — Pydantic models for the interview context
 - `lib/load_context.py` — single-query context loader (no N+1)
+- `lib/interview_flow.py` — question-by-question orchestration, follow-up
+  decision, transcript capture, silence/time-cap handling
+- `lib/save_result.py` — persists transcript + mocked score/tier to Supabase
 - `requirements.txt` — pinned dependencies (LiveKit Agents 1.x line)
 - `.env.example` — environment template (copy to `.env`)

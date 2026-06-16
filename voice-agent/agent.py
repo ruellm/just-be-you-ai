@@ -1,13 +1,19 @@
-"""Just Be You — Phase 2.2b voice agent (Supabase context loading).
+"""Just Be You — Phase 2.2c voice agent (real interview flow).
 
 A LiveKit Agents worker that, given an ``application_id`` in the room metadata,
-loads the real candidate + job + question context from Supabase, greets the
-candidate by name, mentions the job, and ends. This step proves the DATA FLOW
-only — it does NOT run the real interview yet (that's Phase 2.2c).
+loads the real candidate + job + question context from Supabase (Phase 2.2b),
+then conducts the actual interview: greets the candidate, works through each
+generated question one at a time with optional single follow-ups, captures the
+full transcript, and on close saves the transcript + a MOCKED score/tier to
+Supabase so the existing dashboards keep working (real grading is Phase 2.3).
 
-If the room has no usable metadata (e.g. a bare Playground connection), it
-falls back to the Phase 2.2a hello-world behavior so the toolchain stays
-testable on its own.
+If the room has no usable metadata (e.g. a bare Playground connection) or the
+context fails to load, it falls back to the Phase 2.2a hello-world behavior so
+the toolchain stays testable on its own and never crashes.
+
+This file stays focused on the LiveKit entrypoint + system-prompt construction.
+The conversation flow lives in ``lib/interview_flow.py`` and persistence in
+``lib/save_result.py``.
 """
 
 import asyncio
@@ -18,8 +24,12 @@ import os
 from dotenv import load_dotenv
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import deepgram, elevenlabs, openai, silero
+from openai import AsyncOpenAI
 
+from lib.context import InterviewContext
+from lib.interview_flow import InterviewFlow
 from lib.load_context import load_interview_context
+from lib.save_result import save_interview_result
 
 load_dotenv()
 
@@ -34,7 +44,7 @@ HELLO_WORLD_PROMPT = (
 
 
 def _build_session() -> AgentSession:
-    """The shared voice pipeline (identical to 2.2a)."""
+    """The shared voice pipeline (identical to 2.2a/2.2b)."""
     return AgentSession(
         vad=silero.VAD.load(),
         stt=deepgram.STT(model="nova-3"),
@@ -67,28 +77,84 @@ def _parse_application_id(metadata: str | None) -> str | None:
     return str(app_id)
 
 
-def _build_interview_prompt(ctx) -> str:
-    """System prompt for the 2.2b test greeting (NOT the real interview)."""
+def _build_interview_prompt(ctx: InterviewContext) -> str:
+    """The concise voice-LLM system prompt for the real interview (requirement 7).
+
+    Note: the orchestrator (interview_flow.py) feeds questions one at a time via
+    generate_reply and makes the follow-up DECISION with a separate model — this
+    prompt only governs HOW the agent reads what it's handed.
+    """
     candidate = ctx.candidate
     job = ctx.job
     first_name = candidate.full_name.split()[0] if candidate.full_name else "there"
-    n_questions = len(ctx.questions)
 
     return (
-        "You are the AI interviewer for Just Be You, a job platform. You are "
-        f"interviewing {candidate.full_name} for the {job.title} role at "
-        f"{job.company_name}.\n\n"
-        "IMPORTANT: This is a CONNECTION TEST. Do NOT conduct the real "
-        "interview and do NOT ask any of the interview questions. Say exactly "
-        "this kind of brief greeting and then stop:\n\n"
-        f'"Hi {first_name}, welcome. I\'m the AI interviewer for the '
-        f"{job.title} role at {job.company_name}. I have your background here "
-        f"and I have {n_questions} questions to go through with you. For this "
-        "test, I won't ask the actual questions yet — that's the next step. "
-        'I\'ll just say goodbye. Thanks!"\n\n'
-        "After that greeting, end the conversation politely. Do not say "
-        "anything else."
+        f"You are an AI interviewer for {job.company_name} for the {job.title} "
+        "role. You will be given questions ONE AT A TIME by the orchestrator. "
+        "Read the current question naturally and conversationally. Keep your "
+        "spoken lines under 2 sentences. Do NOT improvise your own questions — "
+        "only ask what the orchestrator gives you. When acknowledging an answer, "
+        "be brief ('thanks', 'got it', 'noted' — vary your wording). You are "
+        f"warm but professional. The candidate's name is {first_name}."
     )
+
+
+async def _run_interview(
+    ctx: JobContext, session: AgentSession, interview_ctx: InterviewContext
+) -> None:
+    """Conduct the real interview and persist the result on close."""
+    logger.info(
+        "Loaded context: candidate=%r, job=%r at %r, questions=%d",
+        interview_ctx.candidate.full_name,
+        interview_ctx.job.title,
+        interview_ctx.job.company_name,
+        len(interview_ctx.questions),
+    )
+    logger.debug("Full interview context:\n%s", interview_ctx.model_dump_json(indent=2))
+
+    if not interview_ctx.questions:
+        logger.warning(
+            "Application %s has no generated questions; nothing to ask.",
+            interview_ctx.application_id,
+        )
+
+    await session.start(
+        agent=Agent(instructions=_build_interview_prompt(interview_ctx)),
+        room=ctx.room,
+    )
+
+    flow = InterviewFlow(
+        session,
+        interview_ctx,
+        followup_client=AsyncOpenAI(),  # reads OPENAI_API_KEY; gpt-4o-mini for decisions
+    )
+
+    # Resolve the candidate's silence-wait promptly when they leave the room.
+    def _on_disconnect(_participant) -> None:
+        flow.mark_disconnected()
+
+    ctx.room.on("participant_disconnected", _on_disconnect)
+
+    try:
+        await flow.run()
+    finally:
+        ctx.room.off("participant_disconnected", _on_disconnect)
+        flow.detach()
+
+    transcript_text = flow.build_transcript_text()
+    # Persist transcript + MOCKED result. A save failure must NOT crash the close.
+    try:
+        await asyncio.to_thread(
+            save_interview_result,
+            application_id=interview_ctx.application_id,
+            job_level=interview_ctx.job.level,
+            transcript_text=transcript_text,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Failed to save interview result for application %s.",
+            interview_ctx.application_id,
+        )
 
 
 async def entrypoint(ctx: JobContext) -> None:
@@ -114,33 +180,10 @@ async def entrypoint(ctx: JobContext) -> None:
     session = _build_session()
 
     if interview_ctx is not None:
-        # INFO summary + DEBUG full dump of the loaded context.
-        logger.info(
-            "Loaded context: candidate=%r, job=%r at %r, questions=%d",
-            interview_ctx.candidate.full_name,
-            interview_ctx.job.title,
-            interview_ctx.job.company_name,
-            len(interview_ctx.questions),
-        )
-        logger.debug(
-            "Full interview context:\n%s",
-            interview_ctx.model_dump_json(indent=2),
-        )
-
-        await session.start(
-            agent=Agent(instructions=_build_interview_prompt(interview_ctx)),
-            room=ctx.room,
-        )
-        await session.generate_reply(
-            instructions=(
-                "Deliver the brief test greeting from your instructions now, "
-                "using the candidate's first name and the job title, then end "
-                "politely. Do not ask any interview questions."
-            )
-        )
+        await _run_interview(ctx, session, interview_ctx)
         return
 
-    # Phase 2.2a hello-world fallback (no/invalid metadata).
+    # Phase 2.2a hello-world fallback (no/invalid metadata, or load failure).
     logger.info("No interview context; running hello-world greeting.")
     await session.start(
         agent=Agent(instructions=HELLO_WORLD_PROMPT),
