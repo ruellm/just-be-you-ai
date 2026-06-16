@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Just Be You
 
-## Getting Started
+A job platform where candidates build profiles and apply for jobs, and companies
+post jobs, see applicants, and view AI interview results. Philippines-first.
 
-First, run the development server:
+- **Web app** — Next.js (App Router) + Supabase (Postgres/Auth/Storage) +
+  Prisma + Tailwind/shadcn. This repo root.
+- **Voice agent** — a standalone Python service that runs the real AI voice
+  interview (LiveKit Agents + Deepgram + OpenAI + ElevenLabs). See
+  [`voice-agent/`](voice-agent/README.md).
+
+See [`CLAUDE.md`](CLAUDE.md) for the full project constitution, stack, and
+phase-by-phase status.
+
+## Getting started (web app)
 
 ```bash
+npm install
+cp .env.local.example .env.local   # then fill in the values
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Useful scripts: `npm run db:seed` (seed skills/companies/jobs),
+`npm run backfill:resumes` (re-parse resume text).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running a real voice interview (Phase 2.2d)
 
-## Learn More
+The browser interview screen connects to a LiveKit room and the Next.js app
+dispatches the Python voice agent into it. You need **two terminals**, and both
+services must point at the **same LiveKit project** (the `LIVEKIT_*` values in
+`.env.local` must match `voice-agent/.env`):
 
-To learn more about Next.js, take a look at the following resources:
+```powershell
+# Terminal 1 — Next.js web app (repo root)
+npm run dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Terminal 2 — Python voice agent
+cd voice-agent
+venv\Scripts\activate
+python agent.py start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Then open http://localhost:3000, log in as a candidate, apply to a job, and you
+are dropped into a real voice interview. When it finishes you land on the result
+page with the saved transcript. First-time setup for the agent (venv + keys) is
+in [`voice-agent/README.md`](voice-agent/README.md).

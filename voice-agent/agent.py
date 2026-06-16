@@ -186,6 +186,11 @@ async def entrypoint(ctx: JobContext) -> None:
     session = _build_session()
 
     if interview_ctx is not None:
+        # The worker (Python) connects faster than the candidate's browser. If
+        # we greeted immediately the candidate would miss it, so wait until they
+        # are actually in the room. Returns immediately if they're already here.
+        logger.info("Waiting for the candidate to join the room...")
+        await ctx.wait_for_participant()
         await _run_interview(ctx, session, interview_ctx)
         return
 
@@ -203,5 +208,14 @@ async def entrypoint(ctx: JobContext) -> None:
     )
 
 
+# Must match the agent_name the Next.js dispatcher targets (see
+# lib/livekit/start-interview.ts AGENT_NAME). Setting an explicit agent_name
+# disables automatic dispatch: the worker ONLY joins rooms it is explicitly
+# dispatched into, which is exactly what the Next.js start-session action does.
+AGENT_NAME = "just-be-you-interviewer"
+
+
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(
+        WorkerOptions(entrypoint_fnc=entrypoint, agent_name=AGENT_NAME)
+    )

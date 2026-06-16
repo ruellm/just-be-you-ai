@@ -3,19 +3,23 @@
 A standalone **Python** service that runs the AI voice interview. It runs as a
 separate process from the Next.js app — it is **not** part of the web server.
 
-This is **Phase 2.2c**: given an `application_id` in the LiveKit room metadata,
-the agent loads the candidate + job + question context from Supabase (2.2b) and
-then **conducts the real interview** — it greets the candidate, works through
-each generated question one at a time (with an optional single follow-up per
-question), captures the full transcript, and on close saves the transcript plus
-a **mocked** score/tier to Supabase so the existing dashboards keep working.
-Real LLM grading arrives in Phase 2.3. With no metadata (or on a context-load
-error) it falls back to the Phase 2.2a hello-world greeting, so the toolchain
-stays testable on its own.
+As of **Phase 2.2d** this is wired into the Next.js app: given an
+`application_id` in the LiveKit room metadata, the agent loads the candidate +
+job + question context from Supabase (2.2b) and then **conducts the real
+interview** — it greets the candidate, works through each generated question one
+at a time (with an optional single follow-up per question), captures the full
+transcript, and on close saves the transcript plus a **mocked** score/tier to
+Supabase so the existing dashboards keep working. Real LLM grading arrives in
+Phase 2.3. With no metadata (or on a context-load error) it falls back to the
+Phase 2.2a hello-world greeting, so the toolchain stays testable on its own.
 
-> **Not yet integrated with the Next.js UI.** Testing is via the LiveKit
-> Playground + room metadata (below). Replacing the fake interview screen with a
-> real browser room is Phase 2.2d.
+> **Integrated with the Next.js UI (Phase 2.2d).** The candidate's browser now
+> joins a real LiveKit room from the interview screen and the Next.js app
+> dispatches this worker into it. The worker registers under a fixed
+> `agent_name` (`just-be-you-interviewer`) that the Next.js dispatcher targets;
+> setting an explicit name disables automatic dispatch, so the worker only joins
+> rooms it is explicitly asked to. You can still test it standalone via the
+> LiveKit Playground + room metadata (below).
 
 ## What it does
 
@@ -84,11 +88,40 @@ agent will refuse to start with a clear error if either is missing.
 With the venv active and `.env` filled in:
 
 ```powershell
+# Production worker mode — register with LiveKit and wait for dispatch.
+# This is the mode the Next.js app dispatches into (Phase 2.2d).
+python agent.py start
+```
+
+`start` registers the worker under its `agent_name` and waits for explicit
+dispatch requests (it will NOT auto-join rooms). For standalone iteration with
+hot-reload, use `dev` instead:
+
+```powershell
 python agent.py dev
 ```
 
-This starts a LiveKit worker that waits for a room to join. The first run
-downloads the Silero VAD model.
+Either way, the first run downloads the Silero VAD model.
+
+### Run order for the full browser flow (Phase 2.2d)
+
+Two terminals, from the repo root:
+
+```powershell
+# Terminal 1 — Next.js web app
+npm run dev
+
+# Terminal 2 — Python voice agent (this service)
+cd voice-agent
+venv\Scripts\activate
+python agent.py start
+```
+
+Then open http://localhost:3000, log in as a candidate, apply to a job, and you
+are dropped into a real voice interview in the browser. When it ends you land on
+the result page with the saved transcript. Both services must point at the
+**same LiveKit project** (`LIVEKIT_*` in the Next.js `.env.local` must match
+`voice-agent/.env`).
 
 ## Testing in the LiveKit Agents Playground
 
