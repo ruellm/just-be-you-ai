@@ -11,3 +11,9 @@ livekit-plugins-openai>=1.0,<2.0
 livekit-plugins-elevenlabs>=1.0,<2.0
 livekit-plugins-silero>=1.0,<2.0
 python-dotenv>=1.0,<2.0
+
+# Phase 2.2b — Supabase context loading.
+# supabase: official Python client (PostgREST/Storage/Auth) — same project as Next.js.
+# pydantic: typed data classes for the interview context.
+supabase>=2.0,<3.0
+pydantic>=2.0,<3.0
