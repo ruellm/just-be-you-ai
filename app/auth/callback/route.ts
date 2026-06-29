@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { ensureUserRow, getDashboardPath } from "@/lib/auth";
+import { getPublicOrigin } from "@/lib/url";
 
 // OAuth redirect target. This MUST be a Route Handler (it's where Google/Supabase
 // send the browser back with a `code`) — the one sanctioned exception to the
@@ -15,7 +16,8 @@ import { ensureUserRow, getDashboardPath } from "@/lib/auth";
 const roleSchema = z.enum(["candidate", "business"]);
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = getPublicOrigin(request);
   const code = searchParams.get("code");
   const roleParam = searchParams.get("role");
   // Optional relative redirect target (used by the password-reset link).
