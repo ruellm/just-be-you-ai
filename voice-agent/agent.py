@@ -29,7 +29,7 @@ from livekit.plugins import deepgram, elevenlabs, openai, silero
 from lib.context import InterviewContext
 from lib.interview_flow import InterviewFlow
 from lib.load_context import load_interview_context
-from lib.save_result import save_interview_result
+from lib.save_result import mark_interview_completed, save_interview_result
 
 load_dotenv()
 
@@ -121,6 +121,27 @@ async def _run_interview(
     finally:
         ctx.room.off("participant_disconnected", _on_disconnect)
         flow.detach()
+
+    # The interview is over. Mark the application as interview_completed at the
+    # EARLIEST possible moment — before build_transcript, before the slow Claude
+    # grading call — so the candidate's result page can immediately show a
+    # "Finalizing…" pending state instead of bouncing them into a new interview.
+    # A transient DB error here must NOT kill grading; log and press on.
+    try:
+        await asyncio.to_thread(
+            mark_interview_completed, interview_ctx.application_id
+        )
+        logger.info(
+            "Interview ended for application %s, status → interview_completed, "
+            "grading pending.",
+            interview_ctx.application_id,
+        )
+    except Exception:  # noqa: BLE001
+        logger.exception(
+            "Failed to mark application %s interview_completed; grading will "
+            "still set the final status.",
+            interview_ctx.application_id,
+        )
 
     transcript_text = flow.build_transcript_text()
     # Grade (real Claude call inside) + persist. A save failure must NOT crash

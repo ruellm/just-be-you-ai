@@ -60,11 +60,16 @@ export function InterviewExperience({
   }, []);
 
   // The interview ends when the agent disconnects OR the candidate clicks
-  // "End interview". Either way we land here. Brief pause so the save_result
-  // server-side write (Python) has a beat, then go to the result page.
+  // "End interview". Either way we land here and go straight to the result page
+  // — no delay. The result page's "Finalizing…" pending state handles the wait
+  // for the (slow) Python grading write, so we don't race a fixed timer against
+  // it (that race caused the /interview ⇄ /result bounce loop).
   function handleDisconnected() {
+    console.log(
+      `[interview] room disconnected for application ${applicationId}; navigating to result.`
+    );
     setPhase((p) => (p === "ending" ? p : "ending"));
-    setTimeout(() => router.replace(resultPath), 1500);
+    router.replace(resultPath);
   }
 
   if (phase === "connecting") {

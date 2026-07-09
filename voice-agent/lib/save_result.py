@@ -61,6 +61,23 @@ def _evidence_to_json(items) -> List[Dict[str, str]]:
     return [item.model_dump() for item in items]
 
 
+def mark_interview_completed(application_id: str) -> None:
+    """Flip an application to ``interview_completed`` the instant the interview
+    ends — BEFORE the (slow) Claude grading call.
+
+    This is the durable "interview happened, grading in flight" signal the
+    candidate result page relies on to show a "Finalizing…" pending state
+    instead of bouncing the candidate back into a brand-new interview. It runs
+    fast (a single PostgREST update, no LLM), so the browser — which navigates
+    to the result page immediately on disconnect — sees the new status right
+    away. SYNCHRONOUS; call via ``asyncio.to_thread`` like the save.
+    """
+    completed_at = datetime.now(timezone.utc).isoformat()
+    supabase.table("applications").update(
+        {"status": "interview_completed", "updatedAt": completed_at}
+    ).eq("id", application_id).execute()
+
+
 def save_interview_result(
     *,
     context: InterviewContext,

@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecommendationBadge, TierBadge } from "@/components/applications/Badges";
 import { FitEvaluation } from "@/components/applications/FitEvaluation";
 import { scoreToPercent } from "@/lib/applications";
+import { ResultPending } from "./ResultPending";
 
 export default async function ResultPage({
   params,
@@ -38,9 +39,20 @@ export default async function ResultPage({
   if (!application || application.candidateProfileId !== profile.id) {
     notFound();
   }
-  // Not interviewed yet → send back to the interview.
-  if (!application.interviewResult || application.status === "submitted") {
-    redirect(`/candidate/applications/${applicationId}/interview`);
+
+  // Guard priority (see the Phase 2.3 interview→result loop fix):
+  //   a. Result row exists → render it (falls through below).
+  //   b. No result yet, but the interview has ended (grading in flight, or a
+  //      terminal status) → show the "Finalizing…" pending state. NEVER bounce
+  //      back to /interview — that's what caused the redirect loop.
+  //   c. No result AND still submitted/draft → the candidate genuinely hasn't
+  //      interviewed; send them to the interview.
+  //   d. Anything unexpected → pending (safer than bouncing).
+  if (!application.interviewResult) {
+    if (application.status === "submitted" || application.status === "draft") {
+      redirect(`/candidate/applications/${applicationId}/interview`);
+    }
+    return <ResultPending />;
   }
 
   const result = application.interviewResult;
