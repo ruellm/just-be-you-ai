@@ -44,6 +44,7 @@ export const EMPTY_JOB: JobValues = {
   interviewHints: "",
   idealCandidateProfile: "",
   passingCriteria: "",
+  interviewMaxMinutes: "",
 };
 
 export function JobForm({
@@ -349,6 +350,29 @@ export function JobForm({
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="interviewMaxMinutes"
+            render={({ field }) => (
+              <FormItem className="max-w-xs">
+                <FormLabel>Maximum interview duration (minutes)</FormLabel>
+                <FormControl>
+                  <Input
+                    inputMode="numeric"
+                    min={5}
+                    max={60}
+                    placeholder="30"
+                    {...field}
+                  />
+                </FormControl>
+                <p className="text-muted-foreground text-sm">
+                  Leave blank for default (30 minutes). Recommended: 15-20 for
+                  most roles.
+                </p>
                 <FormMessage />
               </FormItem>
             )}

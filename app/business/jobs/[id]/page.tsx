@@ -5,9 +5,13 @@ import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import {
+  RecommendationBadge,
+  StatusBadge,
+  TierBadge,
+} from "@/components/applications/Badges";
 import { EmptyState } from "@/components/EmptyState";
-import { scoreToPercent } from "@/lib/applications";
+import { recommendationRank, scoreToPercent } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 
 const TABS = [
@@ -56,15 +60,20 @@ export default async function JobApplicantsPage({
           user: { select: { email: true } },
         },
       },
-      interviewResult: { select: { score: true, tier: true } },
+      interviewResult: {
+        select: { score: true, tier: true, recommendation: true },
+      },
     },
   });
 
-  // Best candidates first (no result sorts last).
-  applications.sort(
-    (a, b) =>
-      (b.interviewResult?.score ?? -1) - (a.interviewResult?.score ?? -1)
-  );
+  // Strongest recommendation first, then by score (no result sorts last).
+  applications.sort((a, b) => {
+    const rankDiff =
+      recommendationRank(b.interviewResult?.recommendation) -
+      recommendationRank(a.interviewResult?.recommendation);
+    if (rankDiff !== 0) return rankDiff;
+    return (b.interviewResult?.score ?? -1) - (a.interviewResult?.score ?? -1);
+  });
 
   const filtered = applications.filter((a) => {
     if (activeTab.key === "passed") return a.status === "passed";
@@ -150,6 +159,9 @@ export default async function JobApplicantsPage({
                     <div className="flex flex-wrap items-center gap-2">
                       {app.interviewResult ? (
                         <>
+                          <RecommendationBadge
+                            recommendation={app.interviewResult.recommendation}
+                          />
                           <TierBadge tier={app.interviewResult.tier} />
                           <span className="text-muted-foreground text-sm">
                             {scoreToPercent(app.interviewResult.score)}%

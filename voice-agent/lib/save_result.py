@@ -1,20 +1,24 @@
-"""Persist an interview transcript + a (mocked) result to Supabase.
+"""Persist an interview transcript + a REAL fit evaluation to Supabase (2.3).
 
-Phase 2.2c keeps the score/tier MOCKED — same shape as the Phase 1 TypeScript
-mock (`lib/mock-interview.ts`) so the existing business/candidate dashboards
-keep rendering end-to-end. Phase 2.3 replaces the mock with real LLM grading.
+Phase 2.2c mocked the score/tier. Phase 2.3 replaces that with a real Claude
+evaluation of the transcript (see ``evaluate.py``): the returned score, tier,
+pass/fail, and qualitative fields (summary/strengths/concerns/recommendation)
+are written to ``interview_results`` along with the raw fit signals the AI noted
+during the conversation.
 
-This is a SYNCHRONOUS function (supabase-py is sync) — call it from async code
-via ``asyncio.to_thread(...)`` like the context loader. See agent.py.
+SYNCHRONOUS (supabase-py + the Anthropic SDK are both sync) — call it from async
+code via ``asyncio.to_thread(...)``. See agent.py.
 
 Gotchas worth remembering:
   * PostgREST inserts hit raw Postgres, so Prisma's application-side
     ``@default(cuid())`` does NOT apply — the ``id`` column has no DB default
     and is NOT NULL, so we MUST supply one. ``completedAt`` DOES have a DB
-    default (CURRENT_TIMESTAMP) but we set it explicitly for accuracy.
+    default but we set it explicitly for accuracy.
   * Column names are camelCase (see load_context.py for why).
-  * Per the Phase 1 lifecycle, finishing sets status straight to passed/failed
-    (the transient ``interview_completed`` value is not persisted).
+  * The JSON columns (strengthsJson/concernsJson/fitSignalsJson) accept Python
+    lists directly — postgrest-py serializes them to JSONB.
+  * Application status is driven by the evaluation's ``passed`` flag (Claude's
+    call), NOT the old mechanical LEVEL_RANK rule.
 """
 
 from __future__ import annotations
@@ -23,18 +27,13 @@ import logging
 import secrets
 import time
 from datetime import datetime, timezone
-from typing import Dict
+from typing import Any, Dict, List
 
+from .context import InterviewContext
+from .evaluate import EvaluationResult, evaluate_interview, fallback_evaluation
 from .supabase_client import supabase
 
 logger = logging.getLogger("jbu-voice-agent.save")
-
-# Pass rule (mirrors lib/applications.ts LEVEL_RANK): pass when tier >= job level.
-_LEVEL_RANK = {"entry": 0, "novice": 1, "advanced": 2, "expert": 3}
-
-# Weighted tier distribution per the Phase 2.2c spec:
-#   entry 10%, novice 30%, advanced 45%, expert 15%.
-_TIER_THRESHOLDS = (("entry", 10), ("novice", 40), ("advanced", 85), ("expert", 100))
 
 
 def _generate_id() -> str:
@@ -58,30 +57,30 @@ def _to_base36(n: int) -> str:
     return out
 
 
-def _random_score() -> float:
-    # 0.30 – 0.95, two decimals (matches lib/mock-interview.ts#randomScore).
-    return round(0.3 + secrets.randbelow(66) / 100, 2)
-
-
-def _random_tier() -> str:
-    r = secrets.randbelow(100)  # 0..99
-    for tier, threshold in _TIER_THRESHOLDS:
-        if r < threshold:
-            return tier
-    return "advanced"
+def _evidence_to_json(items) -> List[Dict[str, str]]:
+    return [item.model_dump() for item in items]
 
 
 def save_interview_result(
-    *, application_id: str, job_level: str | None, transcript_text: str
+    *,
+    context: InterviewContext,
+    transcript_text: str,
+    fit_signals: List[Dict[str, Any]],
 ) -> Dict[str, object]:
-    """Insert the InterviewResult and update the Application. Returns a summary.
+    """Grade the interview, insert the InterviewResult, update the Application.
 
-    Raises on Supabase errors — the caller logs and swallows so a save failure
-    never crashes the room close.
+    Returns a small summary dict. Raises only on Supabase errors — the caller
+    logs and swallows so a save failure never crashes the room close. The
+    grading step itself never raises (it falls back internally).
     """
-    score = _random_score()
-    tier = _random_tier()
-    passed = _LEVEL_RANK[tier] >= _LEVEL_RANK.get(job_level or "entry", 0)
+    application_id = context.application_id
+
+    try:
+        evaluation = evaluate_interview(context, transcript_text, fit_signals)
+    except Exception:  # noqa: BLE001 — evaluate_interview shouldn't raise, but be safe.
+        logger.exception("Unexpected error during evaluation; using fallback.")
+        evaluation = fallback_evaluation()
+
     completed_at = datetime.now(timezone.utc).isoformat()
 
     # Re-tests on the same application_id are common in the Playground, and
@@ -95,25 +94,41 @@ def save_interview_result(
         {
             "id": _generate_id(),
             "applicationId": application_id,
-            "score": score,
-            "tier": tier,
+            "score": evaluation.fit_score,
+            "tier": evaluation.tier,
             "transcript": transcript_text,
             "completedAt": completed_at,
+            "passed": evaluation.passed,
+            "fitSummary": evaluation.fit_summary,
+            "strengthsJson": _evidence_to_json(evaluation.strengths),
+            "concernsJson": _evidence_to_json(evaluation.concerns),
+            "recommendation": evaluation.recommendation,
+            "fitSignalsJson": fit_signals,
         }
     ).execute()
 
     supabase.table("applications").update(
         {
-            "status": "passed" if passed else "failed",
+            "status": "passed" if evaluation.passed else "failed",
             "updatedAt": completed_at,
         }
     ).eq("id", application_id).execute()
 
     logger.info(
-        "Interview saved for application %s (tier=%s, score=%.2f, %s)",
+        "Interview saved for application %s (tier=%s, score=%.2f, %s, rec=%s, "
+        "%d strengths, %d concerns, %d signals)",
         application_id,
-        tier,
-        score,
-        "passed" if passed else "failed",
+        evaluation.tier,
+        evaluation.fit_score,
+        "passed" if evaluation.passed else "failed",
+        evaluation.recommendation,
+        len(evaluation.strengths),
+        len(evaluation.concerns),
+        len(fit_signals),
     )
-    return {"score": score, "tier": tier, "passed": passed}
+    return {
+        "score": evaluation.fit_score,
+        "tier": evaluation.tier,
+        "passed": evaluation.passed,
+        "recommendation": evaluation.recommendation,
+    }

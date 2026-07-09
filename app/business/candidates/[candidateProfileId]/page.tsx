@@ -5,7 +5,12 @@ import { candidateAppliedToCompany, getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import {
+  RecommendationBadge,
+  StatusBadge,
+  TierBadge,
+} from "@/components/applications/Badges";
+import { FitEvaluation } from "@/components/applications/FitEvaluation";
 import { scoreToPercent } from "@/lib/applications";
 import { ViewResumeButton } from "./ViewResumeButton";
 
@@ -107,6 +112,9 @@ export default async function CandidateDetailPage({
                 <StatusBadge status={app.status} />
                 {app.interviewResult ? (
                   <>
+                    <RecommendationBadge
+                      recommendation={app.interviewResult.recommendation}
+                    />
                     <TierBadge tier={app.interviewResult.tier} />
                     <span className="text-muted-foreground text-sm">
                       {scoreToPercent(app.interviewResult.score)}%
@@ -120,7 +128,14 @@ export default async function CandidateDetailPage({
                     Completed{" "}
                     {app.interviewResult.completedAt.toLocaleDateString()}
                   </p>
-                  <details className="mt-2">
+                  <div className="mt-3">
+                    <FitEvaluation
+                      fitSummary={app.interviewResult.fitSummary}
+                      strengthsJson={app.interviewResult.strengthsJson}
+                      concernsJson={app.interviewResult.concernsJson}
+                    />
+                  </div>
+                  <details className="mt-3">
                     <summary className="cursor-pointer text-sm font-medium">
                       View transcript
                     </summary>

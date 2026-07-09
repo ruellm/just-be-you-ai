@@ -1,19 +1,20 @@
-"""Just Be You — Phase 2.2c voice agent (real interview flow).
+"""Just Be You — Phase 2.3 voice agent (conversational fit-assessment).
 
 A LiveKit Agents worker that, given an ``application_id`` in the room metadata,
 loads the real candidate + job + question context from Supabase (Phase 2.2b),
-then conducts the actual interview: greets the candidate, works through each
-generated question one at a time with optional single follow-ups, captures the
-full transcript, and on close saves the transcript + a MOCKED score/tier to
-Supabase so the existing dashboards keep working (real grading is Phase 2.3).
+then conducts a CONVERSATIONAL interview driven by the voice LLM itself: the
+model gets the whole context + a fallback question pool up front and runs a warm,
+adaptive conversation, noting fit signals via a tool as it goes. On close the
+transcript + noted signals are handed to a REAL Claude grader (Phase 2.3) and the
+result is saved to Supabase so the dashboards render.
 
 If the room has no usable metadata (e.g. a bare Playground connection) or the
 context fails to load, it falls back to the Phase 2.2a hello-world behavior so
 the toolchain stays testable on its own and never crashes.
 
-This file stays focused on the LiveKit entrypoint + system-prompt construction.
-The conversation flow lives in ``lib/interview_flow.py`` and persistence in
-``lib/save_result.py``.
+This file stays focused on the LiveKit entrypoint + voice-pipeline construction.
+The conversation flow + system prompt live in ``lib/interview_flow.py``, grading
+in ``lib/evaluate.py``, and persistence in ``lib/save_result.py``.
 """
 
 import asyncio
@@ -24,10 +25,9 @@ import os
 from dotenv import load_dotenv
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli
 from livekit.plugins import deepgram, elevenlabs, openai, silero
-from openai import AsyncOpenAI
 
 from lib.context import InterviewContext
-from lib.interview_flow import InterviewAgent, InterviewFlow, _resolve_first_name
+from lib.interview_flow import InterviewFlow
 from lib.load_context import load_interview_context
 from lib.save_result import save_interview_result
 
@@ -44,15 +44,32 @@ HELLO_WORLD_PROMPT = (
 
 
 def _build_session() -> AgentSession:
-    """The shared voice pipeline (identical to 2.2a/2.2b)."""
+    """The shared voice pipeline.
+
+    Phase 2.3 turn-taking tuning (requirement A.5) — make the agent patient so it
+    doesn't jump in on short pauses or trigger on ambient noise, while still
+    letting the candidate interrupt it:
+      * VAD min_silence_duration 1.5s (up from ~0.55) — the model waits a beat
+        longer before deciding the candidate finished a turn.
+      * VAD activation_threshold 0.6 (up from 0.5) — the least-sensitive setting
+        that still detects speech reliably, so background noise doesn't register.
+      * VAD prefix_padding_duration 0.3s (300ms) so onsets aren't clipped.
+      * allow_interruptions stays on (default) so the candidate CAN cut in on the
+        AI; the long silence window prevents the AI cutting in on the candidate.
+    """
     return AgentSession(
-        vad=silero.VAD.load(),
+        vad=silero.VAD.load(
+            min_silence_duration=1.5,
+            activation_threshold=0.6,
+            prefix_padding_duration=0.3,
+        ),
         stt=deepgram.STT(model="nova-3"),
         llm=openai.LLM(model="gpt-4o"),
         tts=elevenlabs.TTS(
             voice_id=os.environ["ELEVENLABS_VOICE_ID"],
             model="eleven_turbo_v2_5",
         ),
+        allow_interruptions=True,
     )
 
 
@@ -77,84 +94,43 @@ def _parse_application_id(metadata: str | None) -> str | None:
     return str(app_id)
 
 
-def _build_interview_prompt(ctx: InterviewContext) -> str:
-    """The concise voice-LLM system prompt for the real interview (requirement 7).
-
-    Note: the orchestrator (interview_flow.py) feeds questions one at a time via
-    generate_reply and makes the follow-up DECISION with a separate model — this
-    prompt only governs HOW the agent reads what it's handed.
-    """
-    job = ctx.job
-    first_name = _resolve_first_name(ctx.candidate.full_name)
-    name_line = (
-        f"The candidate's name is {first_name}."
-        if first_name
-        else "You do not know the candidate's name; do not use a name."
-    )
-
-    return (
-        f"You are an AI interviewer for {job.company_name} for the {job.title} "
-        "role. You will be given questions ONE AT A TIME by the orchestrator. "
-        "Read the current question naturally and conversationally. Keep your "
-        "spoken lines under 2 sentences. Do NOT improvise your own questions — "
-        "only ask what the orchestrator gives you. When acknowledging an answer, "
-        "be brief ('thanks', 'got it', 'noted' — vary your wording). You are "
-        f"warm but professional. {name_line}"
-    )
-
-
 async def _run_interview(
     ctx: JobContext, session: AgentSession, interview_ctx: InterviewContext
 ) -> None:
-    """Conduct the real interview and persist the result on close."""
+    """Conduct the conversational interview and persist the graded result."""
     logger.info(
-        "Loaded context: candidate=%r, job=%r at %r, questions=%d",
+        "Loaded context: candidate=%r, job=%r at %r, questions=%d, max=%s min",
         interview_ctx.candidate.full_name,
         interview_ctx.job.title,
         interview_ctx.job.company_name,
         len(interview_ctx.questions),
+        interview_ctx.job.interview_max_minutes or "default",
     )
     logger.debug("Full interview context:\n%s", interview_ctx.model_dump_json(indent=2))
 
-    if not interview_ctx.questions:
-        logger.warning(
-            "Application %s has no generated questions; nothing to ask.",
-            interview_ctx.application_id,
-        )
+    flow = InterviewFlow(session, interview_ctx, ctx.room)
 
-    flow = InterviewFlow(
-        session,
-        interview_ctx,
-        followup_client=AsyncOpenAI(),  # reads OPENAI_API_KEY; gpt-4o-mini for decisions
-    )
-    # InterviewAgent suppresses the session's automatic reply so the orchestrator
-    # drives every utterance (otherwise each candidate turn triggers an
-    # unsolicited reply — the back-to-back-questions bug).
-    agent = InterviewAgent(
-        instructions=_build_interview_prompt(interview_ctx), flow=flow
-    )
-
-    # Resolve the candidate's silence-wait promptly when they leave the room.
+    # End the interview promptly when the candidate leaves the room.
     def _on_disconnect(_participant) -> None:
         flow.mark_disconnected()
 
     ctx.room.on("participant_disconnected", _on_disconnect)
 
     try:
-        await session.start(agent=agent, room=ctx.room)
         await flow.run()
     finally:
         ctx.room.off("participant_disconnected", _on_disconnect)
         flow.detach()
 
     transcript_text = flow.build_transcript_text()
-    # Persist transcript + MOCKED result. A save failure must NOT crash the close.
+    # Grade (real Claude call inside) + persist. A save failure must NOT crash
+    # the room close — log and swallow.
     try:
         await asyncio.to_thread(
             save_interview_result,
-            application_id=interview_ctx.application_id,
-            job_level=interview_ctx.job.level,
+            context=interview_ctx,
             transcript_text=transcript_text,
+            fit_signals=flow.fit_signals,
         )
     except Exception:  # noqa: BLE001
         logger.exception(

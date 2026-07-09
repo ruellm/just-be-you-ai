@@ -4,7 +4,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TierBadge } from "@/components/applications/Badges";
+import { RecommendationBadge, TierBadge } from "@/components/applications/Badges";
+import { FitEvaluation } from "@/components/applications/FitEvaluation";
 import { scoreToPercent } from "@/lib/applications";
 
 export default async function ResultPage({
@@ -43,11 +44,13 @@ export default async function ResultPage({
   }
 
   const result = application.interviewResult;
-  const passed = application.status === "passed";
+  // Old mocked rows default result.passed=false but carry status "passed";
+  // prefer the graded flag, fall back to status for backward compatibility.
+  const passed = result.passed || application.status === "passed";
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-6 py-10">
-      {/* Pass / fail banner */}
+      {/* Pass / needs-review banner */}
       <div
         className={
           passed
@@ -55,7 +58,10 @@ export default async function ResultPage({
             : "rounded-lg border bg-muted/50 p-5 text-center"
         }
       >
-        <h1 className="text-xl font-semibold">
+        <p className="text-xs font-semibold tracking-wide uppercase">
+          {passed ? "Passed" : "Needs review"}
+        </p>
+        <h1 className="mt-1 text-xl font-semibold">
           {passed
             ? "Congratulations, you passed!"
             : "Thanks for interviewing"}
@@ -74,7 +80,7 @@ export default async function ResultPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center gap-6">
             <div>
               <p className="text-muted-foreground text-sm">Tier</p>
               <TierBadge
@@ -88,7 +94,20 @@ export default async function ResultPage({
                 {scoreToPercent(result.score)}%
               </p>
             </div>
+            <div>
+              <p className="text-muted-foreground text-sm">Recommendation</p>
+              <RecommendationBadge
+                recommendation={result.recommendation}
+                className="mt-1 px-3 py-1 text-base"
+              />
+            </div>
           </div>
+
+          <FitEvaluation
+            fitSummary={result.fitSummary}
+            strengthsJson={result.strengthsJson}
+            concernsJson={result.concernsJson}
+          />
 
           <p className="text-muted-foreground text-sm">
             Your result has been shared with {application.job.company.name}.

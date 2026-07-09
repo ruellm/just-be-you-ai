@@ -1,68 +1,55 @@
-"""Phase 2.2c — the question-by-question interview orchestration.
+"""Phase 2.3 — the conversational fit-assessment interview.
 
-This module owns the *conversation flow* of a real interview: greet, work
-through the generated questions one at a time, decide whether each answer
-warrants a single follow-up, and capture every spoken turn into a transcript.
+This REPLACES the Phase 2.2c scripted question-by-question loop. The voice LLM
+(gpt-4o) now drives the interview itself: it gets the whole job + candidate
+context and a fallback pool of pre-generated questions up front, and conducts a
+warm, adaptive conversation whose goal is to gather evidence about whether the
+candidate is a FIT for this specific role — not to march through a checklist.
 
-It deliberately does NOT touch persistence or the LiveKit entrypoint wiring —
-``agent.py`` builds the session + system prompt and hands a started session +
-the loaded ``InterviewContext`` to :class:`InterviewFlow`; ``save_result.py``
-persists the transcript + (mocked) score afterwards.
-
-Design notes:
-  * The orchestrator drives EVERY agent utterance. A plain ``AgentSession``
-    auto-generates an LLM reply whenever the user's turn ends (see
-    agent_activity.py ``_user_turn_completed_task``). That fights manual
-    orchestration and causes the agent to ask the next question without waiting
-    (the 2.2c back-to-back bug). We suppress it with :class:`InterviewAgent`,
-    which raises ``StopResponse`` in ``on_user_turn_completed`` — so the only
-    speech is what this orchestrator explicitly says.
-  * Questions are read by the voice LLM (``session.generate_reply``) so they
-    sound natural; the fixed greeting, closing, acks and the nudge are spoken
-    verbatim via ``session.say`` (cheaper + exact, no extra gpt-4o call).
-  * The *follow-up decision* is a SEPARATE fast LLM call (gpt-4o-mini, JSON
-    mode) — never the voice LLM. Latency matters; the candidate is waiting.
-  * Candidate turns arrive via ``InterviewAgent.on_user_turn_completed`` and are
-    pushed onto a queue, so a turn that lands while the agent is still speaking
-    (an interruption) is buffered, not lost. Agent turns are captured from the
-    ``conversation_item_added`` event (assistant role only).
+How it works (and why it's simpler than 2.2c):
+  * There is NO orchestrator deciding each utterance and NO separate follow-up
+    LLM. We use a plain ``AgentSession`` with a normal :class:`InterviewAgent`,
+    so the session's own STT → LLM → TTS turn loop runs the whole conversation.
+    The system prompt (see :func:`build_system_prompt`) carries all the
+    conversational rules.
+  * The LLM invokes two **function tools** during the conversation:
+      - ``note_fit_signal(dimension, evidence, strength)`` — records a piece of
+        fit evidence into an in-memory list.
+      - ``end_interview(reason)`` — signals the interview is complete.
+    LiveKit Agents 1.6 supports this tool-call loop cleanly: tools declared as
+    methods on the Agent are auto-registered and the LLM calls them mid-turn.
+  * Transcript capture rides ``conversation_item_added`` for BOTH roles (unlike
+    2.2c, we no longer suppress the auto-reply, so user turns are committed and
+    emit the event).
+  * End conditions: (a) the AI calls ``end_interview``; (b) the candidate
+    disconnects; (c) a per-job time cap (default 30 min) forces a graceful close.
+    In every case we build the transcript + fit-signals and hand them to
+    ``save_result`` for real grading.
 """
 
 from __future__ import annotations
 
 import asyncio
-import json
+import contextlib
 import logging
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import Any, Callable, Dict, List, Literal, Optional
 
-from livekit.agents import Agent, AgentSession, StopResponse, llm
+from livekit.agents import Agent, AgentSession, function_tool
+from livekit import rtc
 
 from .context import InterviewContext
 
 logger = logging.getLogger("jbu-voice-agent.flow")
 
-# Hard cap on the whole interview. Past this we wrap up early (requirement 5c).
-MAX_INTERVIEW_SECONDS = 20 * 60
-# Per-turn silence handling (requirement 8): nudge after 30s, give up after 30s more.
-SILENCE_TIMEOUT_SECONDS = 30.0
-
-# Fast, cheap model for the follow-up decision only (NOT the voice LLM).
-FOLLOWUP_MODEL = "gpt-4o-mini"
-
-_FOLLOWUP_SYSTEM_PROMPT = (
-    "You are the silent orchestrator behind a voice job interview. You are NOT "
-    "speaking to the candidate. Given the question that was asked and the "
-    "candidate's spoken answer, decide whether ONE short follow-up is warranted.\n\n"
-    "Reply with a single JSON object, nothing else:\n"
-    '  {"action": "move_on", "ack": "<2-4 word acknowledgement>"}\n'
-    '  {"action": "follow_up", "question": "<one short follow-up question>"}\n\n'
-    "Choose move_on when the answer is substantive and on-topic. Choose "
-    "follow_up when the answer is very short (under ~15 words), vague, "
-    "off-topic, or explicitly invites more (\"I can explain more if you want\"). "
-    "Keep ack varied and brief ('Got it, thanks', 'Noted', 'Makes sense'). "
-    "Keep any follow-up to a single sentence."
-)
+# Interview duration cap (requirement A.4). Job.interview_max_minutes overrides.
+DEFAULT_MAX_MINUTES = 30
+# How long before the cap we silently remind the LLM to start wrapping up.
+WRAP_UP_LEAD_SECONDS = 5 * 60
+# Bound on how long we wait for the AI's closing speech to drain on a normal end.
+_IDLE_DRAIN_TIMEOUT = 10.0
+# Cap on parsed-resume text injected into the system prompt.
+_MAX_RESUME_CHARS = 8000
 
 
 def _now_iso() -> str:
@@ -82,252 +69,241 @@ def _resolve_first_name(full_name: Optional[str]) -> Optional[str]:
     return full.split()[0]
 
 
-class InterviewAgent(Agent):
-    """Agent that suppresses the session's automatic reply.
+# ── system prompt ────────────────────────────────────────────────────────────
 
-    The high-level ``AgentSession`` normally replies to every user turn on its
-    own. For a scripted interview that's wrong — the orchestrator decides what
-    to say and when. We capture the candidate's turn here and raise
-    ``StopResponse`` so the session does NOT generate its own reply.
+# The conversational rules block, verbatim from the Phase 2.3 spec. {company}
+# is substituted at build time.
+_CONVERSATION_RULES = """You are conducting a job interview to assess whether this candidate is a fit for this specific role. Your goal is NOT to check off a list of questions — it is to gather evidence about fit.
+
+Style:
+- Warm and conversational. Not a robot. Use natural fillers: 'okay,' 'got it,' 'makes sense,' 'that's interesting,' 'let me ask you something else.'
+- Keep your spoken lines under 2 sentences most of the time. Longer only if you need to explain context.
+- React to what the candidate says. If they mention something interesting, go deeper. If they give a solid answer, acknowledge and move on — don't over-probe.
+
+How to conduct the interview:
+- Start with a warm greeting and confirm they're ready.
+- Explore the fit dimensions that matter for this job. Use the fallback question pool if you're not sure what to ask next.
+- Follow interesting threads. A great answer often opens up a better follow-up than the next scripted question.
+- When you hear meaningful evidence about fit (strong or weak), immediately call note_fit_signal with the dimension, evidence, and strength.
+- If the candidate asks you to repeat or clarify, do so. That is NOT an answer. Ask the question again in slightly different words.
+- If they say 'I don't know' or refuse: try ONE rephrase or a different angle. If they still can't answer, accept gracefully and move on.
+- Handle ambient noise and short pauses gracefully. If you're not sure they finished, wait. Do NOT jump in on a short pause.
+
+When to end:
+- When you have solid fit evidence across the important dimensions (usually within 5-10 minutes for clear cases).
+- When the candidate asks to stop.
+- When you've spent enough time and further probing won't add signal.
+- Always signal closing before ending: 'Alright, I think I have enough to work with — before we wrap up, is there anything you want to add?' Then thank them and call end_interview.
+
+If asked if you're an AI:
+'Yes, I'm an AI interviewer, but everything you say is recorded and reviewed by real people at {company}. Happy to continue whenever you're ready.'"""
+
+
+def _section(title: str, value: Optional[str], *, limit: int = 2000) -> str:
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if len(value) > limit:
+        value = value[:limit] + "…[truncated]"
+    return f"{title}: {value}\n"
+
+
+def build_system_prompt(ctx: InterviewContext) -> str:
+    """Assemble the full voice-LLM system prompt (requirement A.1 + A.2).
+
+    Everything the AI needs is provided up front: job details, candidate
+    details, the fallback question pool, and the conversational rules.
     """
+    job = ctx.job
+    cand = ctx.candidate
+    first_name = _resolve_first_name(cand.full_name)
 
-    def __init__(self, *, instructions: str, flow: "InterviewFlow") -> None:
+    name_line = (
+        f"The candidate's first name is {first_name}. Use it naturally."
+        if first_name
+        else "You do not know the candidate's name; do not invent one."
+    )
+
+    skills = ", ".join(
+        s.name + (f" ({s.years_of_experience}y)" if s.years_of_experience else "")
+        for s in cand.skills
+    ) or "None listed"
+
+    if cand.work_experiences:
+        work_lines = []
+        for w in cand.work_experiences:
+            span = "current" if w.currently_working else (w.end_date or "")
+            line = f"- {w.position} at {w.company_name}"
+            if span:
+                line += f" ({span})"
+            work_lines.append(line)
+        work = "\n".join(work_lines)
+    else:
+        work = "None listed"
+
+    if ctx.questions:
+        pool = "\n".join(
+            f"{i}. [{q.category}] {q.text}" for i, q in enumerate(ctx.questions, 1)
+        )
+    else:
+        pool = "(No pre-generated questions — rely on the job and your judgment.)"
+
+    parts = [
+        _CONVERSATION_RULES.format(company=job.company_name),
+        "\n\n=== THE ROLE ===\n",
+        f"Job title: {job.title}\n",
+        f"Company: {job.company_name}\n",
+        _section("Level", job.level, limit=50),
+        _section("Description", job.description),
+        _section("Role overview", job.role_overview),
+        _section("Requirements", job.requirements),
+        _section("Day-to-day", job.day_to_day),
+        _section("Ideal candidate profile", job.ideal_candidate_profile),
+        _section("Passing criteria", job.passing_criteria),
+        _section("Interviewer hints", job.interview_hints),
+        "\n=== THE CANDIDATE ===\n",
+        f"Name: {cand.full_name}\n",
+        _section("Preferred role", cand.preferred_role, limit=200),
+        _section("Summary", cand.summary),
+        f"Skills: {skills}\n",
+        f"Work experience:\n{work}\n",
+        _section("Parsed resume", cand.parsed_resume_text, limit=_MAX_RESUME_CHARS),
+        "\n=== FALLBACK QUESTION POOL (use only if you're unsure what to ask next) ===\n",
+        f"{pool}\n",
+        f"\n{name_line}\n",
+    ]
+    return "".join(parts)
+
+
+# ── the agent (owns the tools + collected fit signals) ───────────────────────
+
+
+class InterviewAgent(Agent):
+    """The conversational interviewer. Exposes two tools to the voice LLM."""
+
+    def __init__(self, *, instructions: str, on_end: Callable[[str], None]) -> None:
         super().__init__(instructions=instructions)
-        self._flow = flow
+        self.fit_signals: List[Dict[str, Any]] = []
+        self._on_end = on_end
 
-    async def on_user_turn_completed(
-        self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage
-    ) -> None:
-        text = (new_message.text_content or "").strip()
-        if text:
-            self._flow.submit_user_turn(text)
-        # Hand control back to the orchestrator: no automatic reply.
-        raise StopResponse()
+    @function_tool
+    async def note_fit_signal(
+        self,
+        dimension: str,
+        evidence: str,
+        strength: Literal["strong", "moderate", "weak", "negative"],
+    ) -> str:
+        """Record a piece of evidence about the candidate's fit for this role.
+
+        Call this whenever you observe something worth noting — strong or weak.
+
+        Args:
+            dimension: Short fit dimension, e.g. "technical_depth",
+                "communication", "motivation", "problem_solving",
+                "domain_experience".
+            evidence: One sentence quoting or summarizing what the candidate said.
+            strength: How positive or negative the signal is.
+        """
+        self.fit_signals.append(
+            {
+                "dimension": dimension,
+                "evidence": evidence,
+                "strength": strength,
+                "timestamp": _now_iso(),
+            }
+        )
+        logger.info("fit_signal [%s] %s — %s", strength, dimension, evidence)
+        # Return nothing meaningful — this is a silent note, keep the AI talking
+        # to the candidate, not narrating the tool call.
+        return "ok"
+
+    @function_tool
+    async def end_interview(self, reason: str) -> str:
+        """Signal that the interview is complete and the closing should begin.
+
+        Call this once you've gathered enough fit evidence (or the candidate
+        asks to stop). Signal closing to the candidate FIRST, then call this.
+
+        Args:
+            reason: A short internal note, e.g. "gathered sufficient signal",
+                "candidate requested to stop".
+        """
+        logger.info("end_interview requested: %s", reason)
+        self._on_end("completed")
+        return "ok"
+
+
+# ── the flow (session lifecycle, transcript, time cap, close) ────────────────
 
 
 class InterviewFlow:
-    """Drives one interview over an already-started :class:`AgentSession`."""
+    """Runs one conversational interview over an :class:`AgentSession`."""
 
     def __init__(
-        self,
-        session: AgentSession,
-        ctx: InterviewContext,
-        *,
-        followup_client,
+        self, session: AgentSession, ctx: InterviewContext, room: rtc.Room
     ) -> None:
         self.session = session
         self.ctx = ctx
-        self._followup_client = followup_client
+        self.room = room
 
         self.transcript: List[Dict[str, str]] = []
-        self.first_name = _resolve_first_name(ctx.candidate.full_name)
-        self._name_suffix = f" {self.first_name}" if self.first_name else ""
+        self.ended_reason = "completed"  # completed | disconnect | time_cap
+        self._ended = asyncio.Event()
 
-        self._loop = asyncio.get_event_loop()
-        # Buffers candidate turns so one arriving mid-speech isn't lost. A None
-        # sentinel unblocks a waiting _listen() on disconnect.
-        self._user_turns: asyncio.Queue[Optional[str]] = asyncio.Queue()
-        self._closed = asyncio.Event()
-        self.ended_reason = "completed"  # completed | silence | disconnect | time_cap
+        max_minutes = ctx.job.interview_max_minutes or DEFAULT_MAX_MINUTES
+        self.max_seconds = max(60, max_minutes * 60)
+
+        self.first_name = _resolve_first_name(ctx.candidate.full_name)
+        self.agent = InterviewAgent(
+            instructions=build_system_prompt(ctx), on_end=self._request_end
+        )
 
         session.on("conversation_item_added", self._on_conversation_item)
 
-    # ── event hooks ──────────────────────────────────────────────────────────
+    @property
+    def fit_signals(self) -> List[Dict[str, Any]]:
+        return self.agent.fit_signals
 
-    def _on_conversation_item(self, ev) -> None:
-        """Capture the agent's spoken turns (say + generate_reply).
+    # ── lifecycle control ────────────────────────────────────────────────────
 
-        Candidate turns are captured in InterviewAgent.on_user_turn_completed,
-        which fires BEFORE StopResponse short-circuits the auto-reply — the user
-        message is never committed here once we stop the reply, so we must not
-        rely on this event for it.
-        """
-        item = getattr(ev, "item", None)
-        role = getattr(item, "role", None)
-        text = getattr(item, "text_content", None)
-        if not text or role != "assistant":
+    def _request_end(self, reason: str) -> None:
+        if self._ended.is_set():
             return
-        self.transcript.append(
-            {"role": "ai", "text": text.strip(), "timestamp": _now_iso()}
-        )
-
-    def submit_user_turn(self, text: str) -> None:
-        """Record a completed candidate turn and make it available to _listen()."""
-        self.transcript.append(
-            {"role": "candidate", "text": text, "timestamp": _now_iso()}
-        )
-        self._user_turns.put_nowait(text)
+        self.ended_reason = reason
+        self._ended.set()
 
     def mark_disconnected(self) -> None:
         """Called when the candidate's participant leaves the room."""
-        if self._closed.is_set():
+        if self._ended.is_set():
             return
         logger.info("Candidate disconnected; ending interview.")
-        self._closed.set()
-        self._user_turns.put_nowait(None)  # unblock a pending _listen()
+        self._request_end("disconnect")
 
     def detach(self) -> None:
         self.session.off("conversation_item_added", self._on_conversation_item)
 
-    # ── speaking + listening primitives ──────────────────────────────────────
+    # ── transcript capture ───────────────────────────────────────────────────
 
-    async def _listen(self) -> Optional[str]:
-        """Wait for the candidate's next full turn.
+    def _on_conversation_item(self, ev) -> None:
+        """Capture every committed AI + candidate turn.
 
-        Returns the transcript text, or None if they went silent (after one
-        nudge) or disconnected.
+        Tool-call / tool-result items carry no ``text_content`` (or a non-
+        assistant/user role) and are skipped, so only real spoken turns land in
+        the transcript.
         """
-        if self._closed.is_set():
-            return None
-
-        for attempt in range(2):
-            try:
-                text = await asyncio.wait_for(
-                    self._user_turns.get(), SILENCE_TIMEOUT_SECONDS
-                )
-            except asyncio.TimeoutError:
-                if self._closed.is_set():
-                    return None
-                if attempt == 0:
-                    await self._say("Sorry, are you still there?")
-                    continue
-                logger.info("No response after nudge; ending interview.")
-                return None
-            if text is None:  # disconnect sentinel
-                return None
-            return text
-        return None
-
-    async def _say(self, text: str) -> None:
-        """Speak an exact line (greeting/ack/closing). Captured via the event."""
-        handle = self.session.say(text)
-        await handle.wait_for_playout()
-
-    async def _ask_question(self, question_text: str) -> None:
-        """Have the voice LLM read a specific question naturally."""
-        handle = self.session.generate_reply(
-            instructions=(
-                "Read the following interview question to the candidate, "
-                "naturally and conversationally, in one breath. Do NOT add any "
-                "other questions or commentary:\n\n" + question_text
+        item = getattr(ev, "item", None)
+        role = getattr(item, "role", None)
+        text = getattr(item, "text_content", None)
+        if not text:
+            return
+        if role == "assistant":
+            self.transcript.append(
+                {"role": "ai", "text": text.strip(), "timestamp": _now_iso()}
             )
-        )
-        await handle.wait_for_playout()
-
-    # ── follow-up decision (separate fast LLM call) ──────────────────────────
-
-    async def _decide_followup(self, question: str, answer: str) -> Dict[str, str]:
-        """Ask gpt-4o-mini whether to follow up. Defaults to move_on on error."""
-        try:
-            resp = await self._followup_client.chat.completions.create(
-                model=FOLLOWUP_MODEL,
-                response_format={"type": "json_object"},
-                temperature=0.3,
-                max_tokens=80,
-                messages=[
-                    {"role": "system", "content": _FOLLOWUP_SYSTEM_PROMPT},
-                    {
-                        "role": "user",
-                        "content": (
-                            f"Question asked:\n{question}\n\n"
-                            f"Candidate's answer:\n{answer}"
-                        ),
-                    },
-                ],
+        elif role == "user":
+            self.transcript.append(
+                {"role": "candidate", "text": text.strip(), "timestamp": _now_iso()}
             )
-            data = json.loads(resp.choices[0].message.content or "{}")
-        except Exception:  # noqa: BLE001 — never let a decision error stall the flow.
-            logger.exception("Follow-up decision failed; moving on.")
-            return {"action": "move_on", "ack": "Thanks."}
-
-        action = data.get("action")
-        if action == "follow_up" and (data.get("question") or "").strip():
-            return {"action": "follow_up", "question": data["question"].strip()}
-        ack = (data.get("ack") or "").strip() or "Got it, thanks."
-        return {"action": "move_on", "ack": ack}
-
-    # ── the interview ────────────────────────────────────────────────────────
-
-    async def run(self) -> None:
-        """Run the full interview. Returns when it ends for any reason."""
-        job = self.ctx.job
-        questions = self.ctx.questions
-        n = len(questions)
-        start = self._loop.time()
-
-        # (b) Greeting + format explainer.
-        await self._say(
-            f"Hi{self._name_suffix}, welcome. I'm an AI interviewer for the "
-            f"{job.title} role at {job.company_name}. I'll ask you a few "
-            f"questions — take your time. There "
-            f"{'is' if n == 1 else 'are'} {n} "
-            f"question{'' if n == 1 else 's'} total. Ready when you are."
-        )
-
-        # (c) Wait for any acknowledgement before starting.
-        logger.info("Greeting delivered; waiting for candidate to acknowledge.")
-        if await self._listen() is None:
-            return self._finish(
-                reason="disconnect" if self._closed.is_set() else "silence"
-            )
-
-        # (d) Work through each question in order.
-        for idx, q in enumerate(questions, start=1):
-            tag = f"[Q{idx}/{n}]"
-            if self._closed.is_set():
-                return self._finish(reason="disconnect")
-            if self._loop.time() - start > MAX_INTERVIEW_SECONDS:
-                logger.info("%s Time cap reached; wrapping up early.", tag)
-                await self._wrap_up_early()
-                return self._finish(reason="time_cap")
-
-            logger.info("%s Asking question (%s)...", tag, q.category)
-            await self._ask_question(q.text)
-
-            logger.info("%s Waiting for candidate response...", tag)
-            answer = await self._listen()
-            if answer is None:
-                return self._finish(
-                    reason="disconnect" if self._closed.is_set() else "silence"
-                )
-            logger.info("%s Got response: %s", tag, answer[:60])
-
-            # Decide on at most ONE follow-up. Never follow up on a follow-up.
-            decision = await self._decide_followup(q.text, answer)
-            logger.info("%s Follow-up decision: %s", tag, decision["action"])
-            if decision["action"] == "follow_up":
-                await self._say(decision["question"])
-                logger.info("%s Waiting for follow-up response...", tag)
-                follow_answer = await self._listen()
-                if follow_answer is None:
-                    return self._finish(
-                        reason="disconnect" if self._closed.is_set() else "silence"
-                    )
-                logger.info("%s Got follow-up response: %s", tag, follow_answer[:60])
-            else:
-                await self._say(decision["ack"])
-
-            logger.info("%s Done with question.", tag)
-
-        # (e) Normal completion closing.
-        await self._say(
-            f"Thanks{self._name_suffix}, that's all the questions. We'll review "
-            "your responses and the company will be in touch. Have a great day."
-        )
-        return self._finish(reason="completed")
-
-    async def _wrap_up_early(self) -> None:
-        await self._say(
-            f"Thanks{self._name_suffix} — we're at time, so I'll wrap up here. "
-            "We'll review what we covered and the company will be in touch. "
-            "Have a great day."
-        )
-
-    def _finish(self, *, reason: str) -> None:
-        self.ended_reason = reason
-        logger.info("Interview ended (%s) with %d turns.", reason, len(self.transcript))
-
-    # ── transcript serialization ─────────────────────────────────────────────
 
     def build_transcript_text(self) -> str:
         """Serialize the captured turns to the stored ``AI:/Candidate:`` format."""
@@ -336,3 +312,93 @@ class InterviewFlow:
             speaker = "AI" if turn["role"] == "ai" else "Candidate"
             lines.append(f"{speaker}: {turn['text']}")
         return "\n".join(lines)
+
+    # ── the interview ────────────────────────────────────────────────────────
+
+    async def run(self) -> None:
+        """Start the session, greet, then run until an end condition fires."""
+        job = self.ctx.job
+        await self.session.start(agent=self.agent, room=self.room)
+
+        # Kick off the conversation with a warm greeting. The session's own turn
+        # loop takes over from here — the LLM drives the rest via the rules in
+        # the system prompt and its two tools.
+        greet_name = f" {self.first_name}" if self.first_name else ""
+        await self.session.generate_reply(
+            instructions=(
+                f"Greet the candidate warmly{greet_name}. In one or two sentences, "
+                f"introduce yourself as the AI interviewer for the {job.title} role "
+                f"at {job.company_name}, and ask if they're ready to begin."
+            )
+        )
+
+        watcher = asyncio.create_task(self._time_cap_watch())
+        try:
+            await self._ended.wait()
+        finally:
+            watcher.cancel()
+            with contextlib.suppress(asyncio.CancelledError):
+                await watcher
+
+        await self._graceful_close()
+        logger.info(
+            "Interview ended (%s) with %d turns, %d fit signals.",
+            self.ended_reason,
+            len(self.transcript),
+            len(self.fit_signals),
+        )
+
+    async def _time_cap_watch(self) -> None:
+        """Warn 5 min before the cap, then force a graceful close at the cap."""
+        lead = self.max_seconds - WRAP_UP_LEAD_SECONDS
+        if lead > 0:
+            await asyncio.sleep(lead)
+            if self._ended.is_set():
+                return
+            await self._inject_reminder(
+                "You have about 5 minutes left. Start wrapping up soon."
+            )
+            await asyncio.sleep(WRAP_UP_LEAD_SECONDS)
+        else:
+            await asyncio.sleep(self.max_seconds)
+
+        if self._ended.is_set():
+            return
+        logger.info("Time cap (%ds) reached; forcing graceful close.", self.max_seconds)
+        self._request_end("time_cap")
+
+    async def _inject_reminder(self, text: str) -> None:
+        """Silently add a system note so the LLM's next turn sees it (req A.4)."""
+        try:
+            chat_ctx = self.agent.chat_ctx.copy()
+            chat_ctx.add_message(role="system", content=text)
+            await self.agent.update_chat_ctx(chat_ctx)
+            logger.info("Injected wrap-up reminder to the LLM.")
+        except Exception:  # noqa: BLE001 — a failed nudge must not crash the interview.
+            logger.exception("Failed to inject wrap-up reminder.")
+
+    async def _graceful_close(self) -> None:
+        """Never end abruptly. Behavior depends on why we ended."""
+        if self.ended_reason == "disconnect":
+            return  # candidate already left; nothing to say.
+
+        if self.ended_reason == "time_cap":
+            try:
+                handle = self.session.say(
+                    "We're coming up on time, so I'll wrap things up here. Thank you "
+                    "so much for your time today — the team will review our "
+                    "conversation and be in touch. Take care!"
+                )
+                await handle.wait_for_playout()
+            except Exception:  # noqa: BLE001
+                logger.exception("Failed to speak the time-cap closing.")
+            return
+
+        # Normal completion: the AI already spoke its own closing before calling
+        # end_interview. Just let any in-flight speech drain so we don't cut it off.
+        try:
+            await asyncio.wait_for(
+                self.session.wait_for_idle(), timeout=_IDLE_DRAIN_TIMEOUT
+            )
+        except Exception:  # noqa: BLE001 — timeout or shutdown race; fine to proceed.
+            pass

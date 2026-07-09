@@ -1,8 +1,8 @@
-# Just Be You — Voice Agent (Phase 2.2)
+# Just Be You — Voice Agent (Phase 2.3)
 
 A standalone **Python** service that runs the AI voice interview. It runs as a separate process from the Next.js app — it is **not** part of the web server.
 
-As of **Phase 2.2d** this is wired into the Next.js app: given an `application_id` in the LiveKit room metadata, the agent loads the candidate + job + question context from Supabase (2.2b) and then **conducts the real interview** — it greets the candidate, works through each generated question one at a time (with an optional single follow-up per question), captures the full transcript, and on close saves the transcript plus a **mocked** score/tier to Supabase so the existing dashboards keep working. Real LLM grading arrives in Phase 2.3. With no metadata (or on a context-load error) it falls back to the Phase 2.2a hello-world greeting, so the toolchain stays testable on its own.
+As of **Phase 2.3** the interview is a **conversational fit assessment** driven by the voice LLM itself. Given an `application_id` in the LiveKit room metadata, the agent loads the candidate + job + question context from Supabase (2.2b) and then holds a warm, adaptive conversation whose goal is to gather evidence about whether the candidate is a **fit** for this specific role. The 6 pre-generated questions are a **fallback pool**, not a script. As it talks, the LLM records fit observations via a `note_fit_signal` tool and ends the interview with an `end_interview` tool once it has enough signal. On close the transcript + noted signals are graded by a **real Claude call** (`claude-sonnet-4-6`) into a structured evaluation (score, tier, pass/fail, fit summary, strengths, concerns, recommendation) and saved to Supabase. With no metadata (or on a context-load error) it falls back to the Phase 2.2a hello-world greeting, so the toolchain stays testable on its own.
 
 > **Integrated with the Next.js UI (Phase 2.2d).** The candidate's browser now joins a real LiveKit room from the interview screen and the Next.js app dispatches this worker into it. The worker registers under a fixed `agent_name` (`just-be-you-interviewer`) that the Next.js dispatcher targets; setting an explicit name disables automatic dispatch, so the worker only joins rooms it is explicitly asked to. You can still test it standalone via the LiveKit Playground + room metadata (below).
 
@@ -26,25 +26,32 @@ As of **Phase 2.2d** this is wired into the Next.js app: given an `application_i
 
 ## What it does
 
-- **With** room metadata `{"application_id": "<id>"}`: loads the interview context from Supabase, then runs the full interview — greeting → wait for the candidate to acknowledge → ask each question in order (one follow-up max when the answer is short/vague/off-topic) → closing → save transcript + mocked result.
+- **With** room metadata `{"application_id": "<id>"}`: loads the interview context from Supabase, then runs a **conversational, adaptive** interview — a warm greeting → the LLM explores the fit dimensions that matter for the job, following interesting threads and using the fallback question pool only when unsure → it signals closing and ends → the transcript + noted fit signals are graded by Claude and saved.
 - **Without** usable metadata: connects to a LiveKit room, greets a user named "tester", explains it's a test agent, listens for a reply, responds once, and politely ends (Phase 2.2a behavior).
 
-### How a turn works
+### How the conversation works (Phase 2.3)
 
-- Questions are read by the **voice LLM** (gpt-4o) so they sound natural.
-- The greeting, closing, acknowledgements and the silence nudge are spoken **verbatim** (`session.say`) — exact wording, no extra LLM call.
-- After each answer, a **separate fast LLM call** (gpt-4o-mini, JSON mode) decides `move_on` vs `follow_up`. This is never the voice LLM.
-- Transcript capture rides LiveKit's `conversation_item_added` event.
-- Silence handling: no response for 30s → one "are you still there?" nudge; another 30s of silence → end gracefully. A disconnect ends immediately. A 20-minute time cap wraps the interview up early. In all cases the transcript + mocked result are saved on close.
+- **The voice LLM (`gpt-4o`) drives the whole interview.** There is no orchestrator and no separate follow-up LLM (both removed in 2.3). A plain `AgentSession` runs the STT → LLM → TTS turn loop; all behavior comes from a rich system prompt (job + candidate context + fallback question pool + conversational rules — see `build_system_prompt` in `lib/interview_flow.py`).
+- **Two function tools** the LLM invokes mid-conversation:
+  - `note_fit_signal(dimension, evidence, strength)` — appends a fit observation to an in-memory list.
+  - `end_interview(reason)` — triggers the graceful close.
+- **Transcript capture** rides LiveKit's `conversation_item_added` event for **both** roles (unlike 2.2c we no longer suppress auto-replies).
+- **Time cap** (default 30 min, per-job via `interviewMaxMinutes`): 5 minutes before the cap a silent system reminder nudges the LLM to wrap up; at the cap, if it hasn't ended already, we force a graceful spoken close.
+- **End conditions:** `end_interview` (normal), candidate disconnect, or the time cap. In every case the transcript + fit signals are graded and saved on close.
+- **Turn-taking is patient:** VAD tuned so the agent doesn't jump in on short pauses or ambient noise, while the candidate can still interrupt it (see VAD tuning below).
+
+### Grading (Phase 2.3)
+
+On close, `lib/evaluate.py#evaluate_interview` sends the job, candidate, transcript, and the noted fit signals to **Claude (`claude-sonnet-4-6`)** with a forced structured-output tool. It returns `fit_score`, `tier`, `passed`, `fit_summary`, `strengths[]`, `concerns[]`, and `recommendation` (`hire`/`consider`/`pass`). On any error (after two attempts) it falls back to a neutral result so the `interview_results` row is always written. Application status is set from the `passed` flag.
 
 ## Stack
 
 - **STT** — Deepgram (`nova-3`)
-- **LLM** — OpenAI `gpt-4o` (voice) + `gpt-4o-mini` (follow-up decisions)
+- **LLM** — OpenAI `gpt-4o` (voice conversation) + Anthropic `claude-sonnet-4-6` (grading)
 - **TTS** — ElevenLabs (`eleven_turbo_v2_5`)
-- **VAD** — Silero (default settings)
+- **VAD** — Silero (tuned: `min_silence_duration=1.5`, `activation_threshold=0.6`, `prefix_padding_duration=0.3`)
 - **Data** — Supabase (Postgres via PostgREST, service-role key)
-- **Orchestration** — LiveKit Agents Python SDK 1.x
+- **Orchestration** — LiveKit Agents Python SDK 1.x (function-calling / tool loop)
 
 ## Prerequisites
 
@@ -100,8 +107,12 @@ LIVEKIT_API_SECRET=...
 # Deepgram (speech-to-text)
 DEEPGRAM_API_KEY=...
 
-# OpenAI (LLM for voice + follow-up decisions)
+# OpenAI (LLM for the voice conversation)
 OPENAI_API_KEY=sk-...
+
+# Anthropic (Claude, for the real fit evaluation / grading — Phase 2.3).
+# Same key as the Next.js app's ANTHROPIC_API_KEY.
+ANTHROPIC_API_KEY=sk-ant-...
 
 # ElevenLabs (text-to-speech). BOTH names recommended — the LiveKit plugin
 # looks for ELEVEN_API_KEY, but our code reads ELEVENLABS_API_KEY. Set both
@@ -188,7 +199,7 @@ For testing the agent standalone, without the Next.js app:
 3. Connect it to **the same LiveKit project** as your `.env`.
 4. Click **Connect** and allow microphone access. The agent should greet "tester" out loud.
 
-### Testing with real candidate data (2.2b / 2.2c)
+### Testing with real candidate data (2.2b / 2.2c / 2.3)
 
 Same Playground flow, but **before connecting**:
 
@@ -200,9 +211,11 @@ Same Playground flow, but **before connecting**:
    {"application_id": "PASTE_THE_ID_HERE"}
    ```
 
-4. Connect and allow mic access. The agent will greet the real candidate by name, run the interview, and save the transcript when done.
+4. Connect and allow mic access. The agent will greet the real candidate by name, run the interview, and grade + save the result when done.
 
 > Without metadata (or with invalid JSON) you get the hello-world "tester" greeting — that's the intended fallback for toolchain testing.
+
+**What changed in 2.3:** the testing steps are identical, but the interview is now **adaptive, not scripted** — the AI follows the conversation instead of marching through the 6 questions, handles "what did you say?" as a clarification (not an answer), and ends early once it has enough signal. After the interview, check the `interview_results` row in Supabase: `fitSummary`, `strengthsJson`, `concernsJson`, `recommendation`, and `fitSignalsJson` should all be populated with real content (not the old random values). Setting a job's **Maximum interview duration (minutes)** in the business job form caps the length.
 
 ---
 
@@ -439,13 +452,14 @@ Common causes:
 
 ## Files
 
-- `agent.py` — LiveKit entrypoint + system-prompt construction; metadata → context load → run interview (or hello-world fallback)
+- `agent.py` — LiveKit entrypoint + voice-pipeline / VAD construction; metadata → context load → run interview (or hello-world fallback)
 - `lib/supabase_client.py` — configured service-role Supabase client
 - `lib/context.py` — Pydantic models for the interview context
 - `lib/load_context.py` — single-query context loader (no N+1)
-- `lib/interview_flow.py` — question-by-question orchestration, follow-up decision, transcript capture, silence/time-cap handling
-- `lib/save_result.py` — persists transcript + mocked score/tier to Supabase
-- `requirements.txt` — pinned dependencies (LiveKit Agents 1.x line)
+- `lib/interview_flow.py` — conversational interview: system-prompt builder, the `InterviewAgent` + its `note_fit_signal`/`end_interview` tools, transcript capture, time-cap handling
+- `lib/evaluate.py` — real Claude fit evaluation (structured output) + neutral fallback
+- `lib/save_result.py` — grades via `evaluate.py`, then persists transcript + evaluation + fit signals to Supabase
+- `requirements.txt` — pinned dependencies (LiveKit Agents 1.x line + anthropic)
 - `.env.example` — environment template (copy to `.env`)
 
 ---
@@ -458,6 +472,6 @@ When making changes to the voice agent:
 2. For changes to the interview flow, use real `application_id` metadata so you exercise the full context-load path.
 3. If you change `requirements.txt`, document any version pins worth flagging.
 4. Don't change the `agent_name` in `agent.py` without also updating the Next.js dispatcher — they must match.
-5. The mocked score/tier logic in `save_result.py` is **temporary** (Phase 2.2c). It gets replaced by real LLM grading in Phase 2.3 — don't invest in tuning the mock weights.
+5. Grading is now a **real Claude call** in `lib/evaluate.py` (Phase 2.3). The fit signals it grades are the AI's own real-time observations — don't add post-processing that derives signals from the transcript; trust the LLM's judgment.
 
 See the [main README](../README.md) for repo-level conventions and `CLAUDE.md` for project rules.

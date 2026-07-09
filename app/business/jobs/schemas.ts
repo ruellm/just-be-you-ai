@@ -22,6 +22,15 @@ export const jobSchema = z
     interviewHints: z.string().trim().max(5000),
     idealCandidateProfile: z.string().trim().max(5000),
     passingCriteria: z.string().trim().max(5000),
+    // Max interview duration in minutes. Blank = system default (30); else 5-60.
+    interviewMaxMinutes: z
+      .string()
+      .trim()
+      .regex(/^\d*$/, "Enter a whole number")
+      .refine(
+        (v) => v === "" || (Number.parseInt(v, 10) >= 5 && Number.parseInt(v, 10) <= 60),
+        { message: "Enter a value between 5 and 60, or leave blank" }
+      ),
   })
   .refine(
     (d) =>

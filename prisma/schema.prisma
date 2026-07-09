@@ -286,6 +286,9 @@ model Job {
   idealCandidateProfile String? @db.Text
   passingCriteria       String? @db.Text
 
+  // Max interview duration in minutes (Phase 2.3). null = use system default (30).
+  interviewMaxMinutes Int?
+
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   skills       JobSkill[]
   applications Application[]
@@ -331,9 +334,14 @@ model Application {
   @@map("applications")
 }
 
-// One mocked result per application (Phase 1: seeded fake score/tier/transcript).
+// One result per application. Phase 1 seeded fake score/tier/transcript; Phase
+// 2.3 fills these from a REAL Claude fit-evaluation of the interview transcript.
 // completedAt is when the on-demand interview finished. `tier` reuses the Level
 // enum; the candidate passes a job when tier >= Job.level.
+//
+// The Phase 2.3 qualitative fields carry Prisma-level defaults so this migration
+// is safe against pre-existing (Phase 1/2.2) rows; the save path always supplies
+// real values, so the defaults only ever backfill historical rows.
 model InterviewResult {
   id            String   @id @default(cuid())
   applicationId String   @unique
@@ -341,6 +349,14 @@ model InterviewResult {
   tier          Level
   transcript    String
   completedAt   DateTime @default(now())
+
+  // Phase 2.3 — real fit evaluation (see lib/evaluate.py / save_result.py).
+  passed         Boolean @default(false)
+  fitSummary     String  @default("") @db.Text
+  strengthsJson  Json    @default("[]") // list of EvidenceItem {dimension, evidence, impact}
+  concernsJson   Json    @default("[]") // list of EvidenceItem
+  recommendation String  @default("consider") // "hire" | "consider" | "pass"
+  fitSignalsJson Json    @default("[]") // raw signals the AI noted mid-interview (internal)
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

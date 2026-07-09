@@ -52,6 +52,8 @@ class JobContext(BaseModel):
     interview_hints: Optional[str] = None
     ideal_candidate_profile: Optional[str] = None
     passing_criteria: Optional[str] = None
+    # Max interview duration in minutes (Phase 2.3). None = use system default (30).
+    interview_max_minutes: Optional[int] = None
     company_name: str
 
 

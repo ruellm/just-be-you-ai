@@ -31,6 +31,7 @@ function jobData(d: JobValues) {
     interviewHints: nullify(d.interviewHints),
     idealCandidateProfile: nullify(d.idealCandidateProfile),
     passingCriteria: nullify(d.passingCriteria),
+    interviewMaxMinutes: toIntOrNull(d.interviewMaxMinutes),
   };
 }
 

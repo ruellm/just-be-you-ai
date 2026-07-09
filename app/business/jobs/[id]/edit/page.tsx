@@ -40,6 +40,8 @@ export default async function EditJobPage({
     interviewHints: job.interviewHints ?? "",
     idealCandidateProfile: job.idealCandidateProfile ?? "",
     passingCriteria: job.passingCriteria ?? "",
+    interviewMaxMinutes:
+      job.interviewMaxMinutes != null ? String(job.interviewMaxMinutes) : "",
   };
 
   return (

@@ -73,6 +73,7 @@ job:jobs(
     interviewHints,
     idealCandidateProfile,
     passingCriteria,
+    interviewMaxMinutes,
     company:companies(name)
 ),
 questions:generated_questions(
@@ -188,6 +189,7 @@ def _build_job(row: Dict[str, Any]) -> JobContext:
         interview_hints=row.get("interviewHints"),
         ideal_candidate_profile=row.get("idealCandidateProfile"),
         passing_criteria=row.get("passingCriteria"),
+        interview_max_minutes=row.get("interviewMaxMinutes"),
         company_name=company.get("name") or "the company",
     )
 
