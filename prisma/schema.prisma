@@ -140,6 +140,11 @@ model CandidateProfile {
   parsedResumeText String? // null when no resume or parsing failed
   resumeParsedAt   DateTime? // null when not yet parsed
 
+  // Claude-cleaned resume text (Phase 2.4): parsedResumeText with references,
+  // personal data, and contact details stripped. Written at Apply time; null for
+  // older applications — interview prompt builders fall back to parsedResumeText.
+  cleanedResumeText String?
+
   // Languages spoken (e.g. ["English", "Filipino"])
   languages String[]
 

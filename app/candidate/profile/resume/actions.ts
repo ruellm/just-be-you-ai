@@ -86,18 +86,22 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
     parsedText = null;
   }
 
+  // cleanedResumeText derives from parsedResumeText, so a new resume clears it
+  // (the next Apply regenerates it from the fresh parsed text).
   await prisma.candidateProfile.upsert({
     where: { userId: user.id },
     update: {
       resumeUrl: path,
       parsedResumeText: parsedText,
       resumeParsedAt: parsedText ? new Date() : null,
+      cleanedResumeText: null,
     },
     create: {
       userId: user.id,
       resumeUrl: path,
       parsedResumeText: parsedText,
       resumeParsedAt: parsedText ? new Date() : null,
+      cleanedResumeText: null,
     },
   });
 
@@ -124,7 +128,12 @@ export async function deleteResume(): Promise<ActionResult> {
     await admin.storage.from(BUCKET).remove([profile.resumeUrl]);
     await prisma.candidateProfile.update({
       where: { userId: user.id },
-      data: { resumeUrl: null, parsedResumeText: null, resumeParsedAt: null },
+      data: {
+        resumeUrl: null,
+        parsedResumeText: null,
+        resumeParsedAt: null,
+        cleanedResumeText: null,
+      },
     });
   }
 

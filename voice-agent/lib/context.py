@@ -34,6 +34,9 @@ class CandidateContext(BaseModel):
     city: Optional[str] = None
     summary: Optional[str] = None
     parsed_resume_text: Optional[str] = None
+    # Claude-cleaned (PII-stripped) resume text, written at Apply time.
+    # None for older applications — fall back to parsed_resume_text.
+    cleaned_resume_text: Optional[str] = None
     languages: List[str] = Field(default_factory=list)
     total_years_experience: Optional[int] = None
     preferred_role: Optional[str] = None

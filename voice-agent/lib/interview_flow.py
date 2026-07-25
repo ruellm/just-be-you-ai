@@ -167,7 +167,12 @@ def build_system_prompt(ctx: InterviewContext) -> str:
         _section("Summary", cand.summary),
         f"Skills: {skills}\n",
         f"Work experience:\n{work}\n",
-        _section("Parsed resume", cand.parsed_resume_text, limit=_MAX_RESUME_CHARS),
+        # Cleaned (PII-stripped) text when Apply produced it; raw text otherwise.
+        _section(
+            "Parsed resume",
+            cand.cleaned_resume_text or cand.parsed_resume_text,
+            limit=_MAX_RESUME_CHARS,
+        ),
         "\n=== FALLBACK QUESTION POOL (use only if you're unsure what to ask next) ===\n",
         f"{pool}\n",
         f"\n{name_line}\n",
