@@ -32,6 +32,7 @@ function jobData(d: JobValues) {
     idealCandidateProfile: nullify(d.idealCandidateProfile),
     passingCriteria: nullify(d.passingCriteria),
     interviewMaxMinutes: toIntOrNull(d.interviewMaxMinutes),
+    voiceAgentType: d.voiceAgentType,
   };
 }
 

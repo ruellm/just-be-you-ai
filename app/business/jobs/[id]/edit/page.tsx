@@ -42,6 +42,8 @@ export default async function EditJobPage({
     passingCriteria: job.passingCriteria ?? "",
     interviewMaxMinutes:
       job.interviewMaxMinutes != null ? String(job.interviewMaxMinutes) : "",
+    // DB column is a plain String — narrow to the schema enum defensively.
+    voiceAgentType: job.voiceAgentType === "advanced" ? "advanced" : "basic",
   };
 
   return (

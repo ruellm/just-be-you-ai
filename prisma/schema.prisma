@@ -289,6 +289,11 @@ model Job {
   // Max interview duration in minutes (Phase 2.3). null = use system default (30).
   interviewMaxMinutes Int?
 
+  // Which voice agent this job's interviews use: "basic" | "advanced".
+  // Stored + displayed only for now — interview dispatch ignores it and every
+  // candidate runs the existing basic voice path.
+  voiceAgentType String @default("basic")
+
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   skills       JobSkill[]
   applications Application[]

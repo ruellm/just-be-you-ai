@@ -45,7 +45,13 @@ export const EMPTY_JOB: JobValues = {
   idealCandidateProfile: "",
   passingCriteria: "",
   interviewMaxMinutes: "",
+  voiceAgentType: "basic",
 };
+
+const VOICE_AGENT_OPTIONS = [
+  { value: "basic", label: "Basic AI Interview" },
+  { value: "advanced", label: "Advanced AI Interview" },
+] as const;
 
 export function JobForm({
   mode,
@@ -303,6 +309,37 @@ export function JobForm({
               significantly improves quality.
             </p>
           </div>
+          <FormField
+            control={form.control}
+            name="voiceAgentType"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Interview type</FormLabel>
+                <FormControl>
+                  <div role="radiogroup" className="grid max-w-md grid-cols-2 gap-2">
+                    {VOICE_AGENT_OPTIONS.map((option) => (
+                      <Button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === option.value}
+                        variant={
+                          field.value === option.value ? "default" : "outline"
+                        }
+                        onClick={() => field.onChange(option.value)}
+                      >
+                        {option.label}
+                      </Button>
+                    ))}
+                  </div>
+                </FormControl>
+                <p className="text-muted-foreground text-sm">
+                  Which voice agent conducts this job&apos;s interviews.
+                </p>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
           <FormField
             control={form.control}
             name="interviewHints"

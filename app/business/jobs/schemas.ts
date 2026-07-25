@@ -3,6 +3,7 @@ import { z } from "zod";
 export const jobLevelSchema = z.enum(["entry", "novice", "advanced", "expert"]);
 export const jobWorkModeSchema = z.enum(["onsite", "remote", "hybrid"]);
 export const jobStatusSchema = z.enum(["open", "closed"]);
+export const jobVoiceAgentTypeSchema = z.enum(["basic", "advanced"]);
 
 export const jobSchema = z
   .object({
@@ -22,6 +23,8 @@ export const jobSchema = z
     interviewHints: z.string().trim().max(5000),
     idealCandidateProfile: z.string().trim().max(5000),
     passingCriteria: z.string().trim().max(5000),
+    // Voice engine for this job's interviews. Stored/displayed only for now.
+    voiceAgentType: jobVoiceAgentTypeSchema,
     // Max interview duration in minutes. Blank = system default (30); else 5-60.
     interviewMaxMinutes: z
       .string()
