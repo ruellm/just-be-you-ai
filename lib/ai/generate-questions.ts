@@ -158,12 +158,24 @@ async function requestQuestions(userPrompt: string): Promise<unknown> {
   return toolUse.input;
 }
 
-// Generates 6 interview questions for an application and stores them. Idempotent:
-// existing rows for the application are deleted and recreated. Throws on a hard
-// failure (the caller decides whether to surface it).
+// Generates 6 interview questions for an application and stores them. Throws on
+// a hard failure (the caller decides whether to surface it).
+//
+// Idempotency: by default this NO-OPs when questions already exist for the
+// application — Apply fires it as a detached background task, so a double-fire
+// must not burn a second Claude call. Pass `overwrite: true` (admin Regenerate)
+// to delete + recreate instead.
 export async function generateQuestionsForApplication(
-  applicationId: string
+  applicationId: string,
+  { overwrite = false }: { overwrite?: boolean } = {}
 ): Promise<void> {
+  if (!overwrite) {
+    const existing = await prisma.generatedQuestion.count({
+      where: { applicationId },
+    });
+    if (existing > 0) return;
+  }
+
   const application = await loadApplication(applicationId);
   if (!application) {
     throw new Error(`Application ${applicationId} not found.`);

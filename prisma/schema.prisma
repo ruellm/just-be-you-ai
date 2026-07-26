@@ -334,6 +334,12 @@ model Application {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
+  // ElevenLabs conversation id for ADVANCED-path interviews (Phase 3.3).
+  // Stamped by completeAdvancedInterview when the voice call ends; the 3.4
+  // grading session uses it to fetch the transcript. null for every basic
+  // (LiveKit) interview.
+  voiceConversationId String?
+
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
   job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?

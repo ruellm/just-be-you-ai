@@ -15,7 +15,7 @@ export async function regenerateQuestions(
   }
 
   try {
-    await generateQuestionsForApplication(applicationId);
+    await generateQuestionsForApplication(applicationId, { overwrite: true });
   } catch (error) {
     console.error("[regenerate-questions] failed:", error);
     return {

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { extractResumeText } from "@/lib/resume-parse";
+import { cleanResumeText } from "@/lib/ai/clean-resume";
 import {
   RESUME_ALLOWED_TYPES,
   RESUME_MAX_BYTES,
@@ -64,10 +65,11 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
     return { success: false, error: "Upload failed. Please try again." };
   }
 
-  // Capture the old path so we can clean it up after the DB points at the new one.
+  // Capture the old path so we can clean it up after the DB points at the new
+  // one (+ the name, which anchors "who the candidate is" for resume cleanup).
   const existing = await prisma.candidateProfile.findUnique({
     where: { userId: user.id },
-    select: { resumeUrl: true },
+    select: { resumeUrl: true, firstName: true, lastName: true },
   });
 
   // Extract text from the bytes we already have in memory (no need to
@@ -87,7 +89,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
   }
 
   // cleanedResumeText derives from parsedResumeText, so a new resume clears it
-  // (the next Apply regenerates it from the fresh parsed text).
+  // first; the cleanup pass below repopulates it from the fresh parsed text.
   await prisma.candidateProfile.upsert({
     where: { userId: user.id },
     update: {
@@ -104,6 +106,31 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
       cleanedResumeText: null,
     },
   });
+
+  // Resume cleanup (PII strip → cleanedResumeText) runs HERE, once per
+  // upload/replace, so Apply never waits on it. Awaited so the field is
+  // reliably populated before the (much later) Apply; a few extra seconds on
+  // upload is fine. Must NEVER fail the upload — cleanResumeText itself fails
+  // open to the raw text, and this try/catch guards the DB write. If it does
+  // fail (cleanedResumeText stays null), the interview prompt builders fall
+  // back to parsedResumeText.
+  if (parsedText) {
+    try {
+      const candidateName =
+        [existing?.firstName, existing?.lastName].filter(Boolean).join(" ") ||
+        null;
+      const cleaned = await cleanResumeText(parsedText, candidateName);
+      await prisma.candidateProfile.update({
+        where: { userId: user.id },
+        data: { cleanedResumeText: cleaned },
+      });
+    } catch (cleanError) {
+      console.error(
+        "[clean-resume] Failed to clean uploaded resume:",
+        cleanError
+      );
+    }
+  }
 
   // Best-effort delete of the previous file (replace flow).
   if (existing?.resumeUrl && existing.resumeUrl !== path) {

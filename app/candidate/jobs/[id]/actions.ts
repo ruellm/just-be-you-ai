@@ -6,7 +6,6 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { applicationPath } from "@/lib/applications";
 import { generateQuestionsForApplication } from "@/lib/ai/generate-questions";
-import { cleanResumeText } from "@/lib/ai/clean-resume";
 
 const idSchema = z.string().min(1);
 
@@ -22,12 +21,7 @@ export async function applyToJob(rawJobId: string) {
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: user.id },
-    select: {
-      id: true,
-      parsedResumeText: true,
-      firstName: true,
-      lastName: true,
-    },
+    select: { id: true },
   });
   if (!profile) redirect("/candidate/profile/basic-info");
 
@@ -53,52 +47,20 @@ export async function applyToJob(rawJobId: string) {
     select: { id: true },
   });
 
-  // Two independent AI prep steps, run in parallel so the candidate only waits
-  // for the slower one. Neither may block Apply — each logs and continues on
-  // failure, and neither depends on the other:
-  //   1. Resume cleanup (Phase 2.4): strip PII/references from the parsed
-  //      resume → cleanedResumeText. Interview prompt builders fall back to
-  //      the raw parsedResumeText when this is missing, so a failure here
-  //      only means the raw text is used.
-  //   2. Question generation (3–8s) — an admin can regenerate later. It reads
-  //      the raw parsedResumeText, deliberately NOT the cleaned text.
-  await Promise.all([
-    (async () => {
-      if (!profile.parsedResumeText) return;
-      try {
-        // Name anchors "who the candidate is" so third-party people are
-        // stripped; null when the profile has no name yet.
-        const candidateName =
-          [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
-          null;
-        // cleanResumeText fails open (returns the raw text) — the try/catch
-        // here only guards the DB write.
-        const cleaned = await cleanResumeText(
-          profile.parsedResumeText,
-          candidateName
-        );
-        await prisma.candidateProfile.update({
-          where: { id: profile.id },
-          data: { cleanedResumeText: cleaned },
-        });
-      } catch (error) {
-        console.error(
-          `[clean-resume] Failed for application ${application.id}:`,
-          error
-        );
-      }
-    })(),
-    (async () => {
-      try {
-        await generateQuestionsForApplication(application.id);
-      } catch (error) {
-        console.error(
-          `[generate-questions] Failed for application ${application.id}:`,
-          error
-        );
-      }
-    })(),
-  ]);
+  // Question generation (3–8s) is fired as a detached background task — the
+  // candidate redirects to the interview page immediately and the persistent
+  // Node server finishes generation behind the scenes. Both prompt builders
+  // read questions live at interview start and fall back to their built-in
+  // question-pool guidance if generation hasn't finished (rare), so nothing
+  // blocks on it. The function itself no-ops if questions already exist, so a
+  // double-fire can't burn a second Claude call. (Resume cleanup no longer runs
+  // here — it happens once at resume upload; see profile/resume/actions.ts.)
+  void generateQuestionsForApplication(application.id).catch((error) => {
+    console.error(
+      `[generate-questions] Failed for application ${application.id}:`,
+      error
+    );
+  });
 
   redirect(`/candidate/applications/${application.id}/interview`);
 }

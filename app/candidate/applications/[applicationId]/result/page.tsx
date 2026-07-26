@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { RecommendationBadge, TierBadge } from "@/components/applications/Badges";
 import { FitEvaluation } from "@/components/applications/FitEvaluation";
 import { scoreToPercent } from "@/lib/applications";
+import { ensureAdvancedGraded } from "@/lib/elevenlabs/ensure-advanced-graded";
 import { ResultPending } from "./ResultPending";
 
 export default async function ResultPage({
@@ -51,6 +52,15 @@ export default async function ResultPage({
   if (!application.interviewResult) {
     if (application.status === "submitted" || application.status === "draft") {
       redirect(`/candidate/applications/${applicationId}/interview`);
+    }
+    // Phase 3.4 safety net: ResultPending's poll re-renders this component
+    // every 2s, so firing here (detached — never blocks the render) re-triggers
+    // advanced grading until the row lands. No-ops for basic-tier applications
+    // and while a grade is already in flight (guards inside).
+    if (application.status === "interview_completed") {
+      void ensureAdvancedGraded(applicationId).catch((error) =>
+        console.error("[advanced-grading] ensureAdvancedGraded failed:", error)
+      );
     }
     return <ResultPending />;
   }
