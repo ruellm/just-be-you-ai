@@ -14,7 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { LanguagesInput } from "@/components/profile/LanguagesInput";
-import { basicInfoSchema, type BasicInfoValues } from "../schemas";
+import { basicInfoSchema, FIELD_LIMITS, type BasicInfoValues } from "../schemas";
 import { saveBasicInfo } from "../actions";
 
 export function BasicInfoForm({
@@ -54,7 +54,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>First name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Juan" {...field} />
+                  <Input placeholder="Juan" maxLength={FIELD_LIMITS.name} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -67,7 +67,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Last name</FormLabel>
                 <FormControl>
-                  <Input placeholder="Dela Cruz" {...field} />
+                  <Input placeholder="Dela Cruz" maxLength={FIELD_LIMITS.name} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -80,7 +80,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Country of residence</FormLabel>
                 <FormControl>
-                  <Input placeholder="Philippines" {...field} />
+                  <Input placeholder="Philippines" maxLength={FIELD_LIMITS.location} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -93,7 +93,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>City</FormLabel>
                 <FormControl>
-                  <Input placeholder="Manila" {...field} />
+                  <Input placeholder="Manila" maxLength={FIELD_LIMITS.location} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -106,7 +106,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Phone</FormLabel>
                 <FormControl>
-                  <Input placeholder="+63 ..." {...field} />
+                  <Input placeholder="+63 ..." maxLength={FIELD_LIMITS.phone} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -121,6 +121,7 @@ export function BasicInfoForm({
                 <FormControl>
                   <Input
                     placeholder="https://linkedin.com/in/you"
+                    maxLength={FIELD_LIMITS.url}
                     {...field}
                   />
                 </FormControl>
@@ -138,6 +139,7 @@ export function BasicInfoForm({
                   <Input
                     inputMode="numeric"
                     placeholder="50000"
+                    maxLength={FIELD_LIMITS.salaryDigits}
                     {...field}
                   />
                 </FormControl>
@@ -152,7 +154,7 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Nationality</FormLabel>
                 <FormControl>
-                  <Input placeholder="Filipino" {...field} />
+                  <Input placeholder="Filipino" maxLength={FIELD_LIMITS.location} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -165,7 +167,12 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Total years of experience</FormLabel>
                 <FormControl>
-                  <Input inputMode="numeric" placeholder="5" {...field} />
+                  <Input
+                    inputMode="numeric"
+                    placeholder="5"
+                    maxLength={FIELD_LIMITS.yearsDigits}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -178,7 +185,11 @@ export function BasicInfoForm({
               <FormItem>
                 <FormLabel>Preferred role</FormLabel>
                 <FormControl>
-                  <Input placeholder="Frontend Engineer" {...field} />
+                  <Input
+                    placeholder="Frontend Engineer"
+                    maxLength={FIELD_LIMITS.preferredRole}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -196,6 +207,7 @@ export function BasicInfoForm({
                 id="languages-input"
                 value={field.value}
                 onChange={field.onChange}
+                maxLength={FIELD_LIMITS.language}
               />
               <FormMessage />
             </FormItem>

@@ -21,6 +21,7 @@ import {
   SkillCombobox,
   type SkillOption,
 } from "@/components/profile/SkillCombobox";
+import { FIELD_LIMITS } from "../schemas";
 import { addSkill, deleteCandidateSkill, updateSkillYears } from "./actions";
 
 export type CandidateSkillDTO = {
@@ -132,6 +133,7 @@ export function SkillsSection({
                 id="new-years"
                 inputMode="numeric"
                 placeholder="3"
+                maxLength={FIELD_LIMITS.yearsDigits}
                 value={newYears}
                 onChange={(e) => setNewYears(e.target.value)}
               />
@@ -202,6 +204,7 @@ export function SkillsSection({
             <Input
               id="edit-years"
               inputMode="numeric"
+              maxLength={FIELD_LIMITS.yearsDigits}
               value={editYears}
               onChange={(e) => setEditYears(e.target.value)}
             />

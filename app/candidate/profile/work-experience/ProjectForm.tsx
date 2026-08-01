@@ -19,7 +19,7 @@ import {
   ProjectSkillsPicker,
 } from "@/components/profile/ProjectSkillsPicker";
 import type { SkillOption } from "@/components/profile/SkillCombobox";
-import { projectSchema, type ProjectValues } from "../schemas";
+import { FIELD_LIMITS, projectSchema, type ProjectValues } from "../schemas";
 import { saveProject } from "./actions";
 import type { ProjectDTO } from "./WorkExperienceSection";
 
@@ -86,7 +86,11 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>Project name</FormLabel>
               <FormControl>
-                <Input placeholder="Internal dashboard" {...field} />
+                <Input
+                  placeholder="Internal dashboard"
+                  maxLength={FIELD_LIMITS.projectName}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -99,7 +103,11 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>URL</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com" {...field} />
+                <Input
+                  placeholder="https://example.com"
+                  maxLength={FIELD_LIMITS.url}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -155,7 +163,7 @@ export function ProjectForm({
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea rows={3} {...field} />
+                <Textarea rows={3} maxLength={FIELD_LIMITS.description} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

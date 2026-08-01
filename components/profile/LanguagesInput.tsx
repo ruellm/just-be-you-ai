@@ -12,11 +12,13 @@ export function LanguagesInput({
   onChange,
   id,
   placeholder = "Type a language and press Enter",
+  maxLength,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
   id?: string;
   placeholder?: string;
+  maxLength?: number;
 }) {
   const [draft, setDraft] = useState("");
 
@@ -50,6 +52,7 @@ export function LanguagesInput({
         id={id}
         value={draft}
         placeholder={placeholder}
+        maxLength={maxLength}
         onChange={(e) => setDraft(e.target.value)}
         onKeyDown={handleKeyDown}
         onBlur={() => add(draft)}

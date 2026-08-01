@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { summarySchema, type SummaryValues } from "../schemas";
+import { FIELD_LIMITS, summarySchema, type SummaryValues } from "../schemas";
 import { saveSummary } from "../actions";
 
 export function SummaryForm({ defaultValue }: { defaultValue: string }) {
@@ -48,7 +48,7 @@ export function SummaryForm({ defaultValue }: { defaultValue: string }) {
             <FormItem>
               <FormLabel>Profile summary</FormLabel>
               <FormControl>
-                <Textarea rows={6} {...field} />
+                <Textarea rows={6} maxLength={FIELD_LIMITS.summary} {...field} />
               </FormControl>
               <FormDescription>
                 Tell employers about yourself — your background, what you&apos;re

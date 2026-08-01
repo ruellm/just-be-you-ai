@@ -61,13 +61,21 @@ export async function updateSkillYears(
   const profileId = await getCandidateProfileId();
   if (!profileId) return { success: false, error: "You are not signed in." };
 
-  if (!/^\d*$/.test(years.trim())) {
-    return { success: false, fieldErrors: { yearsOfExperience: "Enter a whole number" } };
+  // Reuse the schema field so the digit + length rules stay in one place.
+  const parsedYears = candidateSkillSchema.shape.yearsOfExperience.safeParse(years);
+  if (!parsedYears.success) {
+    const message =
+      parsedYears.error.issues[0]?.message ?? "Enter a whole number";
+    return {
+      success: false,
+      error: message,
+      fieldErrors: { yearsOfExperience: message },
+    };
   }
 
   await prisma.candidateSkill.updateMany({
     where: { id, candidateProfileId: profileId },
-    data: { yearsOfExperience: toYears(years) },
+    data: { yearsOfExperience: toYears(parsedYears.data) },
   });
 
   revalidate();

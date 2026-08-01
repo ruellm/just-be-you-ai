@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import {
   EMPLOYMENT_TYPE_LABELS,
+  FIELD_LIMITS,
   workExperienceSchema,
   type EmploymentTypeValue,
   type WorkExperienceValues,
@@ -95,7 +96,11 @@ export function WorkExperienceForm({
               <FormItem>
                 <FormLabel>Position</FormLabel>
                 <FormControl>
-                  <Input placeholder="Software Engineer" {...field} />
+                  <Input
+                    placeholder="Software Engineer"
+                    maxLength={FIELD_LIMITS.position}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -108,7 +113,11 @@ export function WorkExperienceForm({
               <FormItem>
                 <FormLabel>Company</FormLabel>
                 <FormControl>
-                  <Input placeholder="Acme Inc." {...field} />
+                  <Input
+                    placeholder="Acme Inc."
+                    maxLength={FIELD_LIMITS.companyName}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -190,7 +199,7 @@ export function WorkExperienceForm({
             <FormItem>
               <FormLabel>Description</FormLabel>
               <FormControl>
-                <Textarea rows={4} {...field} />
+                <Textarea rows={4} maxLength={FIELD_LIMITS.description} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>

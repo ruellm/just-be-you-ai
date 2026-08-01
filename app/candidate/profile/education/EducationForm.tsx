@@ -14,7 +14,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { educationSchema, type EducationValues } from "../schemas";
+import { educationSchema, FIELD_LIMITS, type EducationValues } from "../schemas";
 import { saveEducation } from "./actions";
 import type { EducationDTO } from "./EducationSection";
 
@@ -77,7 +77,11 @@ export function EducationForm({
             <FormItem>
               <FormLabel>School / University</FormLabel>
               <FormControl>
-                <Input placeholder="University of the Philippines" {...field} />
+                <Input
+                  placeholder="University of the Philippines"
+                  maxLength={FIELD_LIMITS.school}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -91,7 +95,7 @@ export function EducationForm({
               <FormItem>
                 <FormLabel>Country</FormLabel>
                 <FormControl>
-                  <Input placeholder="Philippines" {...field} />
+                  <Input placeholder="Philippines" maxLength={FIELD_LIMITS.location} {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -104,7 +108,11 @@ export function EducationForm({
               <FormItem>
                 <FormLabel>Degree</FormLabel>
                 <FormControl>
-                  <Input placeholder="BS Computer Science" {...field} />
+                  <Input
+                    placeholder="BS Computer Science"
+                    maxLength={FIELD_LIMITS.degree}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -117,7 +125,11 @@ export function EducationForm({
               <FormItem>
                 <FormLabel>Field of study</FormLabel>
                 <FormControl>
-                  <Input placeholder="Computer Science" {...field} />
+                  <Input
+                    placeholder="Computer Science"
+                    maxLength={FIELD_LIMITS.fieldOfStudy}
+                    {...field}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
