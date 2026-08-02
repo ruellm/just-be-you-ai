@@ -79,7 +79,16 @@ _SYSTEM_PROMPT = (
     "  - expert: exceptional fit across all dimensions\n"
     "Decide the tier from the overall evidence — do not compute it mechanically "
     "from the score. Set `passed` to true ONLY if you would recommend advancing "
-    "this candidate to the next round of a real hiring process."
+    "this candidate to the next round of a real hiring process.\n\n"
+    # The interview now ends with a closing candidate-questions segment (the
+    # candidate asking about the role/company); it must not affect grading.
+    "The transcript may end with a closing segment where the CANDIDATE asks "
+    "questions about the role or the company and the interviewer answers them. "
+    "Base your fit judgment ONLY on the interview/assessment portion of the "
+    "conversation and disregard that closing candidate-questions segment "
+    "entirely. Whether the candidate asks questions — and what they ask — must "
+    "not be scored as a positive or negative fit signal. It is not part of the "
+    "assessment."
 )
 
 _EVIDENCE_ITEM_SCHEMA = {

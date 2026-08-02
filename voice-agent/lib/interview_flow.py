@@ -22,7 +22,9 @@ How it works (and why it's simpler than 2.2c):
     2.2c, we no longer suppress the auto-reply, so user turns are committed and
     emit the event).
   * End conditions: (a) the AI calls ``end_interview``; (b) the candidate
-    disconnects; (c) a per-job time cap (default 30 min) forces a graceful close.
+    disconnects; (c) a per-job time cap (default 30 min) forces a graceful close;
+    (d) prolonged candidate silence — a watcher nudges once ("Are you still
+    there?") then thanks them and ends via the same "completed" path as (a).
     In every case we build the transcript + fit-signals and hand them to
     ``save_result`` for real grading.
 """
@@ -32,6 +34,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, List, Literal, Optional
 
@@ -48,6 +51,18 @@ DEFAULT_MAX_MINUTES = 30
 WRAP_UP_LEAD_SECONDS = 5 * 60
 # Bound on how long we wait for the AI's closing speech to drain on a normal end.
 _IDLE_DRAIN_TIMEOUT = 10.0
+# Silence handling (requirement A1) — mirrors the advanced tier's turn-timeout
+# behavior. After the agent finishes a turn, if the candidate stays silent for
+# SILENCE_NUDGE_SECONDS we check in ONCE ("Are you still there?"); if the
+# silence continues for SILENCE_END_SECONDS more AFTER the nudge, we thank them
+# and end via the normal completion path (~15-18s of total silence). These are
+# deliberately patient so short natural pauses never trigger — tune here.
+SILENCE_NUDGE_SECONDS = 8.0
+SILENCE_END_SECONDS = 9.0
+_SILENCE_POLL_SECONDS = 1.0
+# Agent states during which the silence clock must NOT run (the agent itself is
+# busy — the candidate isn't expected to be talking).
+_AGENT_BUSY_STATES = ("initializing", "thinking", "speaking")
 # Cap on parsed-resume text injected into the system prompt.
 _MAX_RESUME_CHARS = 8000
 
@@ -89,11 +104,18 @@ How to conduct the interview:
 - If they say 'I don't know' or refuse: try ONE rephrase or a different angle. If they still can't answer, accept gracefully and move on.
 - Handle ambient noise and short pauses gracefully. If you're not sure they finished, wait. Do NOT jump in on a short pause.
 
-When to end:
+When to end the assessment:
 - When you have solid fit evidence across the important dimensions (usually within 5-10 minutes for clear cases).
 - When the candidate asks to stop.
 - When you've spent enough time and further probing won't add signal.
-- Always signal closing before ending: 'Alright, I think I have enough to work with — before we wrap up, is there anything you want to add?' Then thank them and call end_interview.
+- Always signal closing first: 'Alright, I think I have enough to work with — before we wrap up, is there anything you want to add?' After they respond, move into the closing questions phase below. Do not end the interview yet.
+
+Closing questions phase (after the assessment is complete, before ending the interview):
+- Ask whether the candidate has any questions for you: 'Before we wrap up, do you have any questions for me about the role or the company?'
+- Answer their questions using ONLY the role and company information provided in this prompt (job title, description, role overview, requirements, day-to-day, company name, ideal candidate profile, interviewer hints). Do not guess or invent anything beyond it.
+- If a question falls outside the information you have, do NOT improvise an answer. Warmly tell them you'll pass the question along to the team at {company} and they can follow up directly.
+- After answering a question, ask 'Is there anything else?' and keep answering until they have no more questions.
+- When they have no further questions, thank them warmly for their time and end the interview by calling end_interview.
 
 If asked if you're an AI:
 'Yes, I'm an AI interviewer, but everything you say is recorded and reviewed by real people at {company}. Happy to continue whenever you're ready.'"""
@@ -263,7 +285,15 @@ class InterviewFlow:
             instructions=build_system_prompt(ctx), on_end=self._request_end
         )
 
+        # Silence tracking (req A1) — see _silence_watch.
+        self._agent_state: str = "initializing"
+        self._user_speaking = False
+        self._silence_nudged = False
+        self._last_activity = time.monotonic()
+
         session.on("conversation_item_added", self._on_conversation_item)
+        session.on("agent_state_changed", self._on_agent_state)
+        session.on("user_state_changed", self._on_user_state)
 
     @property
     def fit_signals(self) -> List[Dict[str, Any]]:
@@ -286,6 +316,8 @@ class InterviewFlow:
 
     def detach(self) -> None:
         self.session.off("conversation_item_added", self._on_conversation_item)
+        self.session.off("agent_state_changed", self._on_agent_state)
+        self.session.off("user_state_changed", self._on_user_state)
 
     # ── transcript capture ───────────────────────────────────────────────────
 
@@ -318,6 +350,87 @@ class InterviewFlow:
             lines.append(f"{speaker}: {turn['text']}")
         return "\n".join(lines)
 
+    # ── silence handling (requirement A1) ────────────────────────────────────
+
+    def _on_agent_state(self, ev) -> None:
+        self._agent_state = str(getattr(ev, "new_state", "") or self._agent_state)
+        # Any agent state change means the conversation just moved (it started
+        # or finished a turn) — restart the silence clock from here.
+        self._last_activity = time.monotonic()
+
+    def _on_user_state(self, ev) -> None:
+        state = getattr(ev, "new_state", None)
+        if state == "speaking":
+            self._user_speaking = True
+            self._silence_nudged = False  # candidate is back — a later silence may nudge again
+            self._last_activity = time.monotonic()
+        elif state == "listening":
+            # Only a transition OUT of speaking counts as activity. The "away"
+            # state is exactly the silence we're measuring — never reset on it.
+            if self._user_speaking:
+                self._last_activity = time.monotonic()
+            self._user_speaking = False
+
+    async def _silence_watch(self) -> None:
+        """Nudge once on prolonged candidate silence, then end gracefully.
+
+        The clock only runs while the agent is quietly waiting (not thinking or
+        speaking) and the candidate is not speaking, so the agent's own turns
+        and short natural pauses never trigger it. ONE nudge per silence
+        episode; if the candidate speaks again the episode resets and a later
+        silence can nudge again.
+        """
+        while not self._ended.is_set():
+            await asyncio.sleep(_SILENCE_POLL_SECONDS)
+            if self._ended.is_set():
+                return
+            if self._agent_state in _AGENT_BUSY_STATES or self._user_speaking:
+                self._last_activity = time.monotonic()
+                continue
+            silent_for = time.monotonic() - self._last_activity
+            if not self._silence_nudged:
+                if silent_for >= SILENCE_NUDGE_SECONDS:
+                    self._silence_nudged = True
+                    logger.info(
+                        "Candidate silent for %.0fs; nudging once.", silent_for
+                    )
+                    try:
+                        await self.session.generate_reply(
+                            instructions=(
+                                "The candidate has not responded for a while. "
+                                "Gently check in with exactly one short line, "
+                                "like 'Are you still there?' Nothing else."
+                            )
+                        )
+                    except Exception:  # noqa: BLE001 — a failed nudge must not crash.
+                        logger.exception("Failed to speak the silence nudge.")
+                    self._last_activity = time.monotonic()
+            elif silent_for >= SILENCE_END_SECONDS:
+                logger.info(
+                    "Candidate still silent %.0fs after the nudge; ending.",
+                    silent_for,
+                )
+                await self._end_due_to_silence()
+                return
+
+    async def _end_due_to_silence(self) -> None:
+        """Thank the unresponsive candidate briefly, then end normally.
+
+        Routes through ``_request_end("completed")`` — the exact call the LLM's
+        ``end_interview`` tool makes — so the interview_completed status,
+        grading, and save all run exactly like a normal completion.
+        """
+        try:
+            handle = self.session.say(
+                "It seems we may have lost you, so I'll wrap things up here. "
+                "Thank you for your time today — the team will review our "
+                "conversation and be in touch. Take care!"
+            )
+            await handle.wait_for_playout()
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to speak the silence closing.")
+        self._request_end("completed")
+
     # ── the interview ────────────────────────────────────────────────────────
 
     async def run(self) -> None:
@@ -337,13 +450,17 @@ class InterviewFlow:
             )
         )
 
-        watcher = asyncio.create_task(self._time_cap_watch())
+        watchers = [
+            asyncio.create_task(self._time_cap_watch()),
+            asyncio.create_task(self._silence_watch()),
+        ]
         try:
             await self._ended.wait()
         finally:
-            watcher.cancel()
-            with contextlib.suppress(asyncio.CancelledError):
-                await watcher
+            for watcher in watchers:
+                watcher.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await watcher
 
         await self._graceful_close()
         logger.info(
