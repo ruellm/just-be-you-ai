@@ -6,8 +6,10 @@
     "Single source of truth for the weighted interview rubric. The TypeScript eval (lib/ai/evaluate-interview.ts) imports this file directly (resolveJsonModule); the Python eval (voice-agent/lib/evaluate.py) reads it from disk at load. Do NOT copy this rubric into either codebase.",
     "`weight` is a relative integer weight — consumers MUST normalize by the sum of all category weights (currently 90) when computing the composite. `weightPercent` is display-only (rounded).",
     "Each sub-criterion is scored 1-5 against its anchors: Below = 1-2, Meets = 3, Exceeds = 4-5.",
-    "Intended composite (implemented in a later session): categoryScore = mean of its sub-criterion scores (1-5); composite 0-100 = sum over categories of (weight / sumOfWeights) * ((categoryScore - 1) / 4) * 100.",
-    "`defaultMustHave` lists the sub-criterion keys hard-gated by default; Job.mustHaveCriteriaJson (null = this default set) overrides per job. Sub-criterion keys are globally unique across categories."
+    "Composite: categoryScore = mean of its sub-criterion scores (1-5). Two passing bars select how category scores map onto the 0-100 composite (Job.passingBar: 'selective' | 'standard'; null = 'selective'). selective (default): composite = sum over categories of (weight / sumOfWeights) * ((categoryScore - 1) / 4) * 100 — straight 'meets' (all 3s) = 50 = Fail. standard: piecewise-linear remap of the selective composite x: x <= 50 -> 1.4 * x; x > 50 -> 70 + 0.6 * (x - 50) — straight 'meets' = 70 = Pass, all-1s = 0, all-5s = 100. Composite is rounded half-up to 1 decimal BEFORE banding.",
+    "Hard gates (deterministic code, applied AFTER banding as verdict caps): communication category <= 20 on its own 0-100 scale ((categoryScore - 1) / 4 * 100, bar-independent) caps the verdict at 'fail'; any must-have sub-criterion scoring <= 2 caps it at 'borderline'; an integrity gate hook exists but is dormant (nothing triggers it yet). Fired gates are recorded in InterviewResult.gatesFiredJson.",
+    "`defaultMustHave` lists the sub-criterion keys hard-gated by default; Job.mustHaveCriteriaJson (null = this default set) overrides per job. Sub-criterion keys are globally unique across categories.",
+    "The scoring + decision engine is implemented identically in lib/ai/rubric.ts (TypeScript) and voice-agent/lib/rubric.py (Python) — if you change one, change the other."
   ],
   "scale": {
     "min": 1,

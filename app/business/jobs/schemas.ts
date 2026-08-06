@@ -1,6 +1,8 @@
 import { z } from "zod";
+import { ALL_SUB_CRITERION_KEYS } from "@/lib/ai/rubric";
 
 export const jobLevelSchema = z.enum(["entry", "novice", "advanced", "expert"]);
+export const jobPassingBarSchema = z.enum(["selective", "standard"]);
 export const jobWorkModeSchema = z.enum(["onsite", "remote", "hybrid"]);
 export const jobStatusSchema = z.enum(["open", "closed"]);
 export const jobVoiceAgentTypeSchema = z.enum(["basic", "advanced"]);
@@ -25,6 +27,17 @@ export const jobSchema = z
     passingCriteria: z.string().trim().max(5000),
     // Voice engine for this job's interviews. Stored/displayed only for now.
     voiceAgentType: jobVoiceAgentTypeSchema,
+    // Rubric passing curve ("selective" = default strict bar).
+    passingBar: jobPassingBarSchema,
+    // Must-have sub-criterion keys (hard-gated). Unknown keys are silently
+    // stripped against the rubric's known keys — the client only offers known
+    // ones, so anything else is stale/tampered input.
+    mustHaveCriteria: z
+      .array(z.string())
+      .max(ALL_SUB_CRITERION_KEYS.length * 2)
+      .transform((keys) =>
+        keys.filter((k) => ALL_SUB_CRITERION_KEYS.includes(k))
+      ),
     // Max interview duration in minutes. Blank = system default (30); else 5-60.
     interviewMaxMinutes: z
       .string()

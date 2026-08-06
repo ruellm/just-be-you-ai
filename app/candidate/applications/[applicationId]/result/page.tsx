@@ -4,9 +4,17 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { RecommendationBadge, TierBadge } from "@/components/applications/Badges";
 import { FitEvaluation } from "@/components/applications/FitEvaluation";
-import { scoreToPercent } from "@/lib/applications";
+import {
+  categoryImpression,
+  IMPRESSION_BADGE_CLASS,
+  IMPRESSION_LABELS,
+  parseRubricBreakdown,
+  scoreToPercent,
+} from "@/lib/applications";
+import { cn } from "@/lib/utils";
 import { ensureAdvancedGraded } from "@/lib/elevenlabs/ensure-advanced-graded";
 import { ResultPending } from "./ResultPending";
 
@@ -70,6 +78,12 @@ export default async function ResultPage({
   // prefer the graded flag, fall back to status for backward compatibility.
   const passed = result.passed || application.status === "passed";
 
+  // Rubric-scored result? (detected by data presence, not by date.) The
+  // candidate view of a rubric result is deliberately GENERALIZED: qualitative
+  // per-category impressions only — no numeric scores, no 1-5 values, no
+  // composite, no evidence quotes, no gate/must-have mechanics.
+  const breakdown = parseRubricBreakdown(result.rubricScoresJson);
+
   return (
     <div className="mx-auto max-w-2xl space-y-6 px-6 py-10">
       {/* Pass / needs-review banner */}
@@ -102,33 +116,68 @@ export default async function ResultPage({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex flex-wrap items-center gap-6">
+          {breakdown ? (
+            // Rubric result → qualitative impressions per category, no numbers.
             <div>
-              <p className="text-muted-foreground text-sm">Tier</p>
-              <TierBadge
-                tier={result.tier}
-                className="mt-1 px-3 py-1 text-base"
-              />
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Score</p>
-              <p className="mt-1 text-2xl font-semibold">
-                {scoreToPercent(result.score)}%
+              <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                How you came across
               </p>
+              <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                {breakdown.categories.map((category) => {
+                  const impression = categoryImpression(category.categoryScore);
+                  return (
+                    <li
+                      key={category.key}
+                      className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
+                    >
+                      <span>{category.displayName}</span>
+                      <Badge
+                        className={cn(
+                          "border-transparent",
+                          IMPRESSION_BADGE_CLASS[impression]
+                        )}
+                      >
+                        {IMPRESSION_LABELS[impression]}
+                      </Badge>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
-            <div>
-              <p className="text-muted-foreground text-sm">Recommendation</p>
-              <RecommendationBadge
-                recommendation={result.recommendation}
-                className="mt-1 px-3 py-1 text-base"
-              />
+          ) : (
+            // Old (pre-rubric) result → the existing tier/score/recommendation
+            // row, unchanged.
+            <div className="flex flex-wrap items-center gap-6">
+              <div>
+                <p className="text-muted-foreground text-sm">Tier</p>
+                <TierBadge
+                  tier={result.tier}
+                  className="mt-1 px-3 py-1 text-base"
+                />
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Score</p>
+                <p className="mt-1 text-2xl font-semibold">
+                  {scoreToPercent(result.score)}%
+                </p>
+              </div>
+              <div>
+                <p className="text-muted-foreground text-sm">Recommendation</p>
+                <RecommendationBadge
+                  recommendation={result.recommendation}
+                  className="mt-1 px-3 py-1 text-base"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <FitEvaluation
             fitSummary={result.fitSummary}
             strengthsJson={result.strengthsJson}
-            concernsJson={result.concernsJson}
+            // Rubric results: the candidate sees strengths but not the
+            // concerns list (business views still show it in full). Old
+            // (pre-rubric) results keep showing concerns as before.
+            concernsJson={breakdown ? null : result.concernsJson}
           />
 
           <p className="text-muted-foreground text-sm">

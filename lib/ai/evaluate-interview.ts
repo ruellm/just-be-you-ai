@@ -1,16 +1,22 @@
-// Phase 3.4 — real fit evaluation of an ADVANCED (ElevenLabs) interview.
+// Rubric evaluation of an ADVANCED (ElevenLabs) interview — the TypeScript
+// twin of the Python evaluator the basic (LiveKit) path runs
+// (voice-agent/lib/evaluate.py), kept as close to byte-identical as practical:
+// same Claude model, same system prompt (built from shared/interview-rubric.json
+// via lib/ai/rubric.ts), same forced submit_evaluation tool schema, same
+// user-content assembly (section order, truncation caps, N/A fallbacks), same
+// 2-attempt retry, and the same neutral fallback so the caller can ALWAYS
+// write an interview_results row.
 //
-// This is a faithful TypeScript port of the Python evaluation the basic
-// (LiveKit) path runs — voice-agent/lib/evaluate.py — kept as close to
-// byte-identical as practical: same Claude model, same system prompt, same
-// forced submit_evaluation tool schema, same user-content assembly (section
-// order, truncation caps, N/A fallbacks), same 2-attempt retry, and the same
-// neutral fallback so the caller can ALWAYS write an interview_results row.
+// The model produces ONLY the per-sub-criterion 1-5 scores (+ evidence quotes)
+// and the human-readable pieces (fit_summary/strengths/concerns/
+// recommendation). Everything decision-shaped — category scores, the 0-100
+// composite via the job's passing bar, the verdict band, hard gates, and the
+// legacy passed/tier/score fields — is computed DETERMINISTICALLY by
+// rubric.ts#decideOutcome, never by the model.
 //
 // The output keeps the Python snake_case field names (fit_score, fit_summary…)
-// because those ARE the tool-input keys Claude returns; the grading
-// orchestrator maps them onto the camelCase InterviewResult columns exactly
-// like save_result.py does.
+// because the grading orchestrator maps them onto the camelCase
+// InterviewResult columns exactly like save_result.py does.
 //
 // If voice-agent/lib/evaluate.py changes, mirror it here.
 //
@@ -22,14 +28,28 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
 import type { InterviewApplication } from "@/lib/ai/load-interview-context";
+import {
+  ALL_SUB_CRITERION_KEYS,
+  buildRubricPromptBlock,
+  buildRubricScoresJson,
+  buildRubricScoresToolSchema,
+  decideOutcome,
+  resolveMustHaveKeys,
+  resolvePassingBar,
+  type GateFired,
+  type RubricScores,
+  type Verdict,
+} from "@/lib/ai/rubric";
 
 // Same model as the Python evaluator (EVAL_MODEL in evaluate.py) and the
 // Phase 2.1 question generator.
 const EVAL_MODEL = QUESTION_MODEL; // "claude-sonnet-4-6"
 const MAX_RESUME_CHARS = 8000;
 const MAX_RETRIES = 2; // total attempts at the structured call before falling back
+// 20 sub-scores with evidence quotes + the qualitative summary need headroom.
+const MAX_TOKENS = 4000;
 
-// ── output schema (mirrors evaluate.py's Pydantic models) ────────────────────
+// ── output schemas ───────────────────────────────────────────────────────────
 
 const evidenceItemSchema = z.object({
   dimension: z.string(), // e.g. "technical_depth", "communication", "motivation"
@@ -37,10 +57,16 @@ const evidenceItemSchema = z.object({
   impact: z.enum(["positive", "negative"]),
 });
 
-const evaluationResultSchema = z.object({
-  fit_score: z.number().min(0).max(1),
-  tier: z.enum(["entry", "novice", "advanced", "expert"]),
-  passed: z.boolean(),
+const subScoreSchema = z.object({
+  score: z.number().int().min(1).max(5),
+  evidence: z.string().nullable(),
+});
+
+// What the MODEL returns via the forced tool. The decision-shaped fields
+// (composite/verdict/passed/tier/score) are deliberately absent — they are
+// computed in code from rubric_scores.
+const modelOutputSchema = z.object({
+  rubric_scores: z.record(z.string(), subScoreSchema),
   fit_summary: z.string(), // one paragraph, ~3-5 sentences
   strengths: z.array(evidenceItemSchema).default([]),
   concerns: z.array(evidenceItemSchema).default([]),
@@ -48,7 +74,23 @@ const evaluationResultSchema = z.object({
 });
 
 export type EvidenceItem = z.infer<typeof evidenceItemSchema>;
-export type EvaluationResult = z.infer<typeof evaluationResultSchema>;
+
+// What the grading orchestrator persists. Legacy fields keep their existing
+// names/semantics (backward-compatible displays); the rubric fields are null
+// exactly when the evaluation fell back (no rubric scoring happened).
+export interface EvaluationResult {
+  fit_score: number; // legacy 0-1 `score` column = composite/100
+  tier: "entry" | "novice" | "advanced" | "expert";
+  passed: boolean; // verdict is pass/strong_pass
+  fit_summary: string;
+  strengths: EvidenceItem[];
+  concerns: EvidenceItem[];
+  recommendation: "hire" | "consider" | "pass";
+  rubric_scores_json: Record<string, unknown> | null;
+  composite_score: number | null; // 0-100, per the job's passing bar
+  verdict: Verdict | null;
+  gates_fired: GateFired[] | null;
+}
 
 /** Neutral result used when the Claude call fails (mirrors fallback_evaluation). */
 export function fallbackEvaluation(): EvaluationResult {
@@ -60,37 +102,48 @@ export function fallbackEvaluation(): EvaluationResult {
     strengths: [],
     concerns: [],
     recommendation: "consider",
+    rubric_scores_json: null,
+    composite_score: null,
+    verdict: null,
+    gates_fired: null,
   };
 }
 
-// ── the Claude call (system prompt + tool schema verbatim from evaluate.py) ──
+// ── the Claude call (system prompt + tool schema mirrored in evaluate.py) ────
 
 const SYSTEM_PROMPT =
-  "You are grading a job interview to determine candidate FIT for the specific " +
-  "role described. Your job is NOT to grade quiz answers. Judge whether this " +
-  "candidate would be effective in this specific job based on everything you " +
-  "know: their resume, their profile, the job requirements, the ideal candidate " +
-  "profile, the passing criteria, the interview transcript, and the fit signals " +
-  "the interviewer noted in real-time. Be honest and direct. If the candidate is " +
-  "a poor fit, say so clearly. If they're strong, say so clearly. Base your " +
-  "judgment on evidence, not sympathy.\n\n" +
-  "Tier maps to overall fit level:\n" +
-  "  - entry: minimal fit / clearly not ready\n" +
-  "  - novice: some fit signals but significant gaps\n" +
-  "  - advanced: strong fit with minor concerns\n" +
-  "  - expert: exceptional fit across all dimensions\n" +
-  "Decide the tier from the overall evidence — do not compute it mechanically " +
-  "from the score. Set `passed` to true ONLY if you would recommend advancing " +
-  "this candidate to the next round of a real hiring process.\n\n" +
-  // Advanced-path addition (not yet in evaluate.py): the transcript now ends
-  // with a closing candidate-questions segment that must not affect grading.
+  "You are grading a voice-only job interview for the specific role described, " +
+  "scoring the candidate against a fixed rubric. Score STRICTLY against the " +
+  "rubric anchors below — not against vibes or your own standards. Be honest " +
+  "and direct; base every score on evidence from the transcript, not sympathy.\n\n" +
+  "SCORING SCALE — every sub-criterion gets an integer score 1-5:\n" +
+  "  1-2 = Below the anchor\n" +
+  "  3   = Meets the anchor\n" +
+  "  4-5 = Exceeds the anchor\n\n" +
+  "RUBRIC:\n\n" +
+  buildRubricPromptBlock() +
+  "\n\n" +
+  "EVIDENCE RULES:\n" +
+  "- For every sub-criterion, `evidence` is a short verbatim excerpt from the " +
+  "transcript (the candidate's own words) that justifies the score.\n" +
+  "- NEVER fabricate, embellish, or paraphrase a quote that is not actually in " +
+  "the transcript. If the interview genuinely produced no evidence for a " +
+  "sub-criterion, set its `evidence` to null and score conservatively — a " +
+  "sub-criterion with no evidence must not score above 3.\n\n" +
+  "ATTRIBUTE-BLIND GRADING:\n" +
+  "Ignore the candidate's name, accent, dialect, gender, age, ethnicity, " +
+  "nationality, and every other personal attribute. Grade only what was " +
+  "demonstrated: the content of the answers and how clearly the ideas were " +
+  "communicated. Imperfect grammar or a non-native accent is NOT a " +
+  "communication weakness — clarity of ideas is what counts.\n\n" +
+  "Alongside the rubric scores, also produce the human-readable summary: " +
+  "fit_summary (one paragraph, 3-5 sentences, on overall fit for THIS role), " +
+  "strengths (2-5 positive evidence items), concerns (0-5 negative evidence " +
+  "items), and recommendation (hire / consider / pass).\n\n" +
   "The transcript may end with a closing segment where the CANDIDATE asks " +
   "questions about the role or the company and the interviewer answers them. " +
-  "Base your fit judgment ONLY on the interview/assessment portion of the " +
-  "conversation and disregard that closing candidate-questions segment " +
-  "entirely. Whether the candidate asks questions — and what they ask — must " +
-  "not be scored as a positive or negative fit signal. It is not part of the " +
-  "assessment.";
+  "Disregard that closing segment entirely — do not score it under any " +
+  "sub-criterion, positively or negatively.";
 
 const EVIDENCE_ITEM_SCHEMA = {
   type: "object",
@@ -112,22 +165,11 @@ const EVIDENCE_ITEM_SCHEMA = {
 
 const EVAL_TOOL: Anthropic.Tool = {
   name: "submit_evaluation",
-  description: "Submit your structured fit evaluation of the candidate.",
+  description: "Submit your structured rubric evaluation of the candidate.",
   input_schema: {
     type: "object",
     properties: {
-      fit_score: {
-        type: "number",
-        description: "Overall fit, 0.0 (no fit) to 1.0 (perfect fit).",
-      },
-      tier: {
-        type: "string",
-        enum: ["entry", "novice", "advanced", "expert"],
-      },
-      passed: {
-        type: "boolean",
-        description: "True only if you'd advance them to the next round.",
-      },
+      rubric_scores: buildRubricScoresToolSchema(),
       fit_summary: {
         type: "string",
         description: "One paragraph (3-5 sentences) on overall fit.",
@@ -148,9 +190,7 @@ const EVAL_TOOL: Anthropic.Tool = {
       },
     },
     required: [
-      "fit_score",
-      "tier",
-      "passed",
+      "rubric_scores",
       "fit_summary",
       "strengths",
       "concerns",
@@ -258,10 +298,11 @@ function buildUserContent(
 }
 
 /**
- * Grade an interview with Claude — the advanced-path twin of
+ * Grade an interview against the shared rubric — the advanced-path twin of
  * evaluate.py#evaluate_interview. Never throws: any failure (missing key,
  * API error, invalid tool output after retry) degrades to the same neutral
- * fallback the Python side uses, so the caller always has a row to write.
+ * fallback the Python side uses (rubric fields null), so the caller always
+ * has a row to write.
  *
  * `transcript` must be in the stored `AI:`/`Candidate:` line format (see
  * lib/elevenlabs/fetch-transcript.ts).
@@ -277,6 +318,8 @@ export async function evaluateInterview(
   }
 
   const userContent = buildUserContent(context, transcript, fitSignals);
+  const passingBar = resolvePassingBar(context.job.passingBar);
+  const mustHaveKeys = resolveMustHaveKeys(context.job.mustHaveCriteriaJson);
 
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {
@@ -284,7 +327,7 @@ export async function evaluateInterview(
       const client = getAnthropicClient();
       const response = await client.messages.create({
         model: EVAL_MODEL,
-        max_tokens: 1500,
+        max_tokens: MAX_TOKENS,
         system: SYSTEM_PROMPT,
         tools: [EVAL_TOOL],
         tool_choice: { type: "tool", name: "submit_evaluation" },
@@ -297,13 +340,43 @@ export async function evaluateInterview(
       if (!toolUse || toolUse.type !== "tool_use") {
         throw new Error("No submit_evaluation tool_use block in response.");
       }
-      const result = evaluationResultSchema.parse(toolUse.input);
+      const modelOutput = modelOutputSchema.parse(toolUse.input);
+
+      // Every rubric sub-criterion must be scored; a missing key fails the
+      // attempt (and triggers the retry). Blank evidence normalizes to null.
+      const scores: RubricScores = {};
+      for (const key of ALL_SUB_CRITERION_KEYS) {
+        const sub = modelOutput.rubric_scores[key];
+        if (!sub) {
+          throw new Error(`rubric_scores is missing sub-criterion "${key}".`);
+        }
+        scores[key] = {
+          score: sub.score,
+          evidence: sub.evidence?.trim() ? sub.evidence.trim() : null,
+        };
+      }
+
+      const decision = decideOutcome(scores, { passingBar, mustHaveKeys });
+
       console.log(
         `[evaluate-interview] Evaluation ok (attempt ${attempt}): ` +
-          `tier=${result.tier} score=${result.fit_score.toFixed(2)} ` +
-          `passed=${result.passed} rec=${result.recommendation}`
+          `composite=${decision.composite} bar=${decision.passingBar} ` +
+          `verdict=${decision.verdict} gates=${decision.gatesFired.length} ` +
+          `passed=${decision.passed} rec=${modelOutput.recommendation}`
       );
-      return result;
+      return {
+        fit_score: decision.legacyScore,
+        tier: decision.tier,
+        passed: decision.passed,
+        fit_summary: modelOutput.fit_summary,
+        strengths: modelOutput.strengths,
+        concerns: modelOutput.concerns,
+        recommendation: modelOutput.recommendation,
+        rubric_scores_json: buildRubricScoresJson(scores, decision),
+        composite_score: decision.composite,
+        verdict: decision.verdict,
+        gates_fired: decision.gatesFired,
+      };
     } catch (error) {
       lastError = error;
       console.warn(`[evaluate-interview] Evaluation attempt ${attempt} failed:`, error);

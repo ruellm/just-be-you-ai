@@ -19,6 +19,7 @@
 // concurrently. (This runs on a persistent Node/PM2 server, so module state
 // lives long enough to be a real lock.)
 
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { loadInterviewApplication } from "@/lib/ai/load-interview-context";
 import { evaluateInterview } from "@/lib/ai/evaluate-interview";
@@ -102,6 +103,16 @@ async function grade(applicationId: string): Promise<void> {
         concernsJson: evaluation.concerns,
         recommendation: evaluation.recommendation,
         fitSignalsJson: [],
+        // Rubric fields — null (column default) when the evaluation fell back,
+        // so a null rubricScoresJson marks "not rubric-scored" downstream.
+        rubricScoresJson: evaluation.rubric_scores_json
+          ? (evaluation.rubric_scores_json as Prisma.InputJsonValue)
+          : undefined,
+        compositeScore: evaluation.composite_score,
+        verdict: evaluation.verdict,
+        gatesFiredJson: evaluation.gates_fired
+          ? (evaluation.gates_fired as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
     }),
     prisma.application.update({
@@ -112,7 +123,8 @@ async function grade(applicationId: string): Promise<void> {
 
   console.log(
     `[advanced-grading] Interview saved for application ${applicationId} ` +
-      `(tier=${evaluation.tier}, score=${evaluation.fit_score.toFixed(2)}, ` +
+      `(composite=${evaluation.composite_score ?? "n/a"}, verdict=${evaluation.verdict ?? "n/a"}, ` +
+      `gates=${evaluation.gates_fired?.length ?? 0}, tier=${evaluation.tier}, ` +
       `${evaluation.passed ? "passed" : "failed"}, rec=${evaluation.recommendation}, ` +
       `${evaluation.strengths.length} strengths, ${evaluation.concerns.length} concerns)`
   );

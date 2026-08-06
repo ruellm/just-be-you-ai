@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { resolveMustHaveKeys } from "@/lib/ai/rubric";
 import { JobForm } from "../../JobForm";
 import type { JobValues } from "../../schemas";
 
@@ -44,6 +45,10 @@ export default async function EditJobPage({
       job.interviewMaxMinutes != null ? String(job.interviewMaxMinutes) : "",
     // DB column is a plain String — narrow to the schema enum defensively.
     voiceAgentType: job.voiceAgentType === "advanced" ? "advanced" : "basic",
+    passingBar: job.passingBar === "standard" ? "standard" : "selective",
+    // null (or malformed) → the rubric's default set, pre-checked; an explicit
+    // stored array (including []) is respected as-is.
+    mustHaveCriteria: resolveMustHaveKeys(job.mustHaveCriteriaJson),
   };
 
   return (

@@ -57,6 +57,11 @@ class JobContext(BaseModel):
     passing_criteria: Optional[str] = None
     # Max interview duration in minutes (Phase 2.3). None = use system default (30).
     interview_max_minutes: Optional[int] = None
+    # Rubric scoring config (see shared/interview-rubric.json + lib/rubric.py):
+    # passing curve ("selective" | "standard"; None = "selective") and the
+    # must-have sub-criterion keys (None = the rubric's defaultMustHave set).
+    passing_bar: Optional[str] = None
+    must_have_criteria: Optional[List[str]] = None
     company_name: str
 
 

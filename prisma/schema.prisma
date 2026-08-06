@@ -301,8 +301,13 @@ model Job {
 
   // Rubric must-have sub-criterion keys for this job (see
   // shared/interview-rubric.json). null = use the rubric's defaultMustHave set.
-  // No UI yet — nothing reads or writes this column so far.
+  // No UI yet — the rubric decision engine reads it at grading time.
   mustHaveCriteriaJson Json?
+
+  // Which passing curve maps rubric category scores onto the 0-100 composite:
+  // "selective" (straight 3s = 50 = fail) | "standard" (straight 3s = 70 =
+  // pass). null = "selective". See shared/interview-rubric.json notes.
+  passingBar String?
 
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   skills       JobSkill[]

@@ -75,6 +75,8 @@ job:jobs(
     idealCandidateProfile,
     passingCriteria,
     interviewMaxMinutes,
+    passingBar,
+    mustHaveCriteriaJson,
     company:companies(name)
 ),
 questions:generated_questions(
@@ -180,6 +182,12 @@ def _build_candidate(row: Dict[str, Any]) -> CandidateContext:
 
 def _build_job(row: Dict[str, Any]) -> JobContext:
     company = row.get("company") or {}
+    # mustHaveCriteriaJson is a free-form JSONB column — only accept a clean
+    # list of strings; anything else degrades to None (= rubric default set)
+    # instead of failing the whole context load.
+    must_have = row.get("mustHaveCriteriaJson")
+    if not (isinstance(must_have, list) and all(isinstance(k, str) for k in must_have)):
+        must_have = None
     return JobContext(
         title=row.get("title") or "",
         description=row.get("description"),
@@ -192,6 +200,8 @@ def _build_job(row: Dict[str, Any]) -> JobContext:
         ideal_candidate_profile=row.get("idealCandidateProfile"),
         passing_criteria=row.get("passingCriteria"),
         interview_max_minutes=row.get("interviewMaxMinutes"),
+        passing_bar=row.get("passingBar"),
+        must_have_criteria=must_have,
         company_name=company.get("name") or "the company",
     )
 

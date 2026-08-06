@@ -9,9 +9,11 @@ import {
   RecommendationBadge,
   StatusBadge,
   TierBadge,
+  VerdictBadge,
 } from "@/components/applications/Badges";
 import { FitEvaluation } from "@/components/applications/FitEvaluation";
-import { scoreToPercent } from "@/lib/applications";
+import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
+import { parseRubricBreakdown, scoreToPercent } from "@/lib/applications";
 import { ViewResumeButton } from "./ViewResumeButton";
 
 function monthRange(start: Date | null, end: Date | null, present: boolean) {
@@ -105,52 +107,83 @@ export default async function CandidateDetailPage({
           <CardTitle className="text-base">Interview results</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {applications.map((app) => (
-            <div key={app.id} className="rounded-md border p-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{app.job.title}</span>
-                <StatusBadge status={app.status} />
+          {applications.map((app) => {
+            // Rubric-scored result? (detected by data presence, not by date)
+            const hasRubric =
+              app.interviewResult != null &&
+              parseRubricBreakdown(app.interviewResult.rubricScoresJson) != null;
+            return (
+              <div key={app.id} className="rounded-md border p-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">{app.job.title}</span>
+                  <StatusBadge status={app.status} />
+                  {app.interviewResult ? (
+                    <>
+                      <RecommendationBadge
+                        recommendation={app.interviewResult.recommendation}
+                      />
+                      {hasRubric ? (
+                        // Verdict + composite carry the rubric outcome; the
+                        // legacy tier/percent would duplicate them.
+                        <>
+                          <VerdictBadge verdict={app.interviewResult.verdict} />
+                          {app.interviewResult.compositeScore != null ? (
+                            <span className="text-muted-foreground text-sm">
+                              {app.interviewResult.compositeScore} / 100
+                            </span>
+                          ) : null}
+                        </>
+                      ) : (
+                        <>
+                          <TierBadge tier={app.interviewResult.tier} />
+                          <span className="text-muted-foreground text-sm">
+                            {scoreToPercent(app.interviewResult.score)}%
+                          </span>
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </div>
                 {app.interviewResult ? (
                   <>
-                    <RecommendationBadge
-                      recommendation={app.interviewResult.recommendation}
-                    />
-                    <TierBadge tier={app.interviewResult.tier} />
-                    <span className="text-muted-foreground text-sm">
-                      {scoreToPercent(app.interviewResult.score)}%
-                    </span>
-                  </>
-                ) : null}
-              </div>
-              {app.interviewResult ? (
-                <>
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Completed{" "}
-                    {app.interviewResult.completedAt.toLocaleDateString()}
-                  </p>
-                  <div className="mt-3">
-                    <FitEvaluation
-                      fitSummary={app.interviewResult.fitSummary}
-                      strengthsJson={app.interviewResult.strengthsJson}
-                      concernsJson={app.interviewResult.concernsJson}
-                    />
-                  </div>
-                  <details className="mt-3">
-                    <summary className="cursor-pointer text-sm font-medium">
-                      View transcript
-                    </summary>
-                    <p className="text-muted-foreground mt-2 text-sm whitespace-pre-line">
-                      {app.interviewResult.transcript}
+                    <p className="text-muted-foreground mt-1 text-xs">
+                      Completed{" "}
+                      {app.interviewResult.completedAt.toLocaleDateString()}
                     </p>
-                  </details>
-                </>
-              ) : (
-                <p className="text-muted-foreground mt-1 text-xs">
-                  Interview not completed yet.
-                </p>
-              )}
-            </div>
-          ))}
+                    {hasRubric ? (
+                      <div className="mt-3">
+                        <RubricBreakdown
+                          rubricScoresJson={app.interviewResult.rubricScoresJson}
+                          compositeScore={app.interviewResult.compositeScore}
+                          verdict={app.interviewResult.verdict}
+                          gatesFiredJson={app.interviewResult.gatesFiredJson}
+                        />
+                      </div>
+                    ) : null}
+                    <div className="mt-3">
+                      <FitEvaluation
+                        fitSummary={app.interviewResult.fitSummary}
+                        strengthsJson={app.interviewResult.strengthsJson}
+                        concernsJson={app.interviewResult.concernsJson}
+                      />
+                    </div>
+                    <details className="mt-3">
+                      <summary className="cursor-pointer text-sm font-medium">
+                        View transcript
+                      </summary>
+                      <p className="text-muted-foreground mt-2 text-sm whitespace-pre-line">
+                        {app.interviewResult.transcript}
+                      </p>
+                    </details>
+                  </>
+                ) : (
+                  <p className="text-muted-foreground mt-1 text-xs">
+                    Interview not completed yet.
+                  </p>
+                )}
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

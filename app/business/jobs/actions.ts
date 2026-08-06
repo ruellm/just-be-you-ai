@@ -33,6 +33,10 @@ function jobData(d: JobValues) {
     passingCriteria: nullify(d.passingCriteria),
     interviewMaxMinutes: toIntOrNull(d.interviewMaxMinutes),
     voiceAgentType: d.voiceAgentType,
+    passingBar: d.passingBar,
+    // Stored as the explicit key array (an empty array = "no must-haves" is a
+    // deliberate choice, distinct from NULL = rubric default set).
+    mustHaveCriteriaJson: d.mustHaveCriteria,
   };
 }
 

@@ -121,6 +121,12 @@ def save_interview_result(
             "concernsJson": _evidence_to_json(evaluation.concerns),
             "recommendation": evaluation.recommendation,
             "fitSignalsJson": fit_signals,
+            # Rubric fields — None (→ SQL NULL) when the evaluation fell back,
+            # so a null rubricScoresJson marks "not rubric-scored" downstream.
+            "rubricScoresJson": evaluation.rubric_scores_json,
+            "compositeScore": evaluation.composite_score,
+            "verdict": evaluation.verdict,
+            "gatesFiredJson": evaluation.gates_fired,
         }
     ).execute()
 
@@ -132,9 +138,11 @@ def save_interview_result(
     ).eq("id", application_id).execute()
 
     logger.info(
-        "Interview saved for application %s (tier=%s, score=%.2f, %s, rec=%s, "
-        "%d strengths, %d concerns, %d signals)",
+        "Interview saved for application %s (composite=%s, verdict=%s, tier=%s, "
+        "score=%.2f, %s, rec=%s, %d strengths, %d concerns, %d signals)",
         application_id,
+        evaluation.composite_score,
+        evaluation.verdict,
         evaluation.tier,
         evaluation.fit_score,
         "passed" if evaluation.passed else "failed",

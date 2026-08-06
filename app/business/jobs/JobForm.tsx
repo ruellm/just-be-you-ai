@@ -22,9 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectSkillsPicker } from "@/components/profile/ProjectSkillsPicker";
 import type { SkillOption } from "@/components/profile/SkillCombobox";
 import { LEVELS, LEVEL_LABELS, WORK_MODES, WORK_MODE_LABELS } from "@/lib/jobs";
+import { RUBRIC } from "@/lib/ai/rubric";
+import { cn } from "@/lib/utils";
 import { jobSchema, type JobValues } from "./schemas";
 import { createJob, updateJob } from "./actions";
 
@@ -46,11 +49,27 @@ export const EMPTY_JOB: JobValues = {
   passingCriteria: "",
   interviewMaxMinutes: "",
   voiceAgentType: "basic",
+  passingBar: "selective",
+  // Pre-check the rubric's default must-have set for new jobs.
+  mustHaveCriteria: [...RUBRIC.defaultMustHave],
 };
 
 const VOICE_AGENT_OPTIONS = [
   { value: "basic", label: "Basic AI Interview" },
   { value: "advanced", label: "Advanced AI Interview" },
+] as const;
+
+const PASSING_BAR_OPTIONS = [
+  {
+    value: "selective",
+    label: "Selective",
+    help: "Only strong candidates pass. A candidate who merely meets expectations across the board will not pass. Best when you can be choosy.",
+  },
+  {
+    value: "standard",
+    label: "Standard",
+    help: "Candidates who solidly meet expectations pass. Best when the role is harder to fill.",
+  },
 ] as const;
 
 export function JobForm({
@@ -387,6 +406,83 @@ export function JobForm({
                     {...field}
                   />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="passingBar"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Passing bar</FormLabel>
+                <FormControl>
+                  <div role="radiogroup" className="grid gap-2 sm:grid-cols-2">
+                    {PASSING_BAR_OPTIONS.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="radio"
+                        aria-checked={field.value === option.value}
+                        onClick={() => field.onChange(option.value)}
+                        className={cn(
+                          "rounded-md border p-3 text-left transition-colors",
+                          field.value === option.value
+                            ? "border-primary ring-primary ring-1"
+                            : "hover:bg-muted/50"
+                        )}
+                      >
+                        <span className="text-sm font-medium">{option.label}</span>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          {option.help}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="mustHaveCriteria"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Must-have criteria</FormLabel>
+                <p className="text-muted-foreground text-sm">
+                  If a candidate scores very low on a must-have skill, they
+                  cannot receive a Pass regardless of their overall score.
+                </p>
+                <div className="space-y-2">
+                  {RUBRIC.categories.map((category) => (
+                    <div key={category.key} className="rounded-md border p-3">
+                      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                        {category.displayName}
+                      </p>
+                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                        {category.subCriteria.map((sub) => (
+                          <label
+                            key={sub.key}
+                            className="flex cursor-pointer items-center gap-2 text-sm"
+                          >
+                            <Checkbox
+                              checked={field.value.includes(sub.key)}
+                              onCheckedChange={(checked) =>
+                                field.onChange(
+                                  checked === true
+                                    ? [...field.value, sub.key]
+                                    : field.value.filter((k) => k !== sub.key)
+                                )
+                              }
+                            />
+                            {sub.displayName}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
                 <FormMessage />
               </FormItem>
             )}
