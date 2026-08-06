@@ -299,6 +299,11 @@ model Job {
   // candidate runs the existing basic voice path.
   voiceAgentType String @default("basic")
 
+  // Rubric must-have sub-criterion keys for this job (see
+  // shared/interview-rubric.json). null = use the rubric's defaultMustHave set.
+  // No UI yet — nothing reads or writes this column so far.
+  mustHaveCriteriaJson Json?
+
   company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   skills       JobSkill[]
   applications Application[]
@@ -373,6 +378,15 @@ model InterviewResult {
   concernsJson   Json    @default("[]") // list of EvidenceItem
   recommendation String  @default("consider") // "hire" | "consider" | "pass"
   fitSignalsJson Json    @default("[]") // raw signals the AI noted mid-interview (internal)
+
+  // Weighted-rubric scoring (see shared/interview-rubric.json). Nullable —
+  // nothing writes these yet (scoring lands in a later session); old rows and
+  // old-style results simply leave them null while the fit fields above keep
+  // working during the transition.
+  rubricScoresJson Json?  // per-category, per-sub-criterion 1-5 score + evidence quote
+  compositeScore   Float? // 0-100 weighted composite
+  verdict          String? // "strong_pass" | "pass" | "borderline" | "fail" (rubric scoreBands keys)
+  gatesFiredJson   Json?  // which must-have hard gates fired, if any
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

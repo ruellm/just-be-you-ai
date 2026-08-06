@@ -1,0 +1,246 @@
+{
+  "version": 1,
+  "key": "technical_developer_voice_v1",
+  "displayName": "Technical / Developer Interview Rubric (voice-only)",
+  "notes": [
+    "Single source of truth for the weighted interview rubric. The TypeScript eval (lib/ai/evaluate-interview.ts) imports this file directly (resolveJsonModule); the Python eval (voice-agent/lib/evaluate.py) reads it from disk at load. Do NOT copy this rubric into either codebase.",
+    "`weight` is a relative integer weight — consumers MUST normalize by the sum of all category weights (currently 90) when computing the composite. `weightPercent` is display-only (rounded).",
+    "Each sub-criterion is scored 1-5 against its anchors: Below = 1-2, Meets = 3, Exceeds = 4-5.",
+    "Intended composite (implemented in a later session): categoryScore = mean of its sub-criterion scores (1-5); composite 0-100 = sum over categories of (weight / sumOfWeights) * ((categoryScore - 1) / 4) * 100.",
+    "`defaultMustHave` lists the sub-criterion keys hard-gated by default; Job.mustHaveCriteriaJson (null = this default set) overrides per job. Sub-criterion keys are globally unique across categories."
+  ],
+  "scale": {
+    "min": 1,
+    "max": 5,
+    "bands": { "below": "1-2", "meets": "3", "exceeds": "4-5" }
+  },
+  "categories": [
+    {
+      "key": "technical_knowledge",
+      "displayName": "Technical Knowledge & Accuracy",
+      "weight": 30,
+      "weightPercent": 33.3,
+      "subCriteria": [
+        {
+          "key": "correctness",
+          "displayName": "Correctness",
+          "anchors": {
+            "below": "Factual errors or fundamental misconceptions in core answers.",
+            "meets": "Mostly accurate on core topics for the role, with only minor slips.",
+            "exceeds": "Consistently accurate, including on nuanced or tricky points; corrects imprecision unprompted."
+          }
+        },
+        {
+          "key": "depth",
+          "displayName": "Depth",
+          "anchors": {
+            "below": "Surface-level, buzzword answers with no underlying understanding.",
+            "meets": "Explains how and why for core concepts, not just definitions.",
+            "exceeds": "Explains internals, causes, and limitations beyond what was asked."
+          }
+        },
+        {
+          "key": "currency_best_practice",
+          "displayName": "Currency / Best-Practice",
+          "anchors": {
+            "below": "Presents outdated or deprecated practices as current.",
+            "meets": "Aware of current mainstream practice in their stack.",
+            "exceeds": "Up to date on modern practices and their trade-offs, including when NOT to apply them."
+          }
+        },
+        {
+          "key": "applied_knowledge",
+          "displayName": "Applied Knowledge",
+          "anchors": {
+            "below": "Cannot connect knowledge to real-world scenarios.",
+            "meets": "Applies concepts to realistic work examples when asked.",
+            "exceeds": "Draws on concrete production experience with outcomes and lessons learned."
+          }
+        }
+      ]
+    },
+    {
+      "key": "problem_solving",
+      "displayName": "Problem-Solving & Analytical Reasoning",
+      "weight": 20,
+      "weightPercent": 22.2,
+      "subCriteria": [
+        {
+          "key": "approach_structure",
+          "displayName": "Approach / Structure",
+          "anchors": {
+            "below": "Jumps to answers with no discernible method; guesses randomly.",
+            "meets": "Breaks problems into steps and clarifies the problem before solving.",
+            "exceeds": "Systematic decomposition; states assumptions and weighs alternatives before committing."
+          }
+        },
+        {
+          "key": "edge_case_awareness",
+          "displayName": "Edge-Case Awareness",
+          "anchors": {
+            "below": "Ignores edge cases and failure modes even when prompted.",
+            "meets": "Identifies common edge cases and failure modes.",
+            "exceeds": "Proactively probes boundaries, error paths, and unhappy paths without prompting."
+          }
+        },
+        {
+          "key": "adaptability",
+          "displayName": "Adaptability",
+          "anchors": {
+            "below": "Gets stuck when the problem shifts or a hint contradicts their approach.",
+            "meets": "Incorporates hints and changed constraints reasonably.",
+            "exceeds": "Fluidly revises their approach when new information arrives; not anchored to a first idea."
+          }
+        },
+        {
+          "key": "debugging_self_correction",
+          "displayName": "Debugging / Self-Correction",
+          "anchors": {
+            "below": "Does not notice, or will not admit, their own errors.",
+            "meets": "Catches and fixes their own mistakes when they surface.",
+            "exceeds": "Self-detects errors, reasons through the cause aloud, and corrects unprompted."
+          }
+        }
+      ]
+    },
+    {
+      "key": "system_design",
+      "displayName": "System / Solution Design",
+      "weight": 15,
+      "weightPercent": 16.7,
+      "subCriteria": [
+        {
+          "key": "architecture_thinking",
+          "displayName": "Architecture Thinking",
+          "anchors": {
+            "below": "No coherent picture of components, responsibilities, or data flow.",
+            "meets": "Outlines sensible components, responsibilities, and data flow.",
+            "exceeds": "Coherent end-to-end design including integration points, data, and failure considerations."
+          }
+        },
+        {
+          "key": "tradeoff_analysis",
+          "displayName": "Trade-off Analysis",
+          "anchors": {
+            "below": "Presents one option as universally correct; no awareness of costs.",
+            "meets": "Names the pros and cons of their chosen approach.",
+            "exceeds": "Compares alternatives against context-driven criteria (cost, complexity, team, timeline)."
+          }
+        },
+        {
+          "key": "scalability_reliability",
+          "displayName": "Scalability / Reliability",
+          "anchors": {
+            "below": "No consideration of load, failure, or growth.",
+            "meets": "Addresses obvious bottlenecks and basic failure handling.",
+            "exceeds": "Reasons about scale limits, degradation modes, and monitoring/recovery strategy."
+          }
+        },
+        {
+          "key": "requirements_alignment",
+          "displayName": "Requirements Alignment",
+          "anchors": {
+            "below": "Design ignores stated constraints or goals.",
+            "meets": "Solution matches the stated requirements.",
+            "exceeds": "Surfaces unstated requirements and constraints; right-sizes the solution to the actual need."
+          }
+        }
+      ]
+    },
+    {
+      "key": "communication",
+      "displayName": "Communication & Articulation",
+      "weight": 15,
+      "weightPercent": 16.7,
+      "subCriteria": [
+        {
+          "key": "clarity",
+          "displayName": "Clarity",
+          "anchors": {
+            "below": "Rambling or incoherent explanations; jargon without meaning.",
+            "meets": "Understandable, reasonably organized answers.",
+            "exceeds": "Crisp, well-structured explanations pitched to the listener's level."
+          }
+        },
+        {
+          "key": "think_aloud_quality",
+          "displayName": "Think-Aloud Quality",
+          "anchors": {
+            "below": "Goes silent or opaque while working; reasoning is invisible.",
+            "meets": "Shares their reasoning while working through problems.",
+            "exceeds": "Naturally narrates approach, assumptions, and decision points as they think."
+          }
+        },
+        {
+          "key": "responsiveness",
+          "displayName": "Responsiveness",
+          "anchors": {
+            "below": "Answers a different question than asked; misses conversational cues.",
+            "meets": "Answers the actual question; asks for clarification when unsure.",
+            "exceeds": "Engages precisely with what was asked, builds on the interviewer's framing, clarifies smartly."
+          }
+        },
+        {
+          "key": "technical_storytelling",
+          "displayName": "Technical Storytelling",
+          "anchors": {
+            "below": "Cannot describe their own past work coherently.",
+            "meets": "Relates past projects with context, their actions, and outcomes.",
+            "exceeds": "Specific, compelling narratives that make their own role, decisions, and impact clear."
+          }
+        }
+      ]
+    },
+    {
+      "key": "behavioral",
+      "displayName": "Behavioral & Collaboration Signals",
+      "weight": 10,
+      "weightPercent": 11.1,
+      "subCriteria": [
+        {
+          "key": "ownership",
+          "displayName": "Ownership",
+          "anchors": {
+            "below": "Blames others for failures; passive about outcomes.",
+            "meets": "Takes responsibility for their own work and mistakes.",
+            "exceeds": "Describes going beyond their scope to ensure outcomes; owns failures and the lessons taken."
+          }
+        },
+        {
+          "key": "collaboration_orientation",
+          "displayName": "Collaboration Orientation",
+          "anchors": {
+            "below": "Dismissive of teammates or team process (reviews, QA, planning).",
+            "meets": "Works constructively with others; values feedback.",
+            "exceeds": "Actively enables others — mentoring, unblocking, sharing knowledge."
+          }
+        },
+        {
+          "key": "composure_under_pressure",
+          "displayName": "Composure Under Pressure",
+          "anchors": {
+            "below": "Becomes flustered or defensive when challenged or stuck.",
+            "meets": "Stays calm and constructive when pushed or corrected.",
+            "exceeds": "Treats challenge as productive; stays methodical and even-keeled when stuck."
+          }
+        },
+        {
+          "key": "motivation_role_fit",
+          "displayName": "Motivation / Role Fit",
+          "anchors": {
+            "below": "No discernible interest in this role or company.",
+            "meets": "Credible motivation that aligns with the role.",
+            "exceeds": "Specific, well-researched interest; career goals clearly align with the role."
+          }
+        }
+      ]
+    }
+  ],
+  "scoreBands": [
+    { "key": "strong_pass", "displayName": "Strong Pass", "min": 85, "max": 100 },
+    { "key": "pass", "displayName": "Pass", "min": 70, "max": 84 },
+    { "key": "borderline", "displayName": "Borderline", "min": 60, "max": 69 },
+    { "key": "fail", "displayName": "Fail", "min": 0, "max": 59 }
+  ],
+  "defaultMustHave": ["correctness", "approach_structure"]
+}
