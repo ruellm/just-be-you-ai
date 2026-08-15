@@ -46,6 +46,37 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Brand design tokens (Figma "Just Be You" palette). These coexist with
+     the neutral shadcn tokens above — use for public/marketing surfaces
+     and future redesign sessions. e.g. bg-brand-primary, text-brand-ink. */
+  --color-brand-primary: #430066;
+  --color-brand-secondary: #8123b2;
+  --color-brand-tertiary: #66e0d6;
+  --color-brand-ink: #191c1e;
+  --color-brand-ink-secondary: #3d4948;
+  --color-brand-ink-sidebar: #565e74;
+  --color-brand-surface: #ffffff;
+  --color-brand-canvas: #f5f5f5;
+  --color-brand-container: #f2f2f1;
+  --color-brand-border: #cdd2d3;
+  --color-brand-card: #200039;
+  --color-tag-1: #b7f4ee;
+  --color-tag-2: #2d004d;
+  --color-tag-3: #e0f2fe;
+  --color-accent-1: #0369a1;
+  --color-accent-2: #ea4335;
+  --color-accent-3: #137333;
+  --color-accent-4: #fcd34d;
+  --color-status-success: #e6f4ea;
+  --color-status-fail: #fee2e2;
+  --color-status-pending: #fffbec;
+
+  /* Brand fonts. font-heading (above) stays on Geist — shadcn card/dialog
+     titles use it. Orbitron = font-display (large marketing headlines),
+     Poppins = font-body (marketing subheads/body/buttons). */
+  --font-display: var(--font-orbitron);
+  --font-body: var(--font-poppins);
 }
 
 :root {

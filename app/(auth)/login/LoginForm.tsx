@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AtSign, Lock } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -48,10 +49,20 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" autoComplete="email" {...field} />
-              </FormControl>
+              <FormLabel className="text-xs font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
+                Email
+              </FormLabel>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type="email"
+                    autoComplete="email"
+                    className="h-14 rounded-[8px] border-brand-border bg-brand-surface pr-11"
+                    {...field}
+                  />
+                </FormControl>
+                <AtSign className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -61,14 +72,20 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Password</FormLabel>
-              <FormControl>
-                <Input
-                  type="password"
-                  autoComplete="current-password"
-                  {...field}
-                />
-              </FormControl>
+              <FormLabel className="text-xs font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
+                Password
+              </FormLabel>
+              <div className="relative">
+                <FormControl>
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    className="h-14 rounded-[8px] border-brand-border bg-brand-surface pr-11"
+                    {...field}
+                  />
+                </FormControl>
+                <Lock className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70" />
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -80,14 +97,14 @@ export function LoginForm() {
         ) : null}
         <Button
           type="submit"
-          className="w-full"
+          className="w-full rounded-[8px] bg-brand-secondary text-white shadow-sm hover:bg-brand-secondary/90"
           disabled={form.formState.isSubmitting}
         >
           {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
         </Button>
         <Link
           href="/forgot-password"
-          className="text-muted-foreground hover:text-foreground block text-center text-sm"
+          className="block text-center text-sm text-brand-ink-secondary hover:text-brand-primary"
         >
           Forgot password?
         </Link>

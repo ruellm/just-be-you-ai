@@ -4,6 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Triggers Supabase Google OAuth. The intended role (for brand-new signups) is
 // carried to the callback via the redirect URL's `role` query param.
@@ -14,9 +15,11 @@ import { Button } from "@/components/ui/button";
 export function GoogleAuthButton({
   role,
   label = "Continue with Google",
+  className,
 }: {
   role?: "candidate" | "business";
   label?: string;
+  className?: string;
 }) {
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +52,7 @@ export function GoogleAuthButton({
       onClick={handleClick}
       disabled={loading}
       size="lg"
-      className="w-full"
+      className={cn("w-full", className)}
     >
       <GoogleIcon />
       {loading ? "Redirecting…" : label}

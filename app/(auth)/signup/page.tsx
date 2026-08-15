@@ -1,36 +1,43 @@
 import Link from "next/link";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { GoogleAuthButton } from "@/components/GoogleAuthButton";
 
 export default function CandidateSignupPage() {
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Sign up as a candidate</CardTitle>
-        <CardDescription>Find your next opportunity.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <GoogleAuthButton role="candidate" label="Sign up with Google" />
-      </CardContent>
-      <CardFooter className="text-muted-foreground flex-col gap-2 text-sm">
-        <Link href="/login" className="hover:underline">
-          Already have an account? Log in
-        </Link>
-        <p className="text-center">
-          Are you a business? Contact us at{" "}
-          <a href="mailto:hello@justbeyou.ai" className="underline">
-            hello@justbeyou.ai
-          </a>{" "}
-          to get started.
+    <div className="w-full max-w-[448px] overflow-hidden rounded-[8px] border border-brand-border bg-brand-surface shadow-sm">
+      <div className="space-y-6 p-8 sm:p-10">
+        <div className="space-y-2 text-center">
+          <h1 className="text-2xl font-semibold text-brand-ink">
+            Sign up as a candidate
+          </h1>
+          <p className="text-[15px] text-brand-ink-secondary">
+            Find your next opportunity.
+          </p>
+        </div>
+        <GoogleAuthButton
+          role="candidate"
+          label="Sign up with Google"
+          className="h-14 rounded-[4px] bg-brand-primary text-white hover:bg-brand-primary/90"
+        />
+        <p className="text-center text-sm text-brand-ink-secondary">
+          Already have an account?{" "}
+          <Link href="/login" className="font-semibold text-brand-primary">
+            Log in
+          </Link>
         </p>
-      </CardFooter>
-    </Card>
+      </div>
+
+      {/* Business footer strip — flush to the card edges */}
+      <div className="space-y-1 border-t border-brand-border bg-brand-secondary/10 px-8 py-5 text-center">
+        <p className="text-base text-brand-ink-secondary">
+          Are you a business?
+        </p>
+        <Link
+          href="/contact"
+          className="font-display text-[13px] font-semibold tracking-[0.8px] text-brand-primary uppercase"
+        >
+          Contact us to get started
+        </Link>
+      </div>
+    </div>
   );
 }

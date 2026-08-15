@@ -1,20 +1,16 @@
-import Link from "next/link";
+import { PublicNav } from "@/components/PublicNav";
 
-// Shared layout for the public auth pages (/login, /signup, /signup/business).
+// Shared layout for the public auth pages (/login, /signup,
+// /forgot-password, /reset-password) — full marketing nav on top,
+// centered content on the brand canvas.
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b">
-        <div className="mx-auto max-w-6xl px-6 py-4">
-          <Link href="/" className="text-lg font-semibold tracking-tight">
-            Just Be You
-          </Link>
-        </div>
-      </header>
+    <div className="flex min-h-screen flex-col bg-brand-canvas font-body text-brand-ink">
+      <PublicNav />
       <main className="flex flex-1 items-center justify-center p-6">
         {children}
       </main>
