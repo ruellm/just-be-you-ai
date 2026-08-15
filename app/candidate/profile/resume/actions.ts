@@ -16,6 +16,7 @@ import {
 const BUCKET = "resumes";
 
 function revalidate() {
+  revalidatePath("/candidate/profile");
   revalidatePath("/candidate/profile/resume");
   revalidatePath("/candidate/dashboard");
 }

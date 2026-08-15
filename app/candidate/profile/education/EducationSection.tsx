@@ -4,16 +4,18 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { GraduationCap, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/EmptyState";
+import { cn } from "@/lib/utils";
+import { displayDateRange } from "@/lib/profile-format";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  BTN_DANGER,
+  BTN_INK,
+  BTN_PRIMARY,
+  INSET_PANEL,
+  ProfileSectionHeader,
+} from "../ProfileSectionCard";
+import { Dialog } from "@/components/ui/dialog";
+import { FormModalContent } from "@/components/profile/FormModal";
 import { ConfirmDelete } from "@/components/profile/ConfirmDelete";
 import { EducationForm } from "./EducationForm";
 import { deleteEducation } from "./actions";
@@ -30,16 +32,19 @@ export type EducationDTO = {
 };
 
 function dateRange(e: EducationDTO): string {
-  const start = e.startDate ? e.startDate.slice(0, 7) : "";
-  const end = e.currentlyStudying ? "Present" : e.endDate ? e.endDate.slice(0, 7) : "";
-  if (!start && !end) return "";
-  return [start, end].filter(Boolean).join(" – ");
+  return displayDateRange(e.startDate, e.endDate, e.currentlyStudying);
 }
 
+// `title`/`subtitle`: when given, the section renders its own header row so
+// the "Add Education" button can sit top-right of the card.
 export function EducationSection({
   educations,
+  title,
+  subtitle,
 }: {
   educations: EducationDTO[];
+  title?: string;
+  subtitle?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -58,26 +63,32 @@ export function EducationSection({
     router.refresh();
   }
 
+  const addButton = (
+    <Button className={BTN_PRIMARY} onClick={openAdd}>
+      <Plus /> Add Education
+    </Button>
+  );
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6 font-body">
+      {title && subtitle ? (
+        <ProfileSectionHeader title={title} subtitle={subtitle} action={addButton} />
+      ) : (
+        <div className="flex justify-end">{addButton}</div>
+      )}
+
+      {/* Add / edit dialog — internals untouched (P4) */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogTrigger asChild>
-          <Button onClick={openAdd}>
-            <Plus /> Add education
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Edit education" : "Add education"}
-            </DialogTitle>
-          </DialogHeader>
+        <FormModalContent
+          icon={GraduationCap}
+          title={editing ? "Edit Education" : "Add Education"}
+        >
           <EducationForm
             key={editing?.id ?? "new"}
             entry={editing}
             onSuccess={handleSuccess}
           />
-        </DialogContent>
+        </FormModalContent>
       </Dialog>
 
       {educations.length === 0 ? (
@@ -86,51 +97,59 @@ export function EducationSection({
           title="No education added yet"
           description="Add your schools, degrees, and fields of study."
           action={
-            <Button variant="outline" onClick={openAdd}>
-              <Plus /> Add education
+            <Button className={BTN_PRIMARY} onClick={openAdd}>
+              <Plus /> Add Education
             </Button>
           }
         />
       ) : (
         <div className="grid gap-3">
-          {educations.map((e) => (
-            <Card key={e.id}>
-              <CardHeader className="flex-row items-start justify-between gap-2 space-y-0">
-                <div className="space-y-1">
-                  <CardTitle className="text-base">{e.school}</CardTitle>
-                  <p className="text-muted-foreground text-sm">
-                    {[e.degree, e.fieldOfStudy].filter(Boolean).join(", ")}
-                  </p>
+          {educations.map((e) => {
+            const detail = [e.degree, e.fieldOfStudy].filter(Boolean).join(", ");
+            const range = dateRange(e);
+            return (
+              <div
+                key={e.id}
+                className={cn(
+                  INSET_PANEL,
+                  "flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                )}
+              >
+                <div className="min-w-0 space-y-1">
+                  <p className="text-lg font-semibold text-brand-ink">{e.school}</p>
+                  {detail ? (
+                    <p className="text-sm text-brand-ink-secondary">{detail}</p>
+                  ) : null}
+                  {e.country || range ? (
+                    <p className="flex flex-wrap items-center gap-2 text-sm text-brand-ink-secondary">
+                      {e.country ? <span>{e.country}</span> : null}
+                      {e.country && range ? (
+                        <span
+                          aria-hidden
+                          className="size-1 rounded-full bg-brand-ink-secondary"
+                        />
+                      ) : null}
+                      {range ? <span>{range}</span> : null}
+                    </p>
+                  ) : null}
                 </div>
-                <div className="flex shrink-0 gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => openEdit(e)}
-                    aria-label="Edit"
-                  >
-                    <Pencil />
+                <div className="flex shrink-0 gap-2">
+                  <Button className={BTN_INK} onClick={() => openEdit(e)}>
+                    <Pencil /> Edit
                   </Button>
                   <ConfirmDelete
                     onConfirm={() => deleteEducation(e.id)}
                     successMessage="Education deleted"
                     trigger={
-                      <Button variant="ghost" size="icon-sm" aria-label="Delete">
-                        <Trash2 />
+                      <Button className={BTN_DANGER}>
+                        <Trash2 /> Delete
                       </Button>
                     }
                   />
                 </div>
-              </CardHeader>
-              <CardContent className="text-muted-foreground flex flex-wrap items-center gap-2 text-sm">
-                {e.country ? <span>{e.country}</span> : null}
-                {dateRange(e) ? <span>· {dateRange(e)}</span> : null}
-                {e.currentlyStudying ? (
-                  <Badge variant="secondary">Currently studying</Badge>
-                ) : null}
-              </CardContent>
-            </Card>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

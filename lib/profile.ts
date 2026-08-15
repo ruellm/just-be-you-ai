@@ -1,3 +1,6 @@
+// SERVER-ONLY: this module pulls in auth (next/headers) via lib/auth. Pure
+// display/format helpers live in lib/profile-format.ts — import those from
+// client components, never this file.
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 
@@ -15,17 +18,4 @@ export async function getCandidateProfileId(): Promise<string | null> {
     select: { id: true },
   });
   return profile.id;
-}
-
-// Date <-> <input type="date"> string ("YYYY-MM-DD").
-export function dateToInput(date: Date | null | undefined): string {
-  if (!date) return "";
-  return date.toISOString().slice(0, 10);
-}
-
-export function toDateOrNull(value: string): Date | null {
-  const trimmed = value.trim();
-  if (!trimmed) return null;
-  const date = new Date(trimmed);
-  return Number.isNaN(date.getTime()) ? null : date;
 }

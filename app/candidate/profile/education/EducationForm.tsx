@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
@@ -14,6 +14,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  FormModalBody,
+  FormModalFooter,
+  MODAL_CHECK_LABEL,
+  MODAL_CHECKBOX,
+  MODAL_INPUT,
+  MODAL_LABEL,
+  MODAL_PAIR,
+  ModalDateInput,
+  Req,
+} from "@/components/profile/FormModal";
 import { educationSchema, FIELD_LIMITS, type EducationValues } from "../schemas";
 import { saveEducation } from "./actions";
 import type { EducationDTO } from "./EducationSection";
@@ -69,48 +80,22 @@ export function EducationForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <FormField
-          control={form.control}
-          name="school"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>School / University</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="University of the Philippines"
-                  maxLength={FIELD_LIMITS.school}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <FormModalBody>
           <FormField
             control={form.control}
-            name="country"
+            name="school"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Country</FormLabel>
-                <FormControl>
-                  <Input placeholder="Philippines" maxLength={FIELD_LIMITS.location} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="degree"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Degree</FormLabel>
+                <FormLabel className={MODAL_LABEL}>
+                  School / University
+                  <Req />
+                </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="BS Computer Science"
-                    maxLength={FIELD_LIMITS.degree}
+                    placeholder="University of the Philippines"
+                    maxLength={FIELD_LIMITS.school}
+                    className={MODAL_INPUT}
                     {...field}
                   />
                 </FormControl>
@@ -118,16 +103,55 @@ export function EducationForm({
               </FormItem>
             )}
           />
+          <div className={MODAL_PAIR}>
+            <FormField
+              control={form.control}
+              name="country"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>Country</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Philippines"
+                      maxLength={FIELD_LIMITS.location}
+                      className={MODAL_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="degree"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>Degree</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="BS Computer Science"
+                      maxLength={FIELD_LIMITS.degree}
+                      className={MODAL_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
             name="fieldOfStudy"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Field of study</FormLabel>
+                <FormLabel className={MODAL_LABEL}>Field of Study</FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Computer Science"
                     maxLength={FIELD_LIMITS.fieldOfStudy}
+                    className={MODAL_INPUT}
                     {...field}
                   />
                 </FormControl>
@@ -135,55 +159,57 @@ export function EducationForm({
               </FormItem>
             )}
           />
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+          <div className={MODAL_PAIR}>
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>Start Date</FormLabel>
+                  <FormControl>
+                    <ModalDateInput {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>End Date</FormLabel>
+                  <FormControl>
+                    <ModalDateInput disabled={currentlyStudying} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
-            name="startDate"
+            name="currentlyStudying"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start date</FormLabel>
+              <FormItem className="flex flex-row items-center gap-2.5">
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Checkbox
+                    className={MODAL_CHECKBOX}
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                  />
                 </FormControl>
-                <FormMessage />
+                <FormLabel className={cn("!mt-0", MODAL_CHECK_LABEL)}>
+                  I currently study here
+                </FormLabel>
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End date</FormLabel>
-                <FormControl>
-                  <Input type="date" disabled={currentlyStudying} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-        <FormField
-          control={form.control}
-          name="currentlyStudying"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center gap-2">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <FormLabel className="!mt-0">I currently study here</FormLabel>
-            </FormItem>
-          )}
+        </FormModalBody>
+        <FormModalFooter
+          saveLabel="Save Education"
+          pending={form.formState.isSubmitting}
         />
-        <div className="flex justify-end">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Saving…" : "Save"}
-          </Button>
-        </div>
       </form>
     </Form>
   );

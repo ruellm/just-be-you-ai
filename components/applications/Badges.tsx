@@ -16,7 +16,12 @@ import {
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
   return (
-    <Badge className={cn("border-transparent", APPLICATION_STATUS_BADGE_CLASS[status])}>
+    <Badge
+      className={cn(
+        "rounded-[8px] border-transparent font-body text-xs font-medium",
+        APPLICATION_STATUS_BADGE_CLASS[status]
+      )}
+    >
       {APPLICATION_STATUS_LABELS[status]}
     </Badge>
   );

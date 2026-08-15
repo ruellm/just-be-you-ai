@@ -3,8 +3,12 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Conversation } from "@elevenlabs/client";
-import { Loader2, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  LiveStage,
+  StatusScreen,
+  useElapsedSeconds,
+} from "@/components/interview/InterviewUi";
 import { startAdvancedInterview } from "@/lib/elevenlabs/start-advanced-interview";
 import { completeAdvancedInterview } from "@/lib/elevenlabs/complete-advanced-interview";
 
@@ -44,6 +48,11 @@ export function AdvancedInterviewExperience({
   const nextLineId = useRef(0);
 
   const resultPath = `/candidate/applications/${applicationId}/result`;
+
+  // Display-only elapsed counter: starts when the session goes live, freezes
+  // when it leaves the live phase. Never influences the session or any end
+  // condition.
+  const elapsed = useElapsedSeconds(phase === "live");
 
   // The interview ends when the agent hangs up OR the candidate clicks
   // "End interview". Either way: stamp interview_completed + conversation id,
@@ -120,112 +129,71 @@ export function AdvancedInterviewExperience({
 
   if (phase === "connecting") {
     return (
-      <Centered>
-        <Loader2 className="text-primary size-10 animate-spin" />
-        <p className="text-muted-foreground">Connecting to your interview…</p>
-      </Centered>
+      <StatusScreen
+        title="Connecting you to our AI Interviewer.."
+        body="Please hang tight while we prepare your workspace. Take a deep breath, you've got this!"
+        footer={
+          <p className="text-base text-brand-ink-secondary">
+            <span className="font-bold text-brand-primary">
+              Tip for a smooth interview:
+            </span>{" "}
+            Find a quiet space with a stable connection before you begin.
+          </p>
+        }
+      />
     );
   }
 
   if (phase === "ending") {
     return (
-      <Centered>
-        <Loader2 className="text-primary size-10 animate-spin" />
-        <h1 className="text-xl font-semibold">Wrapping up…</h1>
-        <p className="text-muted-foreground">Saving your interview.</p>
-      </Centered>
+      <StatusScreen
+        title="Wrapping up.."
+        body="Saving your interview. You'll be taken to your results in a moment."
+      />
     );
   }
 
   if (phase === "error") {
     return (
-      <Centered>
-        <h1 className="text-xl font-semibold">We couldn’t start your interview</h1>
-        <p className="text-muted-foreground max-w-sm">
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl flex-col items-center justify-center gap-4 px-6 text-center font-body">
+        <h1 className="text-2xl font-semibold text-brand-primary">
+          We couldn’t start your interview
+        </h1>
+        <p className="max-w-sm text-base text-brand-ink-secondary">
           Something went wrong connecting to the interview. Please check your
           microphone permissions and try again.
         </p>
-        <div className="flex gap-3">
-          <Button onClick={() => window.location.reload()}>Try again</Button>
+        <div className="flex gap-3 pt-2">
+          <Button
+            onClick={() => window.location.reload()}
+            className="h-10 rounded-[8px] bg-brand-secondary px-5 text-sm font-medium text-white hover:bg-brand-secondary/90"
+          >
+            Try again
+          </Button>
           <Button
             variant="outline"
             onClick={() => router.push("/candidate/applications")}
+            className="h-10 rounded-[8px] border-brand-border bg-brand-surface px-5 text-sm font-medium text-brand-ink hover:bg-brand-container"
           >
             Back to applications
           </Button>
         </div>
-      </Centered>
+      </div>
     );
   }
 
   const agentSpeaking = mode === "speaking";
-  const recent = lines.slice(-6);
+  // Design shows only the interviewer's latest line (not a running transcript).
+  const latestAgent = [...lines].reverse().find((l) => l.role === "agent");
 
   return (
-    <div className="mx-auto flex min-h-[80vh] max-w-xl flex-col items-center justify-center gap-8 px-6 text-center">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">AI interview in progress</h1>
-        <p className="text-muted-foreground text-sm">
-          {jobTitle} · {companyName}
-        </p>
-      </div>
-
-      {/* Simple speaking indicator — a pulsing dot instead of the LiveKit bars. */}
-      <div className="flex h-32 w-full items-center justify-center">
-        <div
-          className={
-            agentSpeaking
-              ? "bg-primary size-16 animate-pulse rounded-full"
-              : "bg-muted-foreground/30 size-16 rounded-full"
-          }
-        />
-      </div>
-
-      <p
-        className={
-          agentSpeaking
-            ? "text-primary text-sm font-medium"
-            : "text-muted-foreground text-sm"
-        }
-      >
-        {agentSpeaking ? "Interviewer is speaking…" : "Listening — go ahead."}
-      </p>
-
-      {/* Live transcript — populated from onMessage. */}
-      {recent.length > 0 && (
-        <div className="bg-muted/50 max-h-40 w-full space-y-2 overflow-y-auto rounded-lg border p-4 text-left text-sm">
-          {recent.map((line) => (
-            <p key={line.id}>
-              <span className="text-muted-foreground font-medium">
-                {line.role === "user" ? "You: " : "Interviewer: "}
-              </span>
-              {line.text}
-            </p>
-          ))}
-        </div>
-      )}
-
-      <p className="text-muted-foreground max-w-sm text-sm">
-        Speak naturally. The interview will end on its own when finished.
-      </p>
-
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => void conversationRef.current?.endSession()}
-        className="gap-2"
-      >
-        <PhoneOff className="size-4" />
-        End interview
-      </Button>
-    </div>
-  );
-}
-
-function Centered({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mx-auto flex min-h-[80vh] max-w-xl flex-col items-center justify-center gap-4 px-6 text-center">
-      {children}
-    </div>
+    <LiveStage
+      jobTitle={jobTitle}
+      companyName={companyName}
+      speaking={agentSpeaking}
+      latestMessage={latestAgent?.text ?? null}
+      onEnd={() => void conversationRef.current?.endSession()}
+      elapsedSeconds={elapsed}
+    />
   );
 }

@@ -2,14 +2,15 @@ import Link from "next/link";
 import { SearchX } from "lucide-react";
 import { Prisma, type Level, type WorkMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { Button } from "@/components/ui/button";
+import { getCurrentUser } from "@/lib/auth";
 import { JobCard } from "@/components/jobs/JobCard";
 import { EmptyState } from "@/components/EmptyState";
 import { LEVELS, WORK_MODES } from "@/lib/jobs";
+import { cn } from "@/lib/utils";
 import { JobFilters } from "./JobFilters";
-import { JobSearch } from "./JobSearch";
 
-const PAGE_SIZE = 10;
+// 9 fills the 3-column grid evenly.
+const PAGE_SIZE = 9;
 
 function parseCsv(value: string | string[] | undefined): string[] {
   if (!value) return [];
@@ -24,6 +25,19 @@ function first(value: string | string[] | undefined): string {
   return (Array.isArray(value) ? value[0] : value) ?? "";
 }
 
+// Page numbers to render: always 1 and last, a window of ±1 around the
+// current page, and "…" for any gap. e.g. 1 … 4 5 6 … 12
+function pageItems(current: number, total: number): (number | "…")[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
+  const keep = new Set([1, total, current - 1, current, current + 1]);
+  const items: (number | "…")[] = [];
+  for (let p = 1; p <= total; p++) {
+    if (keep.has(p)) items.push(p);
+    else if (items[items.length - 1] !== "…") items.push("…");
+  }
+  return items;
+}
+
 export default async function JobsPage({
   searchParams,
 }: {
@@ -31,6 +45,7 @@ export default async function JobsPage({
 }) {
   const sp = await searchParams;
   const q = first(sp.q).trim();
+  const location = first(sp.location).trim();
   const modes = parseCsv(sp.mode).filter((m) =>
     WORK_MODES.includes(m as WorkMode)
   ) as WorkMode[];
@@ -39,6 +54,8 @@ export default async function JobsPage({
   ) as Level[];
   const skillIds = parseCsv(sp.skill);
   const page = Math.max(1, Number.parseInt(first(sp.page), 10) || 1);
+  const hasFilters =
+    !!q || !!location || modes.length > 0 || levels.length > 0 || skillIds.length > 0;
 
   const where: Prisma.JobWhereInput = {};
   if (q) {
@@ -47,11 +64,14 @@ export default async function JobsPage({
       { description: { contains: q, mode: "insensitive" } },
     ];
   }
+  if (location) where.location = { contains: location, mode: "insensitive" };
   if (modes.length) where.workMode = { in: modes };
   if (levels.length) where.level = { in: levels };
   if (skillIds.length) where.skills = { some: { skillId: { in: skillIds } } };
 
-  const [total, jobs, allSkills] = await Promise.all([
+  const user = await getCurrentUser();
+
+  const [total, jobs, allSkills, applications] = await Promise.all([
     prisma.job.count({ where }),
     prisma.job.findMany({
       where,
@@ -64,13 +84,23 @@ export default async function JobsPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    // One query for every job this candidate has applied to (drives the
+    // card's disabled "Apply Now" + "Applied" state). No per-card lookups.
+    user
+      ? prisma.application.findMany({
+          where: { candidateProfile: { userId: user.id } },
+          select: { jobId: true },
+        })
+      : Promise.resolve([]),
   ]);
+  const appliedJobIds = new Set(applications.map((a) => a.jobId));
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   function pageHref(targetPage: number) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
+    if (location) params.set("location", location);
     if (modes.length) params.set("mode", modes.join(","));
     if (levels.length) params.set("level", levels.join(","));
     if (skillIds.length) params.set("skill", skillIds.join(","));
@@ -79,71 +109,98 @@ export default async function JobsPage({
     return `/candidate/jobs${query ? `?${query}` : ""}`;
   }
 
+  const pageBtn =
+    "inline-flex h-[39px] min-w-[35px] items-center justify-center rounded-[8px] border px-2 text-sm transition-colors";
+  const pageBtnIdle =
+    "border-brand-border bg-brand-surface text-brand-ink-secondary hover:bg-brand-container";
+  const pageBtnActive = "border-brand-secondary bg-brand-secondary text-white";
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      <h1 className="mb-6 text-2xl font-semibold">Browse jobs</h1>
-
-      <div className="flex flex-col gap-8 sm:flex-row">
-        <aside className="sm:w-60 sm:shrink-0">
-          <JobFilters skills={allSkills} />
-        </aside>
-
-        <div className="min-w-0 flex-1 space-y-4">
-          <JobSearch />
-
-          <p className="text-muted-foreground text-sm">
-            Showing {jobs.length} of {total} {total === 1 ? "job" : "jobs"}
-          </p>
-
-          {jobs.length === 0 ? (
-            <EmptyState
-              icon={SearchX}
-              title={
-                q || modes.length || levels.length || skillIds.length
-                  ? "No jobs match your filters"
-                  : "No jobs posted yet"
-              }
-              description={
-                q || modes.length || levels.length || skillIds.length
-                  ? "Try removing a filter or searching for something else."
-                  : "Check back soon — new roles are added regularly."
-              }
-            />
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              {jobs.map((job) => (
-                <JobCard key={job.id} job={job} />
-              ))}
-            </div>
-          )}
-
-          {totalPages > 1 ? (
-            <div className="flex items-center justify-between pt-2">
-              {page > 1 ? (
-                <Button asChild variant="outline" size="sm">
-                  <Link href={pageHref(page - 1)}>Previous</Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Previous
-                </Button>
-              )}
-              <span className="text-muted-foreground text-sm">
-                Page {page} of {totalPages}
-              </span>
-              {page < totalPages ? (
-                <Button asChild variant="outline" size="sm">
-                  <Link href={pageHref(page + 1)}>Next</Link>
-                </Button>
-              ) : (
-                <Button variant="outline" size="sm" disabled>
-                  Next
-                </Button>
-              )}
-            </div>
-          ) : null}
-        </div>
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
+      <div className="space-y-2 border-b border-brand-border pb-6">
+        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+          Browse Jobs
+        </h1>
+        <p className="max-w-2xl text-base text-brand-ink-secondary">
+          Our AI has curated these opportunities based on your unique profile
+          and aspirations. Find where you belong.
+        </p>
       </div>
+
+      <JobFilters skills={allSkills} />
+
+      {jobs.length === 0 ? (
+        <EmptyState
+          icon={SearchX}
+          title={hasFilters ? "No jobs match your filters" : "No jobs posted yet"}
+          description={
+            hasFilters
+              ? "Try removing a filter or searching for something else."
+              : "Check back soon — new roles are added regularly."
+          }
+          className="border-brand-border bg-brand-surface"
+        />
+      ) : (
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {jobs.map((job) => (
+            <JobCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} />
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-brand-ink-secondary">
+        Showing {jobs.length} of {total} {total === 1 ? "job" : "jobs"}
+      </p>
+
+      {totalPages > 1 ? (
+        <nav
+          aria-label="Pagination"
+          className="flex flex-wrap items-center justify-center gap-2"
+        >
+          {page > 1 ? (
+            <Link
+              href={pageHref(page - 1)}
+              className={cn(pageBtn, pageBtnIdle, "min-w-[71px]")}
+            >
+              Prev
+            </Link>
+          ) : null}
+          {pageItems(page, totalPages).map((item, i) =>
+            item === "…" ? (
+              <span
+                key={`gap-${i}`}
+                className="px-1 text-sm text-brand-ink-secondary"
+              >
+                …
+              </span>
+            ) : item === page ? (
+              <span
+                key={item}
+                aria-current="page"
+                className={cn(pageBtn, pageBtnActive)}
+              >
+                {item}
+              </span>
+            ) : (
+              <Link
+                key={item}
+                href={pageHref(item)}
+                className={cn(pageBtn, pageBtnIdle)}
+              >
+                {item}
+              </Link>
+            )
+          )}
+          {page < totalPages ? (
+            <Link
+              href={pageHref(page + 1)}
+              className={cn(pageBtn, pageBtnIdle, "min-w-[71px]")}
+            >
+              Next
+            </Link>
+          ) : null}
+        </nav>
+      ) : null}
     </div>
   );
 }

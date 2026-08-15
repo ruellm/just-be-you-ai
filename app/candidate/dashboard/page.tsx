@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { Briefcase, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EmptyState } from "@/components/EmptyState";
+import { JobCard } from "@/components/jobs/JobCard";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { StatusBadge, TierBadge } from "@/components/applications/Badges";
-import { applicationPath } from "@/lib/applications";
+import { getRecommendedJobs } from "@/lib/recommendations";
 
 type ProfileFields = {
   firstName: string | null;
@@ -72,91 +73,88 @@ export default async function CandidateDashboardPage() {
     : { education: 0, skills: 0, workExperience: 0 };
 
   const percent = completionPercent(profile, counts);
+  const firstName =
+    profile?.firstName || user?.email?.split("@")[0] || "there";
 
-  const recentApplications = profile
-    ? await prisma.application.findMany({
-        where: { candidateProfileId: profile.id },
-        orderBy: { createdAt: "desc" },
-        take: 3,
-        include: {
-          job: { select: { title: true, company: { select: { name: true } } } },
-          interviewResult: { select: { tier: true } },
-        },
-      })
-    : [];
+  const recommended = profile ? await getRecommendedJobs(profile.id) : [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 p-8">
-      <h1 className="text-2xl font-semibold">Welcome, {user?.email}</h1>
+    <div className="mx-auto max-w-6xl space-y-8 px-6 py-10 font-body lg:px-14 lg:py-14">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+          Welcome back, {firstName}!
+        </h1>
+        <p className="text-base text-brand-ink-secondary">
+          You&apos;re making great progress towards your dream career.
+        </p>
+      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-wrap gap-2">
-            <Button asChild>
-              <Link href="/candidate/profile/basic-info">
-                Complete your profile
-              </Link>
-            </Button>
-            <Button asChild variant="outline">
-              <Link href="/candidate/jobs">Browse jobs</Link>
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-sm">
-            Profile completion: {percent}%
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle>Recent applications</CardTitle>
-          <Link
-            href="/candidate/applications"
-            className="text-muted-foreground hover:text-foreground text-sm"
-          >
-            View all
-          </Link>
-        </CardHeader>
-        <CardContent>
-          {recentApplications.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No applications yet.{" "}
-              <Link href="/candidate/jobs" className="underline">
-                Browse jobs
-              </Link>
-              .
-            </p>
-          ) : (
-            <div className="divide-y">
-              {recentApplications.map((app) => (
-                <Link
-                  key={app.id}
-                  href={applicationPath(app.id, app.status)}
-                  className="hover:bg-muted/40 -mx-2 flex items-center justify-between gap-3 rounded-md px-2 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-medium">
-                      {app.job.title}
-                    </p>
-                    <p className="text-muted-foreground truncate text-xs">
-                      {app.job.company.name}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {app.interviewResult ? (
-                      <TierBadge tier={app.interviewResult.tier} />
-                    ) : null}
-                    <StatusBadge status={app.status} />
-                  </div>
-                </Link>
-              ))}
+      {/* Profile Strength */}
+      <section className="rounded-[20px] border border-brand-border bg-brand-surface p-6 sm:p-8">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center">
+          <div className="flex min-w-0 flex-1 gap-4">
+            <div className="flex size-12 shrink-0 items-center justify-center rounded-[12px] bg-brand-primary/10 text-brand-primary">
+              <ShieldCheck className="size-6" />
             </div>
-          )}
-        </CardContent>
-      </Card>
+            <div className="min-w-0 flex-1 space-y-3">
+              <div>
+                <p className="text-base font-semibold text-brand-ink">
+                  Profile Strength
+                </p>
+                <p className="text-sm text-brand-ink-secondary">
+                  Almost there! Complete your profile for better job matches.
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                {/* Progress bar: two divs (the `progress` primitive isn't installed). */}
+                <div
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={percent}
+                  aria-label="Profile completion"
+                  className="h-3 flex-1 overflow-hidden rounded-[12px] bg-brand-container"
+                >
+                  <div
+                    className="h-full rounded-[12px] bg-brand-primary transition-[width]"
+                    style={{ width: `${percent}%` }}
+                  />
+                </div>
+                <span className="shrink-0 text-sm text-brand-ink-secondary">
+                  {percent}/100
+                </span>
+              </div>
+            </div>
+          </div>
+          <Button
+            asChild
+            className="h-[46px] shrink-0 rounded-[12px] bg-brand-secondary px-6 text-sm font-medium text-white hover:bg-brand-secondary/90"
+          >
+            <Link href="/candidate/profile">Complete Your Profile</Link>
+          </Button>
+        </div>
+      </section>
+
+      {/* Recommended For You */}
+      <section className="space-y-5">
+        <h2 className="text-2xl font-semibold text-brand-primary">
+          Recommended For You
+        </h2>
+        {recommended.length === 0 ? (
+          <EmptyState
+            icon={Briefcase}
+            title="No open jobs right now"
+            description="Check back soon — new roles are added regularly."
+            className="bg-brand-surface"
+          />
+        ) : (
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {recommended.map(({ job, applied }) => (
+              <JobCard key={job.id} job={job} applied={applied} />
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

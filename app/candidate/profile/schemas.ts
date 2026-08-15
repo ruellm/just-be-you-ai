@@ -10,12 +10,15 @@ import { z } from "zod";
 // typing stops at the same cap. Keep both layers reading from this object.
 export const FIELD_LIMITS = {
   name: 100, // first / last name
+  middleName: 100,
+  suffix: 20, // "Jr.", "III", …
   location: 100, // country / city / nationality
   phone: 40,
   url: 300, // linkedin + project URLs
   preferredRole: 120,
   language: 50, // one spoken-language chip
-  summary: 2000,
+  maxLanguages: 5, // number of language chips (design: "Max of 5")
+  summary: 300,
   school: 200,
   degree: 150,
   fieldOfStudy: 150,
@@ -35,13 +38,30 @@ export const basicInfoSchema = z.object({
     .trim()
     .min(1, "First name is required")
     .max(FIELD_LIMITS.name, tooLong(FIELD_LIMITS.name)),
+  middleName: z
+    .string()
+    .trim()
+    .max(FIELD_LIMITS.middleName, tooLong(FIELD_LIMITS.middleName)),
   lastName: z
     .string()
     .trim()
     .min(1, "Last name is required")
     .max(FIELD_LIMITS.name, tooLong(FIELD_LIMITS.name)),
-  country: z.string().trim().max(FIELD_LIMITS.location, tooLong(FIELD_LIMITS.location)),
-  city: z.string().trim().max(FIELD_LIMITS.location, tooLong(FIELD_LIMITS.location)),
+  suffix: z
+    .string()
+    .trim()
+    .max(FIELD_LIMITS.suffix, tooLong(FIELD_LIMITS.suffix)),
+  // Country / city / nationality are required per the profile redesign.
+  country: z
+    .string()
+    .trim()
+    .min(1, "Country is required")
+    .max(FIELD_LIMITS.location, tooLong(FIELD_LIMITS.location)),
+  city: z
+    .string()
+    .trim()
+    .min(1, "City is required")
+    .max(FIELD_LIMITS.location, tooLong(FIELD_LIMITS.location)),
   phone: z.string().trim().max(FIELD_LIMITS.phone, tooLong(FIELD_LIMITS.phone)),
   linkedinUrl: z.union([
     z.literal(""),
@@ -59,6 +79,7 @@ export const basicInfoSchema = z.object({
   nationality: z
     .string()
     .trim()
+    .min(1, "Nationality is required")
     .max(FIELD_LIMITS.location, tooLong(FIELD_LIMITS.location)),
   languages: z
     .array(
@@ -68,7 +89,7 @@ export const basicInfoSchema = z.object({
         .min(1)
         .max(FIELD_LIMITS.language, tooLong(FIELD_LIMITS.language))
     )
-    .max(30),
+    .max(FIELD_LIMITS.maxLanguages, `Up to ${FIELD_LIMITS.maxLanguages} languages`),
   totalYearsExperience: z
     .string()
     .trim()
@@ -90,6 +111,11 @@ export const summarySchema = z.object({
 });
 
 export type SummaryValues = z.infer<typeof summarySchema>;
+
+// Basic Information + Profile Summary are one client form on the single
+// profile page; the server still validates each half with its own schema.
+export const profileFormSchema = basicInfoSchema.merge(summarySchema);
+export type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 // Shape returned by every profile server action.
 export type ActionResult =

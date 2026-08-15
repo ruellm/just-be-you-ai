@@ -18,7 +18,7 @@ export default async function InterviewPage({
     where: { userId: user.id },
     select: { id: true },
   });
-  if (!profile) redirect("/candidate/profile/basic-info");
+  if (!profile) redirect("/candidate/profile");
 
   const application = await prisma.application.findUnique({
     where: { id: applicationId },

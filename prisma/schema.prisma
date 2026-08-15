@@ -124,7 +124,9 @@ model CandidateProfile {
 
   // Basic info
   firstName      String?
+  middleName     String? // profile redesign P1 (optional)
   lastName       String?
+  suffix         String? // e.g. "Jr.", "III" (profile redesign P1, optional)
   country        String? // country of residence
   city           String? // optional per spec
   phone          String?
@@ -159,6 +161,7 @@ model CandidateProfile {
   user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   educations      Education[]
   workExperiences WorkExperience[]
+  projects        Project[]
   skills          CandidateSkill[]
   applications    Application[]
 
@@ -194,29 +197,29 @@ model WorkExperience {
   description        String?
 
   candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
-  projects         Project[]
 
   @@index([candidateProfileId])
   @@map("work_experiences")
 }
 
-// Projects belong to a specific work experience (per the UX spec — the
-// "Add project" button lives inside a work-experience panel).
+// Projects are a standalone profile section (profile redesign P3): personal /
+// academic / freelance projects belong to the candidate, not to an employer.
+// (Re-parented from WorkExperience; migration 20260816000000 backfills.)
 model Project {
-  id               String    @id @default(cuid())
-  workExperienceId String
-  name             String
-  url              String?
-  startDate        DateTime?
-  endDate          DateTime?
-  ongoing          Boolean   @default(false)
-  description      String?
-  screenshots      String[] // Supabase Storage object URLs
+  id                 String    @id @default(cuid())
+  candidateProfileId String
+  name               String
+  url                String?
+  startDate          DateTime?
+  endDate            DateTime?
+  ongoing            Boolean   @default(false)
+  description        String?
+  screenshots        String[] // Supabase Storage object URLs
 
-  workExperience WorkExperience @relation(fields: [workExperienceId], references: [id], onDelete: Cascade)
-  skills         ProjectSkill[]
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  skills           ProjectSkill[]
 
-  @@index([workExperienceId])
+  @@index([candidateProfileId])
   @@map("projects")
 }
 

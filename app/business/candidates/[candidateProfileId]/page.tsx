@@ -56,11 +56,11 @@ export default async function CandidateDetailPage({
       user: { select: { email: true } },
       educations: { orderBy: { startDate: "desc" } },
       skills: { include: { skill: true }, orderBy: { skill: { name: "asc" } } },
-      workExperiences: {
+      workExperiences: { orderBy: { startDate: "desc" } },
+      // Projects are a standalone profile section (profile redesign P3).
+      projects: {
         orderBy: { startDate: "desc" },
-        include: {
-          projects: { include: { skills: { include: { skill: true } } } },
-        },
+        include: { skills: { include: { skill: true } } },
       },
     },
   });
@@ -280,7 +280,7 @@ export default async function CandidateDetailPage({
         </Card>
       ) : null}
 
-      {/* Work experience + projects */}
+      {/* Work experience */}
       {profile.workExperiences.length ? (
         <Card>
           <CardHeader>
@@ -302,30 +302,40 @@ export default async function CandidateDetailPage({
                     {w.description}
                   </p>
                 ) : null}
-                {w.projects.length ? (
-                  <div className="space-y-2 border-l pl-3">
-                    {w.projects.map((p) => (
-                      <div key={p.id}>
-                        <p className="text-sm font-medium">{p.name}</p>
-                        {p.description ? (
-                          <p className="text-muted-foreground text-sm">
-                            {p.description}
-                          </p>
-                        ) : null}
-                        {p.skills.length ? (
-                          <div className="mt-1 flex flex-wrap gap-1">
-                            {p.skills.map((ps) => (
-                              <Badge
-                                key={ps.id}
-                                variant="secondary"
-                                className="text-xs font-normal"
-                              >
-                                {ps.skill.name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Projects (standalone section since profile redesign P3) */}
+      {profile.projects.length ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Projects</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {profile.projects.map((p) => (
+              <div key={p.id}>
+                <p className="text-sm font-medium">{p.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {monthRange(p.startDate, p.endDate, p.ongoing)}
+                </p>
+                {p.description ? (
+                  <p className="text-muted-foreground text-sm">
+                    {p.description}
+                  </p>
+                ) : null}
+                {p.skills.length ? (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {p.skills.map((ps) => (
+                      <Badge
+                        key={ps.id}
+                        variant="secondary"
+                        className="text-xs font-normal"
+                      >
+                        {ps.skill.name}
+                      </Badge>
                     ))}
                   </div>
                 ) : null}

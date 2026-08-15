@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 
-// Projects have no standalone page — they're managed inside each Work
-// Experience entry. Send the sidebar's "Projects" link there.
-export default function ProjectsPage() {
-  redirect("/candidate/profile/work-experience");
+// The profile is now a single page; old section routes redirect there.
+export default function LegacyProfileSectionPage() {
+  redirect("/candidate/profile");
 }

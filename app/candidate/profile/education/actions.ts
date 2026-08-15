@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { getCandidateProfileId, toDateOrNull } from "@/lib/profile";
+import { getCandidateProfileId } from "@/lib/profile";
+import { toDateOrNull } from "@/lib/profile-format";
 import { fieldErrorsFrom } from "@/lib/zod";
 import {
   educationSchema,
@@ -15,6 +16,7 @@ function nullify(value: string): string | null {
 }
 
 function revalidate() {
+  revalidatePath("/candidate/profile");
   revalidatePath("/candidate/profile/education");
   revalidatePath("/candidate/dashboard");
 }

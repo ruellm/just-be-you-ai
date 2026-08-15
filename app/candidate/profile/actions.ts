@@ -52,7 +52,9 @@ export async function saveBasicInfo(
       where: { userId: user.id },
       update: {
         firstName: nullify(d.firstName),
+        middleName: nullify(d.middleName),
         lastName: nullify(d.lastName),
+        suffix: nullify(d.suffix),
         country: nullify(d.country),
         city: nullify(d.city),
         phone: nullify(d.phone),
@@ -66,7 +68,9 @@ export async function saveBasicInfo(
       create: {
         userId: user.id,
         firstName: nullify(d.firstName),
+        middleName: nullify(d.middleName),
         lastName: nullify(d.lastName),
+        suffix: nullify(d.suffix),
         country: nullify(d.country),
         city: nullify(d.city),
         phone: nullify(d.phone),
@@ -82,6 +86,7 @@ export async function saveBasicInfo(
     return { success: false, error: "Could not save. Please try again." };
   }
 
+  revalidatePath("/candidate/profile");
   revalidatePath("/candidate/profile/basic-info");
   revalidatePath("/candidate/dashboard");
   return { success: true };
@@ -108,6 +113,7 @@ export async function saveSummary(
     return { success: false, error: "Could not save. Please try again." };
   }
 
+  revalidatePath("/candidate/profile");
   revalidatePath("/candidate/profile/summary");
   revalidatePath("/candidate/dashboard");
   return { success: true };

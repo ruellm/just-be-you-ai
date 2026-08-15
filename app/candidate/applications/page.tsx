@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { Inbox } from "lucide-react";
+import { ExternalLink, FileCheck, FileText, Inbox } from "lucide-react";
 import type { ApplicationStatus } from "@prisma/client";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { StatusBadge, TierBadge } from "@/components/applications/Badges";
+import { StatusBadge } from "@/components/applications/Badges";
 import { EmptyState } from "@/components/EmptyState";
 import { applicationPath } from "@/lib/applications";
 import { cn } from "@/lib/utils";
@@ -19,6 +18,12 @@ const FILTERS: { key: string; label: string; status: ApplicationStatus | null }[
     { key: "failed", label: "Failed", status: "failed" },
   ];
 
+// Applications that can still be interviewed (mirrors applicationPath():
+// these route to /interview, everything else routes to /result).
+function isInterviewable(status: ApplicationStatus): boolean {
+  return status === "draft" || status === "submitted";
+}
+
 function formatDate(date: Date): string {
   return date.toLocaleDateString(undefined, {
     year: "numeric",
@@ -26,6 +31,9 @@ function formatDate(date: Date): string {
     day: "numeric",
   });
 }
+
+const ACTION_BTN =
+  "h-[35px] rounded-[8px] px-3 font-body text-sm font-medium text-white";
 
 export default async function ApplicationsPage({
   searchParams,
@@ -58,20 +66,33 @@ export default async function ApplicationsPage({
     : [];
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6 px-6 py-8">
-      <h1 className="text-2xl font-semibold">My applications</h1>
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
+      <div className="space-y-2 border-b border-brand-border pb-6">
+        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+          My Applications
+        </h1>
+        <p className="max-w-2xl text-base text-brand-ink-secondary">
+          Keep track of your journey. Manage your submissions, interview
+          stages, and feedback in one place.
+        </p>
+      </div>
 
-      {/* Status filter */}
-      <div className="flex flex-wrap gap-1">
+      {/* Status filter pills (server-rendered links on ?status=) */}
+      <div className="flex flex-wrap gap-2">
         {FILTERS.map((f) => (
           <Link
             key={f.key}
-            href={f.status ? `/candidate/applications?status=${f.key}` : "/candidate/applications"}
+            href={
+              f.status
+                ? `/candidate/applications?status=${f.key}`
+                : "/candidate/applications"
+            }
+            aria-current={active.key === f.key ? "page" : undefined}
             className={cn(
-              "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+              "inline-flex h-[39px] items-center rounded-[8px] border px-4 text-sm font-medium transition-colors",
               active.key === f.key
-                ? "bg-muted text-foreground"
-                : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                ? "border-brand-secondary bg-brand-secondary text-white"
+                : "border-brand-border bg-brand-surface text-brand-ink-secondary hover:bg-brand-container"
             )}
           >
             {f.label}
@@ -93,37 +114,74 @@ export default async function ApplicationsPage({
               : "Browse open roles and apply to get started."
           }
           action={
-            <Button asChild>
-              <Link href="/candidate/jobs">Browse jobs</Link>
+            <Button
+              asChild
+              className="h-[46px] min-w-[174px] rounded-[12px] bg-brand-secondary px-6 text-sm font-medium text-white hover:bg-brand-secondary/90"
+            >
+              <Link href="/candidate/jobs">Browse Jobs</Link>
             </Button>
           }
         />
       ) : (
-        <div className="grid gap-3">
-          {applications.map((app) => (
-            <Link
-              key={app.id}
-              href={applicationPath(app.id, app.status)}
-              className="block"
-            >
-              <Card className="transition-colors hover:border-foreground/20">
-                <CardContent className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="font-medium">{app.job.title}</p>
-                    <p className="text-muted-foreground text-sm">
-                      {app.job.company.name} · Applied {formatDate(app.createdAt)}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {app.interviewResult ? (
-                      <TierBadge tier={app.interviewResult.tier} />
-                    ) : null}
+        <div className="grid gap-4">
+          {applications.map((app) => {
+            const interviewable = isInterviewable(app.status);
+            return (
+              <article
+                key={app.id}
+                className="flex flex-col gap-4 rounded-[12px] border border-brand-border bg-brand-surface px-6 py-6 md:flex-row md:items-center md:justify-between"
+              >
+                <div className="min-w-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <h2 className="text-xl font-semibold text-brand-primary">
+                      {app.job.title}
+                    </h2>
                     <StatusBadge status={app.status} />
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <p className="flex flex-wrap items-center gap-2 text-sm text-brand-ink-secondary">
+                    <span>{app.job.company.name}</span>
+                    <span
+                      aria-hidden
+                      className="size-1 rounded-full bg-brand-ink-secondary"
+                    />
+                    <span>Applied {formatDate(app.createdAt)}</span>
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-2 md:shrink-0">
+                  <Button
+                    asChild
+                    className={cn(ACTION_BTN, "bg-brand-ink hover:bg-brand-ink/90")}
+                  >
+                    <Link href={`/candidate/jobs/${app.jobId}`}>
+                      <ExternalLink /> View Role
+                    </Link>
+                  </Button>
+                  {/* Take Interview / View Result both resolve through
+                      applicationPath() — the single source of routing truth. */}
+                  <Button
+                    asChild
+                    className={cn(
+                      ACTION_BTN,
+                      "bg-brand-secondary hover:bg-brand-secondary/90"
+                    )}
+                  >
+                    <Link href={applicationPath(app.id, app.status)}>
+                      {interviewable ? (
+                        <>
+                          <FileText /> Take Interview
+                        </>
+                      ) : (
+                        <>
+                          <FileCheck /> View Result
+                        </>
+                      )}
+                    </Link>
+                  </Button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>

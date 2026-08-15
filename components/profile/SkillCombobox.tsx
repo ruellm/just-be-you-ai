@@ -28,12 +28,14 @@ export function SkillCombobox({
   onChange,
   disabledIds = [],
   placeholder = "Select a skill…",
+  triggerClassName,
 }: {
   skills: SkillOption[];
   value: string;
   onChange: (id: string) => void;
   disabledIds?: string[];
   placeholder?: string;
+  triggerClassName?: string; // optional restyle hook for the trigger button
 }) {
   const [open, setOpen] = useState(false);
   const selected = skills.find((s) => s.id === value);
@@ -47,7 +49,7 @@ export function SkillCombobox({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between font-normal"
+          className={cn("w-full justify-between font-normal", triggerClassName)}
         >
           {selected ? selected.name : placeholder}
           <ChevronsUpDown className="opacity-50" />

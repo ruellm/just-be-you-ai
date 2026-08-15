@@ -1,6 +1,13 @@
 import { redirect } from "next/navigation";
-import { AppNav } from "@/components/AppNav";
+import { CandidateSidebar } from "@/components/candidate/CandidateSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
+import { prisma } from "@/lib/db";
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  const letters = parts.slice(0, 2).map((p) => p.charAt(0).toUpperCase());
+  return letters.join("") || "?";
+}
 
 export default async function CandidateLayout({
   children,
@@ -14,19 +21,24 @@ export default async function CandidateLayout({
     redirect(getDashboardPath(dbUser.role));
   }
 
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { userId: dbUser.id },
+    select: { firstName: true, lastName: true, preferredRole: true },
+  });
+  const fullName = [profile?.firstName, profile?.lastName]
+    .filter(Boolean)
+    .join(" ");
+  const displayName = fullName || dbUser.email.split("@")[0] || "Candidate";
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppNav
-        email={dbUser.email}
-        logoHref={getDashboardPath(dbUser.role)}
-        links={[
-          { label: "Dashboard", href: "/candidate/dashboard" },
-          { label: "Browse jobs", href: "/candidate/jobs" },
-          { label: "My Applications", href: "/candidate/applications" },
-          { label: "Profile", href: "/candidate/profile/basic-info" },
-        ]}
+    <div className="min-h-screen bg-brand-canvas">
+      <CandidateSidebar
+        name={displayName}
+        initials={initialsOf(displayName)}
+        jobTitle={profile?.preferredRole ?? null}
       />
-      <div className="flex-1">{children}</div>
+      {/* Content sits to the right of the fixed 255px sidebar on lg+. */}
+      <main className="min-w-0 lg:pl-[255px]">{children}</main>
     </div>
   );
 }

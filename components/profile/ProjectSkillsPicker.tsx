@@ -13,10 +13,14 @@ export function ProjectSkillsPicker({
   skills,
   value,
   onChange,
+  placeholder = "Add a skill used…",
+  triggerClassName,
 }: {
   skills: SkillOption[];
   value: string[];
   onChange: (ids: string[]) => void;
+  placeholder?: string;
+  triggerClassName?: string; // passed through to the combobox trigger
 }) {
   const byId = new Map(skills.map((s) => [s.id, s.name]));
 
@@ -34,7 +38,8 @@ export function ProjectSkillsPicker({
         value=""
         onChange={add}
         disabledIds={value}
-        placeholder="Add a skill used…"
+        placeholder={placeholder}
+        triggerClassName={triggerClassName}
       />
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">

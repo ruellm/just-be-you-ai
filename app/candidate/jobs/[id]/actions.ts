@@ -23,7 +23,7 @@ export async function applyToJob(rawJobId: string) {
     where: { userId: user.id },
     select: { id: true },
   });
-  if (!profile) redirect("/candidate/profile/basic-info");
+  if (!profile) redirect("/candidate/profile");
 
   const job = await prisma.job.findUnique({
     where: { id: jobId },

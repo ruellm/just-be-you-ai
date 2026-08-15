@@ -5,23 +5,29 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { EmptyState } from "@/components/EmptyState";
+import { Dialog } from "@/components/ui/dialog";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+  FormModalBody,
+  FormModalContent,
+  FormModalFooter,
+  MODAL_INPUT,
+  MODAL_LABEL,
+  Req,
+} from "@/components/profile/FormModal";
 import {
   SkillCombobox,
   type SkillOption,
 } from "@/components/profile/SkillCombobox";
 import { FIELD_LIMITS } from "../schemas";
+import { cn } from "@/lib/utils";
+import {
+  BTN_PRIMARY,
+  INSET_PANEL,
+  ProfileSectionHeader,
+} from "../ProfileSectionCard";
 import { addSkill, deleteCandidateSkill, updateSkillYears } from "./actions";
 
 export type CandidateSkillDTO = {
@@ -31,12 +37,18 @@ export type CandidateSkillDTO = {
   years: number;
 };
 
+// `title`/`subtitle`: when given, the section renders its own header row so
+// the "Add Skill" button can sit top-right of the card.
 export function SkillsSection({
   candidateSkills,
   skillOptions,
+  title,
+  subtitle,
 }: {
   candidateSkills: CandidateSkillDTO[];
   skillOptions: SkillOption[];
+  title?: string;
+  subtitle?: string;
 }) {
   const router = useRouter();
 
@@ -104,31 +116,41 @@ export function SkillsSection({
     router.refresh();
   }
 
+  const addButton = (
+    <Button className={BTN_PRIMARY} onClick={() => setAddOpen(true)}>
+      <Plus /> Add Skill
+    </Button>
+  );
+
   return (
-    <div className="space-y-4">
-      {/* Add skill */}
+    <div className="space-y-6 font-body">
+      {title && subtitle ? (
+        <ProfileSectionHeader title={title} subtitle={subtitle} action={addButton} />
+      ) : (
+        <div className="flex justify-end">{addButton}</div>
+      )}
+
+      {/* Add skill dialog — internals untouched (P4) */}
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogTrigger asChild>
-          <Button>
-            <Plus /> Add skill
-          </Button>
-        </DialogTrigger>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Add a skill</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Skill</Label>
+        <FormModalContent icon={Sparkles} title="Add Skill" size="sm">
+          <FormModalBody>
+            <div className="space-y-1.5">
+              <Label className={MODAL_LABEL}>
+                Skill
+                <Req />
+              </Label>
               <SkillCombobox
                 skills={skillOptions}
                 value={newSkillId}
                 onChange={setNewSkillId}
                 disabledIds={usedSkillIds}
+                triggerClassName={cn(MODAL_INPUT, "hover:bg-brand-surface")}
               />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="new-years">Years of experience</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="new-years" className={MODAL_LABEL}>
+                Years of Experience
+              </Label>
               <Input
                 id="new-years"
                 inputMode="numeric"
@@ -136,15 +158,17 @@ export function SkillsSection({
                 maxLength={FIELD_LIMITS.yearsDigits}
                 value={newYears}
                 onChange={(e) => setNewYears(e.target.value)}
+                className={MODAL_INPUT}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button onClick={handleAdd} disabled={adding}>
-              {adding ? "Adding…" : "Add skill"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+          </FormModalBody>
+          <FormModalFooter
+            saveLabel="Add Skill"
+            saveType="button"
+            onSave={handleAdd}
+            pending={adding}
+          />
+        </FormModalContent>
       </Dialog>
 
       {/* Current skills */}
@@ -154,38 +178,38 @@ export function SkillsSection({
           title="No skills added yet"
           description="Add the skills you have and your years of experience with each."
           action={
-            <Button variant="outline" onClick={() => setAddOpen(true)}>
-              <Plus /> Add skill
+            <Button className={BTN_PRIMARY} onClick={() => setAddOpen(true)}>
+              <Plus /> Add Skill
             </Button>
           }
         />
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className={cn(INSET_PANEL, "flex flex-wrap gap-2 px-5 py-4")}>
           {candidateSkills.map((cs) => (
-            <Badge
+            <span
               key={cs.id}
-              variant="secondary"
-              className="gap-1.5 py-1 pr-1 pl-2.5 text-sm"
+              className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-tag-1 pr-1.5 pl-3 text-sm text-brand-ink"
             >
+              {/* Chip body opens the existing edit-years dialog */}
               <button
                 type="button"
                 onClick={() => openEdit(cs)}
-                className="hover:underline"
+                className="inline-flex items-center gap-2 hover:underline"
               >
-                {cs.skillName}
-                <span className="text-muted-foreground ml-1">
-                  · {cs.years}y
-                </span>
+                <span>{cs.skillName}</span>
+                <span aria-hidden className="size-1 rounded-full bg-brand-ink" />
+                <span>{cs.years}y</span>
               </button>
+              {/* Immediate delete (no confirm) — existing behaviour */}
               <button
                 type="button"
                 onClick={() => handleDelete(cs.id)}
                 aria-label={`Remove ${cs.skillName}`}
-                className="hover:text-foreground/70"
+                className="rounded p-0.5 text-brand-ink-secondary hover:text-brand-ink"
               >
                 <X className="size-3.5" />
               </button>
-            </Badge>
+            </span>
           ))}
         </div>
       )}
@@ -195,26 +219,29 @@ export function SkillsSection({
         open={editing !== null}
         onOpenChange={(o) => !o && setEditing(null)}
       >
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editing?.skillName}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label htmlFor="edit-years">Years of experience</Label>
-            <Input
-              id="edit-years"
-              inputMode="numeric"
-              maxLength={FIELD_LIMITS.yearsDigits}
-              value={editYears}
-              onChange={(e) => setEditYears(e.target.value)}
-            />
-          </div>
-          <DialogFooter>
-            <Button onClick={handleEditSave} disabled={savingEdit}>
-              {savingEdit ? "Saving…" : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
+        <FormModalContent icon={Sparkles} title={editing?.skillName} size="sm">
+          <FormModalBody>
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-years" className={MODAL_LABEL}>
+                Years of Experience
+              </Label>
+              <Input
+                id="edit-years"
+                inputMode="numeric"
+                maxLength={FIELD_LIMITS.yearsDigits}
+                value={editYears}
+                onChange={(e) => setEditYears(e.target.value)}
+                className={MODAL_INPUT}
+              />
+            </div>
+          </FormModalBody>
+          <FormModalFooter
+            saveLabel="Save"
+            saveType="button"
+            onSave={handleEditSave}
+            pending={savingEdit}
+          />
+        </FormModalContent>
       </Dialog>
     </div>
   );

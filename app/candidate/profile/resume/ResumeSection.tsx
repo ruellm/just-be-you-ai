@@ -14,30 +14,39 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { ConfirmDelete } from "@/components/profile/ConfirmDelete";
+import { BTN_DANGER, BTN_INK, INSET_PANEL } from "../ProfileSectionCard";
 import { RESUME_ACCEPT, RESUME_MAX_BYTES } from "../schemas";
 import { deleteResume, getResumeSignedUrl, uploadResume } from "./actions";
 
-// Staged upload status. The server action (upload → parse → Claude cleanup) is
-// a single awaited call, so the stage transitions below are TIMER-DRIVEN
-// approximations of the real phases, not actual progress — except "done",
-// which is only ever set when the action genuinely resolves successfully. If
-// the action resolves before a timer fires, we jump straight to "done"; if the
-// cleanup runs long, we simply HOLD on the last stage ("cleaning") until the
-// real result comes back.
-type UploadStage = "uploading" | "reading" | "cleaning" | "done";
+// Staged upload status. The server action (upload → parse → Claude cleanup →
+// save) is a single awaited call, so the stage transitions below are
+// TIMER-DRIVEN approximations of the real phases, not actual progress —
+// except "done", which is only ever set when the action genuinely resolves
+// successfully. If the action resolves before a timer fires, we jump straight
+// to "done"; if the cleanup runs long, we simply HOLD on the last stage
+// ("preparing") until the real result comes back.
+type UploadStage = "uploading" | "extracting" | "analyzing" | "preparing" | "done";
+
+// In-flight stages, in order. The last one holds until the real result.
+const PENDING_STAGES: UploadStage[] = ["uploading", "extracting", "analyzing", "preparing"];
 
 const STAGE_LABELS: Record<UploadStage, string> = {
-  uploading: "Uploading your resume...",
-  reading: "Reading your resume...",
-  cleaning: "Cleaning up your resume...",
+  uploading: "Uploading document...",
+  extracting: "Extracting resume details...",
+  analyzing: "Analyzing qualifications...",
+  preparing: "Preparing your workspace...",
   done: "Done",
 };
 
-// Timer thresholds (ms from upload start) for advancing to the next stage.
-const READING_AT_MS = 1500;
-const CLEANING_AT_MS = 3000;
+const STAGE_SUBLINE = "This may take a while. Please wait.";
+
+// Timer thresholds (ms from upload start) for advancing to each next stage.
+// Roughly: upload ~1.5s → text extraction ~1.5s → Claude cleanup (longest)
+// → "preparing" (holds until the action resolves; no timer past this).
+const EXTRACTING_AT_MS = 1500;
+const ANALYZING_AT_MS = 3000;
+const PREPARING_AT_MS = 7000;
 // How long "Done" stays visible before the status resets (the uploader
 // usually unmounts before this once router.refresh() lands).
 const DONE_RESET_MS = 2000;
@@ -102,23 +111,23 @@ export function ResumeSection({
 
     // Kick off the staged status: advance on timers while the awaited action
     // runs. Timers only ever move FORWARD through the pending stages — "done"
-    // is set exclusively from the real result below. Past CLEANING_AT_MS
-    // there is no further timer, so a long cleanup call holds visibly on
-    // "Cleaning up your resume...".
+    // is set exclusively from the real result below. Past PREPARING_AT_MS
+    // there is no further timer, so a long cleanup/save holds visibly on
+    // "Preparing your workspace...".
+    const advanceTo = (target: UploadStage) =>
+      setStage((s) =>
+        s !== null &&
+        s !== "done" &&
+        PENDING_STAGES.indexOf(s) < PENDING_STAGES.indexOf(target)
+          ? target
+          : s
+      );
     setStage("uploading");
     clearStageTimers();
     timersRef.current = [
-      setTimeout(
-        () => setStage((s) => (s === "uploading" ? "reading" : s)),
-        READING_AT_MS
-      ),
-      setTimeout(
-        () =>
-          setStage((s) =>
-            s === "uploading" || s === "reading" ? "cleaning" : s
-          ),
-        CLEANING_AT_MS
-      ),
+      setTimeout(() => advanceTo("extracting"), EXTRACTING_AT_MS),
+      setTimeout(() => advanceTo("analyzing"), ANALYZING_AT_MS),
+      setTimeout(() => advanceTo("preparing"), PREPARING_AT_MS),
     ];
 
     let result: Awaited<ReturnType<typeof uploadResume>>;
@@ -165,46 +174,49 @@ export function ResumeSection({
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 font-body">
       {hasResume ? (
-        <Card>
-          <CardContent className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex min-w-0 items-center gap-3">
-              <FileText className="text-muted-foreground size-8 shrink-0" />
-              <div className="min-w-0">
-                <p className="truncate font-medium">{filename}</p>
-                {uploadedAt ? (
-                  <p className="text-muted-foreground text-sm">
-                    Uploaded {formatDate(uploadedAt)}
-                  </p>
-                ) : null}
-              </div>
+        <div
+          className={cn(
+            INSET_PANEL,
+            "flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-[8px] bg-brand-surface text-brand-primary">
+              <FileText className="size-5" />
             </div>
-            <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={handleView}>
-                <ExternalLink /> View resume
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setReplacing((v) => !v)}
-              >
-                <RefreshCw /> Replace
-              </Button>
-              <ConfirmDelete
-                onConfirm={deleteResume}
-                title="Remove your resume?"
-                description="The file will be deleted from storage. This cannot be undone."
-                successMessage="Resume removed"
-                trigger={
-                  <Button variant="outline" size="sm">
-                    <Trash2 /> Remove
-                  </Button>
-                }
-              />
+            <div className="min-w-0">
+              <p className="truncate text-base font-semibold text-brand-ink">
+                {filename}
+              </p>
+              {uploadedAt ? (
+                <p className="text-sm text-brand-ink-secondary">
+                  Uploaded on {formatDate(uploadedAt)}
+                </p>
+              ) : null}
             </div>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button className={BTN_INK} onClick={handleView}>
+              <ExternalLink /> View
+            </Button>
+            <Button className={BTN_INK} onClick={() => setReplacing((v) => !v)}>
+              <RefreshCw /> Replace
+            </Button>
+            <ConfirmDelete
+              onConfirm={deleteResume}
+              title="Remove your resume?"
+              description="The file will be deleted from storage. This cannot be undone."
+              successMessage="Resume removed"
+              trigger={
+                <Button className={BTN_DANGER}>
+                  <Trash2 /> Delete
+                </Button>
+              }
+            />
+          </div>
+        </div>
       ) : null}
 
       {showUploader ? (
@@ -225,36 +237,49 @@ export function ResumeSection({
           onDragLeave={() => setDragOver(false)}
           onDrop={onDrop}
           className={cn(
-            "flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed p-10 text-center transition-colors",
-            dragOver ? "border-primary bg-muted/50" : "border-input",
-            uploading ? "pointer-events-none opacity-70" : "cursor-pointer"
+            "flex flex-col items-center justify-center gap-2 rounded-[12px] border p-10 text-center transition-colors",
+            stage
+              ? // Upload-status card: solid border, white, ~134px tall.
+                "min-h-[134px] border-brand-border bg-brand-surface"
+              : dragOver
+                ? "border-dashed border-brand-secondary bg-brand-container"
+                : "border-dashed border-brand-border bg-brand-surface",
+            uploading ? "pointer-events-none" : "cursor-pointer"
           )}
         >
           {stage ? (
             <>
               {stage === "done" ? (
-                <CheckCircle2 className="size-6 text-green-600 dark:text-green-400" />
+                <CheckCircle2 className="size-6 text-accent-3" />
               ) : (
-                <Loader2 className="text-muted-foreground size-6 animate-spin" />
+                <Loader2
+                  className="size-[58px] animate-spin text-brand-secondary"
+                  strokeWidth={2}
+                />
               )}
-              <p className="text-sm font-medium" role="status" aria-live="polite">
+              <p
+                className="pt-1 text-base font-semibold text-brand-ink"
+                role="status"
+                aria-live="polite"
+              >
                 {STAGE_LABELS[stage]}
               </p>
+              {stage !== "done" ? (
+                <p className="text-sm text-brand-ink-secondary">{STAGE_SUBLINE}</p>
+              ) : null}
             </>
           ) : (
             <>
-              <UploadCloud className="text-muted-foreground size-6" />
-              <p className="text-sm font-medium">
+              <UploadCloud className="size-6 text-brand-primary" />
+              <p className="text-sm font-medium text-brand-ink">
                 Drag &amp; drop your resume here
               </p>
-              <p className="text-muted-foreground text-xs">
+              <p className="text-xs text-brand-ink-secondary">
                 PDF or DOCX, up to 5MB
               </p>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
-                className="mt-2"
+                className={cn(BTN_INK, "mt-2")}
                 onClick={(e) => {
                   e.stopPropagation();
                   inputRef.current?.click();
@@ -279,7 +304,12 @@ export function ResumeSection({
       ) : null}
 
       {hasResume && replacing && !uploading ? (
-        <Button variant="ghost" size="sm" onClick={() => setReplacing(false)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setReplacing(false)}
+          className="text-brand-ink-secondary hover:text-brand-primary"
+        >
           Cancel
         </Button>
       ) : null}

@@ -5,28 +5,12 @@ import { useRouter } from "next/navigation";
 import { Briefcase, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import type { SkillOption } from "@/components/profile/SkillCombobox";
+import { Dialog } from "@/components/ui/dialog";
+import { FormModalContent } from "@/components/profile/FormModal";
 import type { EmploymentTypeValue } from "../schemas";
+import { BTN_PRIMARY, ProfileSectionHeader } from "../ProfileSectionCard";
 import { WorkExperienceForm } from "./WorkExperienceForm";
 import { WorkExperienceCard } from "./WorkExperienceCard";
-
-export type ProjectDTO = {
-  id: string;
-  name: string;
-  url: string;
-  startDate: string;
-  endDate: string;
-  ongoing: boolean;
-  description: string;
-  skillIds: string[];
-  skillNames: string[];
-};
 
 export type WorkExperienceDTO = {
   id: string;
@@ -37,15 +21,18 @@ export type WorkExperienceDTO = {
   currentlyWorking: boolean;
   employmentType: EmploymentTypeValue;
   description: string;
-  projects: ProjectDTO[];
 };
 
+// `title`/`subtitle`: when given, the section renders its own header row so
+// the "Add Work Experience" button can sit top-right of the card.
 export function WorkExperienceSection({
   experiences,
-  skillOptions,
+  title,
+  subtitle,
 }: {
   experiences: WorkExperienceDTO[];
-  skillOptions: SkillOption[];
+  title?: string;
+  subtitle?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -64,35 +51,42 @@ export function WorkExperienceSection({
     router.refresh();
   }
 
-  return (
-    <div className="space-y-4">
-      <Button onClick={openAdd}>
-        <Plus /> Add work experience
-      </Button>
+  const addButton = (
+    <Button className={BTN_PRIMARY} onClick={openAdd}>
+      <Plus /> Add Work Experience
+    </Button>
+  );
 
+  return (
+    <div className="space-y-6 font-body">
+      {title && subtitle ? (
+        <ProfileSectionHeader title={title} subtitle={subtitle} action={addButton} />
+      ) : (
+        <div className="flex justify-end">{addButton}</div>
+      )}
+
+      {/* Add / edit dialog — internals untouched (P4) */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>
-              {editing ? "Edit work experience" : "Add work experience"}
-            </DialogTitle>
-          </DialogHeader>
+        <FormModalContent
+          icon={Briefcase}
+          title={editing ? "Edit Work Experience" : "Add Work Experience"}
+        >
           <WorkExperienceForm
             key={editing?.id ?? "new"}
             entry={editing}
             onSuccess={handleSuccess}
           />
-        </DialogContent>
+        </FormModalContent>
       </Dialog>
 
       {experiences.length === 0 ? (
         <EmptyState
           icon={Briefcase}
           title="No work experience added yet"
-          description="Add roles you've held and the projects you worked on."
+          description="Add the professional roles you've held and your key responsibilities."
           action={
-            <Button variant="outline" onClick={openAdd}>
-              <Plus /> Add work experience
+            <Button className={BTN_PRIMARY} onClick={openAdd}>
+              <Plus /> Add Work Experience
             </Button>
           }
         />
@@ -102,7 +96,6 @@ export function WorkExperienceSection({
             <WorkExperienceCard
               key={w.id}
               experience={w}
-              skillOptions={skillOptions}
               onEdit={() => openEdit(w)}
             />
           ))}

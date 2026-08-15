@@ -1,30 +1,87 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
+import type { ReactNode } from "react";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { applicationPath } from "@/lib/applications";
 import {
   LEVEL_LABELS,
   WORK_MODE_LABELS,
-  companyInitial,
   formatSalary,
   postedAgo,
 } from "@/lib/jobs";
+import { cn } from "@/lib/utils";
 import { ApplyButton } from "./ApplyButton";
 
-function Section({ title, body }: { title: string; body: string | null }) {
-  if (!body) return null;
+// Full-width content card. `tone="container"` = the Evaluation Process
+// variant (brand-container background instead of white).
+function SectionCard({
+  title,
+  tone = "surface",
+  children,
+}: {
+  title: string;
+  tone?: "surface" | "container";
+  children: ReactNode;
+}) {
   return (
-    <section className="space-y-2">
-      <h2 className="text-lg font-semibold">{title}</h2>
-      <p className="text-muted-foreground text-sm whitespace-pre-line">{body}</p>
+    <section
+      className={cn(
+        "space-y-4 rounded-[12px] border border-brand-border p-6 sm:p-8",
+        tone === "container" ? "bg-brand-container" : "bg-brand-surface"
+      )}
+    >
+      <h2 className="text-2xl font-semibold text-brand-primary">{title}</h2>
+      {children}
     </section>
   );
 }
+
+// Text sections are free-form Strings (may or may not contain newlines).
+// Multi-line values render as bullets (blank lines skipped); a single line
+// stays a paragraph. `bullets` opts a section into the list treatment.
+function TextSection({
+  title,
+  body,
+  bullets = false,
+}: {
+  title: string;
+  body: string | null;
+  bullets?: boolean;
+}) {
+  if (!body) return null;
+  const lines = body
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*[-•*]\s+/, "").trim())
+    .filter(Boolean);
+  const asList = bullets && lines.length > 1;
+
+  return (
+    <SectionCard title={title}>
+      {asList ? (
+        <ul className="list-disc space-y-1.5 pl-5 text-base text-brand-ink">
+          {lines.map((line, i) => (
+            <li key={i}>{line}</li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-base whitespace-pre-line text-brand-ink">{body}</p>
+      )}
+    </SectionCard>
+  );
+}
+
+function DarkTag({ children }: { children: ReactNode }) {
+  return (
+    <span className="inline-flex h-[23px] items-center rounded-[6px] bg-tag-2 px-2.5 text-xs text-white">
+      {children}
+    </span>
+  );
+}
+
+const CTA_CLASS = "h-9 rounded-[8px] px-5 font-body text-sm font-medium text-white";
 
 export default async function JobDetailPage({
   params,
@@ -62,114 +119,140 @@ export default async function JobDetailPage({
       })
     : null;
 
+  // Four CTA states, all preserved: closed / no profile / already applied /
+  // apply. Only the disabled + helper-link variants need extra markup.
+  let cta: ReactNode;
+  if (closed) {
+    cta = (
+      <Button
+        disabled
+        className={cn(CTA_CLASS, "bg-brand-border disabled:opacity-100")}
+      >
+        Apply Now
+      </Button>
+    );
+  } else if (!profile) {
+    cta = (
+      <div className="space-y-2 md:text-right">
+        <Button
+          disabled
+          className={cn(CTA_CLASS, "bg-brand-border disabled:opacity-100")}
+        >
+          Apply Now
+        </Button>
+        <p className="text-xs text-brand-ink-secondary">
+          Complete your{" "}
+          <Link
+            href="/candidate/profile"
+            className="underline hover:text-brand-primary"
+          >
+            basic info
+          </Link>{" "}
+          before applying.
+        </p>
+      </div>
+    );
+  } else if (existing) {
+    cta = (
+      <Button
+        asChild
+        className={cn(CTA_CLASS, "bg-brand-ink hover:bg-brand-ink/90")}
+      >
+        <Link href={applicationPath(existing.id, existing.status)}>
+          {existing.status === "submitted"
+            ? "Continue your interview"
+            : "View your result"}
+        </Link>
+      </Button>
+    );
+  } else {
+    cta = (
+      <ApplyButton
+        jobId={job.id}
+        className={cn(CTA_CLASS, "bg-brand-secondary hover:bg-brand-secondary/90")}
+        label="Apply Now"
+      />
+    );
+  }
+
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <Link
         href="/candidate/jobs"
-        className="text-muted-foreground hover:text-foreground mb-6 inline-flex items-center gap-1 text-sm"
+        className="inline-flex items-center gap-2 text-xl font-semibold text-brand-primary hover:underline"
       >
-        <ArrowLeft className="size-4" /> Back to jobs
+        <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
 
       {closed ? (
-        <div className="border-destructive/40 bg-destructive/10 text-destructive mb-6 rounded-md border px-4 py-3 text-sm">
+        <div className="rounded-[12px] border border-brand-border bg-status-fail px-4 py-3 text-sm text-accent-2">
           This job is no longer accepting applications.
         </div>
       ) : null}
 
-      {/* Hero */}
-      <div className="mb-8 space-y-4">
-        <div className="flex items-start gap-4">
-          {job.company.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={job.company.logoUrl}
-              alt=""
-              className="size-12 shrink-0 rounded-md object-cover"
-            />
-          ) : (
-            <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-md font-semibold">
-              {companyInitial(job.company.name)}
-            </div>
-          )}
-          <div className="min-w-0">
-            <h1 className="text-2xl font-semibold">{job.title}</h1>
-            <p className="text-muted-foreground">{job.company.name}</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5">
-          <Badge variant="outline">{WORK_MODE_LABELS[job.workMode]}</Badge>
-          {job.location ? (
-            <Badge variant="outline">{job.location}</Badge>
-          ) : null}
-          <Badge variant="secondary">{LEVEL_LABELS[job.level]} level</Badge>
-        </div>
-
-        {salary ? <p className="font-medium">{salary}</p> : null}
-        <p className="text-muted-foreground text-xs">{postedAgo(job.createdAt)}</p>
-
-        {closed ? (
-          <Button size="lg" disabled>
-            Apply
-          </Button>
-        ) : !profile ? (
-          <div className="space-y-2">
-            <Button size="lg" disabled>
-              Apply
-            </Button>
-            <p className="text-muted-foreground text-sm">
-              Complete your{" "}
-              <Link
-                href="/candidate/profile/basic-info"
-                className="underline"
-              >
-                basic info
-              </Link>{" "}
-              before applying.
+      {/* Top block */}
+      <div className="flex flex-col gap-6 border-b border-brand-border pb-8 md:flex-row md:items-start md:justify-between">
+        <div className="min-w-0 space-y-3">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-semibold text-brand-primary">
+              {job.title}
+            </h1>
+            <p className="text-base text-brand-ink-secondary">
+              {job.company.name}
             </p>
           </div>
-        ) : existing ? (
-          <Button asChild size="lg" variant="outline">
-            <Link href={applicationPath(existing.id, existing.status)}>
-              {existing.status === "submitted"
-                ? "Continue your interview"
-                : "View your result"}
-            </Link>
-          </Button>
-        ) : (
-          <ApplyButton jobId={job.id} />
-        )}
+          {salary ? (
+            <p className="text-base font-semibold text-brand-ink-secondary">
+              {salary}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
+            <DarkTag>{WORK_MODE_LABELS[job.workMode]}</DarkTag>
+            {job.location ? <DarkTag>{job.location}</DarkTag> : null}
+            <DarkTag>{LEVEL_LABELS[job.level]}</DarkTag>
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
+          {cta}
+          <p className="text-xs text-brand-ink-secondary">
+            {postedAgo(job.createdAt)}
+          </p>
+        </div>
       </div>
 
-      <div className="space-y-8">
-        <Section title="Job description" body={job.description} />
-        <Section title="Role overview" body={job.roleOverview} />
-        <Section title="What does day-to-day look like" body={job.dayToDay} />
-        <Section title="Requirements" body={job.requirements} />
+      {/* Content sections */}
+      <div className="space-y-5">
+        <TextSection title="Job Description" body={job.description} />
+        <TextSection title="Role Overview" body={job.roleOverview} />
+        <TextSection
+          title="What does day-to-day look like"
+          body={job.dayToDay}
+          bullets
+        />
+        <TextSection title="Requirements" body={job.requirements} bullets />
 
         {job.skills.length > 0 ? (
-          <section className="space-y-2">
-            <h2 className="text-lg font-semibold">Required skills</h2>
-            <div className="flex flex-wrap gap-1.5">
+          <SectionCard title="Required Skills">
+            <div className="flex flex-wrap gap-2">
               {job.skills.map((s) => (
-                <Badge key={s.skillId} variant="secondary">
+                <span
+                  key={s.skillId}
+                  className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-xs text-brand-ink"
+                >
                   {s.skill.name}
-                </Badge>
+                </span>
               ))}
             </div>
-          </section>
+          </SectionCard>
         ) : null}
 
-        <Card>
-          <CardContent className="text-muted-foreground text-sm">
-            <p className="text-foreground mb-1 font-medium">
-              Evaluation process
-            </p>
+        <SectionCard title="Evaluation Process" tone="container">
+          <p className="text-base text-brand-ink">
             After you apply, you&apos;ll complete a short AI interview. Results
             are shared with {job.company.name} along with your profile.
-          </CardContent>
-        </Card>
+          </p>
+        </SectionCard>
       </div>
     </div>
   );

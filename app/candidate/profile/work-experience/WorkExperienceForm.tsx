@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +22,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  FormModalBody,
+  FormModalFooter,
+  MODAL_CHECK_LABEL,
+  MODAL_CHECKBOX,
+  MODAL_INPUT,
+  MODAL_LABEL,
+  MODAL_PAIR,
+  MODAL_TEXTAREA,
+  ModalDateInput,
+  Req,
+} from "@/components/profile/FormModal";
 import {
   EMPLOYMENT_TYPE_LABELS,
   FIELD_LIMITS,
@@ -87,18 +99,133 @@ export function WorkExperienceForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+        <FormModalBody>
+          <div className={MODAL_PAIR}>
+            <FormField
+              control={form.control}
+              name="position"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>
+                    Position
+                    <Req />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Software Engineer"
+                      maxLength={FIELD_LIMITS.position}
+                      className={MODAL_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="companyName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>
+                    Company
+                    <Req />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Acme Inc."
+                      maxLength={FIELD_LIMITS.companyName}
+                      className={MODAL_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          <div className={MODAL_PAIR}>
+            <FormField
+              control={form.control}
+              name="startDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>Start Date</FormLabel>
+                  <FormControl>
+                    <ModalDateInput {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="endDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={MODAL_LABEL}>End Date</FormLabel>
+                  <FormControl>
+                    <ModalDateInput disabled={currentlyWorking} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <FormField
             control={form.control}
-            name="position"
+            name="currentlyWorking"
+            render={({ field }) => (
+              <FormItem className="flex flex-row items-center gap-2.5">
+                <FormControl>
+                  <Checkbox
+                    className={MODAL_CHECKBOX}
+                    checked={field.value}
+                    onCheckedChange={(checked) => field.onChange(checked === true)}
+                  />
+                </FormControl>
+                <FormLabel className={cn("!mt-0", MODAL_CHECK_LABEL)}>
+                  I currently work here
+                </FormLabel>
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="employmentType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Position</FormLabel>
+                <FormLabel className={MODAL_LABEL}>Employment Type</FormLabel>
+                <Select value={field.value} onValueChange={field.onChange}>
+                  <FormControl>
+                    <SelectTrigger className={cn(MODAL_INPUT, "w-full")}>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent className="font-body">
+                    {EMPLOYMENT_TYPES.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {EMPLOYMENT_TYPE_LABELS[type]}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="description"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className={MODAL_LABEL}>Description</FormLabel>
                 <FormControl>
-                  <Input
-                    placeholder="Software Engineer"
-                    maxLength={FIELD_LIMITS.position}
+                  <Textarea
+                    rows={4}
+                    maxLength={FIELD_LIMITS.description}
+                    className={MODAL_TEXTAREA}
                     {...field}
                   />
                 </FormControl>
@@ -106,111 +233,11 @@ export function WorkExperienceForm({
               </FormItem>
             )}
           />
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="Acme Inc."
-                    maxLength={FIELD_LIMITS.companyName}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="startDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Start date</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="endDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>End date</FormLabel>
-                <FormControl>
-                  <Input type="date" disabled={currentlyWorking} {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        <FormField
-          control={form.control}
-          name="currentlyWorking"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center gap-2">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={(checked) => field.onChange(checked === true)}
-                />
-              </FormControl>
-              <FormLabel className="!mt-0">I currently work here</FormLabel>
-            </FormItem>
-          )}
+        </FormModalBody>
+        <FormModalFooter
+          saveLabel="Save Work Experience"
+          pending={form.formState.isSubmitting}
         />
-
-        <FormField
-          control={form.control}
-          name="employmentType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Employment type</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {EMPLOYMENT_TYPES.map((type) => (
-                    <SelectItem key={type} value={type}>
-                      {EMPLOYMENT_TYPE_LABELS[type]}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea rows={4} maxLength={FIELD_LIMITS.description} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end">
-          <Button type="submit" disabled={form.formState.isSubmitting}>
-            {form.formState.isSubmitting ? "Saving…" : "Save"}
-          </Button>
-        </div>
       </form>
     </Form>
   );

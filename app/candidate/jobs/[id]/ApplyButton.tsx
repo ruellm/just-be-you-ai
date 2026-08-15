@@ -7,12 +7,22 @@ import { applyToJob } from "./actions";
 
 // Creates a submitted Application then (server-side) redirects to the
 // on-demand interview screen.
-export function ApplyButton({ jobId }: { jobId: string }) {
+// `className` / `label` are visual-only hooks for the redesigned detail page.
+export function ApplyButton({
+  jobId,
+  className,
+  label = "Apply",
+}: {
+  jobId: string;
+  className?: string;
+  label?: string;
+}) {
   const [pending, startTransition] = useTransition();
 
   return (
     <Button
       size="lg"
+      className={className}
       disabled={pending}
       onClick={() =>
         startTransition(async () => {
@@ -35,7 +45,7 @@ export function ApplyButton({ jobId }: { jobId: string }) {
         })
       }
     >
-      {pending ? "Preparing your interview…" : "Apply"}
+      {pending ? "Preparing your interview…" : label}
     </Button>
   );
 }

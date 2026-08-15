@@ -34,16 +34,16 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   archived: "Archived",
 };
 
+// Design-system status pill colours (brand tokens from app/globals.css).
+// Draft/Archived aren't in the design — neutral brand-container / ink-secondary.
 export const APPLICATION_STATUS_BADGE_CLASS: Record<ApplicationStatus, string> =
   {
-    draft: "bg-muted text-muted-foreground",
-    submitted: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-    interview_completed:
-      "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200",
-    passed:
-      "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-    failed: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
-    archived: "bg-muted text-muted-foreground",
+    draft: "bg-brand-container text-brand-ink-secondary",
+    submitted: "bg-tag-3 text-accent-1",
+    interview_completed: "bg-status-success text-accent-3",
+    passed: "bg-status-success text-accent-3",
+    failed: "bg-status-fail text-accent-2",
+    archived: "bg-brand-container text-brand-ink-secondary",
   };
 
 // Where a given application should link to, based on its status.

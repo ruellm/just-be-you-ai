@@ -17,6 +17,7 @@ function toYears(value: string): number {
 }
 
 function revalidate() {
+  revalidatePath("/candidate/profile");
   revalidatePath("/candidate/profile/skills");
   revalidatePath("/candidate/dashboard");
 }
