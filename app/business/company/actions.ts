@@ -19,23 +19,24 @@ export async function saveCompany(values: CompanyValues): Promise<ActionResult> 
     return { success: false, fieldErrors: fieldErrorsFrom(parsed.error) };
   }
   const d = parsed.data;
+  const data = {
+    name: d.name,
+    description: nullify(d.description),
+    website: nullify(d.website),
+    logoUrl: nullify(d.logoUrl),
+    yearFounded: d.yearFounded === "" ? null : Number.parseInt(d.yearFounded, 10),
+    contactEmail: nullify(d.contactEmail),
+    phone: nullify(d.phone),
+    headquarters: nullify(d.headquarters),
+    type: nullify(d.type),
+    industry: nullify(d.industry),
+  };
 
   try {
     await prisma.company.upsert({
       where: { userId: user.id },
-      update: {
-        name: d.name,
-        description: nullify(d.description),
-        website: nullify(d.website),
-        logoUrl: nullify(d.logoUrl),
-      },
-      create: {
-        userId: user.id,
-        name: d.name,
-        description: nullify(d.description),
-        website: nullify(d.website),
-        logoUrl: nullify(d.logoUrl),
-      },
+      update: data,
+      create: { userId: user.id, ...data },
     });
   } catch {
     return { success: false, error: "Could not save. Please try again." };

@@ -108,6 +108,15 @@ model Company {
   logoUrl     String?
   createdAt   DateTime @default(now())
 
+  // Company profile details (business redesign). All optional; free text
+  // except yearFounded. `type` is free text ("Privately Held", …) — no enum.
+  yearFounded  Int?
+  contactEmail String?
+  phone        String?
+  headquarters String?
+  type         String?
+  industry     String?
+
   user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs Job[]
 
