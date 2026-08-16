@@ -12,8 +12,4 @@ export function userDisplayName(u: UserNameSource): string {
   return fullName || u.company?.name?.trim() || u.email;
 }
 
-export const SEATS = {
-  plan: "Professional (10 seats/month)",
-  current: 3,
-  max: 3,
-};
+export const MAX_SEATS_TOTAL = 1000;

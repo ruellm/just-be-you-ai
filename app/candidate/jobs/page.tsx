@@ -3,6 +3,7 @@ import { SearchX } from "lucide-react";
 import { Prisma, type Level, type WorkMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
+import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { JobCard } from "@/components/jobs/JobCard";
 import { EmptyState } from "@/components/EmptyState";
 import { LEVELS, WORK_MODES } from "@/lib/jobs";
@@ -71,7 +72,7 @@ export default async function JobsPage({
 
   const user = await getCurrentUser();
 
-  const [total, jobs, allSkills, applications] = await Promise.all([
+  const [total, jobs, allSkills, applications, seatBalance] = await Promise.all([
     prisma.job.count({ where }),
     prisma.job.findMany({
       where,
@@ -92,8 +93,14 @@ export default async function JobsPage({
           select: { jobId: true },
         })
       : Promise.resolve([]),
+    user
+      ? prisma.candidateProfile
+          .findUnique({ where: { userId: user.id }, select: { id: true } })
+          .then((p) => (p ? getInterviewSeatBalance(prisma, p.id) : null))
+      : Promise.resolve(null),
   ]);
   const appliedJobIds = new Set(applications.map((a) => a.jobId));
+  const noSeats = seatBalance != null && seatBalance.remaining === 0;
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -143,7 +150,12 @@ export default async function JobsPage({
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {jobs.map((job) => (
-            <JobCard key={job.id} job={job} applied={appliedJobIds.has(job.id)} />
+            <JobCard
+              key={job.id}
+              job={job}
+              applied={appliedJobIds.has(job.id)}
+              noSeats={noSeats}
+            />
           ))}
         </div>
       )}

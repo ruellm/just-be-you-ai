@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { applicationPath } from "@/lib/applications";
+import { OUT_OF_SEATS_SHORT, getInterviewSeatBalance } from "@/lib/interview-seats";
 import {
   LEVEL_LABELS,
   WORK_MODE_LABELS,
@@ -58,6 +59,9 @@ export default async function JobDetailPage({
         select: { id: true, status: true },
       })
     : null;
+  const seatBalance =
+    profile && !existing ? await getInterviewSeatBalance(prisma, profile.id) : null;
+  const noSeats = seatBalance != null && seatBalance.remaining === 0;
 
   // Four CTA states, all preserved: closed / no profile / already applied /
   // apply. Only the disabled + helper-link variants need extra markup.
@@ -104,6 +108,18 @@ export default async function JobDetailPage({
             : "View your result"}
         </Link>
       </Button>
+    );
+  } else if (noSeats) {
+    cta = (
+      <div className="space-y-2 md:text-right">
+        <Button
+          disabled
+          className={cn(CTA_CLASS, "bg-brand-border disabled:opacity-100")}
+        >
+          Apply Now
+        </Button>
+        <p className="text-xs text-brand-ink-secondary">{OUT_OF_SEATS_SHORT}</p>
+      </div>
     );
   } else {
     cta = (

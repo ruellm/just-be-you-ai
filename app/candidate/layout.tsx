@@ -2,6 +2,10 @@ import { redirect } from "next/navigation";
 import { CandidateSidebar } from "@/components/candidate/CandidateSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import {
+  clampSeatsUsedForDisplay,
+  getInterviewSeatBalance,
+} from "@/lib/interview-seats";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -23,8 +27,13 @@ export default async function CandidateLayout({
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: dbUser.id },
-    select: { firstName: true, lastName: true, preferredRole: true },
+    select: { id: true, firstName: true, lastName: true, preferredRole: true },
   });
+  const seatBalance = profile
+    ? await getInterviewSeatBalance(prisma, profile.id)
+    : null;
+  const seatsTotal = seatBalance?.total ?? 0;
+  const seatsUsed = clampSeatsUsedForDisplay(seatBalance?.used ?? 0, seatsTotal);
   const fullName = [profile?.firstName, profile?.lastName]
     .filter(Boolean)
     .join(" ");
@@ -36,6 +45,8 @@ export default async function CandidateLayout({
         name={displayName}
         initials={initialsOf(displayName)}
         jobTitle={profile?.preferredRole ?? null}
+        seatsUsed={seatsUsed}
+        seatsTotal={seatsTotal}
       />
       {/* Content sits to the right of the fixed 255px sidebar on lg+. */}
       <main className="min-w-0 lg:pl-[255px]">{children}</main>

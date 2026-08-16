@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Image from "next/image";
-import { ChevronDown, Minus, Plus } from "lucide-react";
-import { SEATS } from "@/lib/admin";
+import { useRouter } from "next/navigation";
+import { Minus, Plus } from "lucide-react";
+import { toast } from "sonner";
+import { MAX_SEATS_TOTAL } from "@/lib/admin";
+import { setCompanySeats } from "@/app/admin/companies/actions";
+import { setCandidateSeats } from "@/app/admin/users/actions";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -22,19 +26,66 @@ const COUNT_BOX =
 export function ChangeSeatsModal({
   open,
   onOpenChange,
-  subject = "user",
+  subject,
+  targetId,
+  seatsUsed,
+  seatsTotal,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  subject?: "user" | "business";
+  subject: "business" | "candidate";
+  targetId: string;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
-  const [seats, setSeats] = useState(SEATS.current);
+  const router = useRouter();
+  const floor = Math.min(seatsUsed, MAX_SEATS_TOTAL);
+  const overCap = seatsUsed > seatsTotal;
+  const initial = Math.max(seatsTotal, floor);
+  const [seats, setSeats] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  const subjectLabel = subject === "business" ? "Business" : "Candidate";
+  const usedLabel = subject === "business" ? "Profile unlocks used" : "Interview seats used";
+
+  useEffect(() => {
+    if (open) {
+      setSeats(initial);
+      setError(null);
+    }
+  }, [open, initial]);
+
+  function submit() {
+    setError(null);
+    startTransition(async () => {
+      const result =
+        subject === "business"
+          ? await setCompanySeats(targetId, seats)
+          : await setCandidateSeats(targetId, seats);
+      if (result.ok) {
+        toast.success(`Seats updated to ${result.seatsTotal}.`);
+        onOpenChange(false);
+        router.refresh();
+        return;
+      }
+      if (result.reason === "below_used") {
+        setError(
+          `Cannot set seats to ${result.requested}: this ${subjectLabel.toLowerCase()} has already used ${result.seatsUsed} seat${result.seatsUsed === 1 ? "" : "s"}. The total must be at least ${result.seatsUsed}.`
+        );
+        return;
+      }
+      setError(result.error);
+    });
+  }
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        if (!next) setSeats(SEATS.current);
+        if (!next) {
+          setSeats(initial);
+          setError(null);
+        }
         onOpenChange(next);
       }}
     >
@@ -54,7 +105,7 @@ export function ChangeSeatsModal({
             />
           </div>
           <DialogTitle className="text-xl leading-7 font-semibold text-brand-primary">
-            Change Seats for {subject === "business" ? "Business" : "User"}
+            Change Seats for {subjectLabel}
           </DialogTitle>
           <DialogClose
             aria-label="Close"
@@ -65,23 +116,16 @@ export function ChangeSeatsModal({
         </div>
         <div className="mx-6 h-px bg-brand-border" />
         <div className="px-6 pt-5 pb-6">
-          <p className={LABEL_CLASS}>
-            Current Plan <span className="text-accent-2">*</span>
-          </p>
-          <div className="flex h-[42px] items-center justify-between rounded-[8px] border-[0.8px] border-brand-border px-4 text-sm font-medium text-brand-ink-secondary">
-            {SEATS.plan}
-            <ChevronDown className="size-4 text-brand-ink-secondary" />
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-6">
+          <div className="flex flex-wrap gap-6">
             <div>
               <p className={LABEL_CLASS}>Current Seats</p>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
                   aria-label="Decrease seats"
-                  onClick={() => setSeats((s) => Math.max(0, s - 1))}
-                  className={STEP_BTN}
+                  onClick={() => setSeats((s) => Math.max(floor, s - 1))}
+                  disabled={seats <= floor}
+                  className={`${STEP_BTN} disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   <Minus className="size-4" />
                 </button>
@@ -89,24 +133,36 @@ export function ChangeSeatsModal({
                 <button
                   type="button"
                   aria-label="Increase seats"
-                  onClick={() => setSeats((s) => Math.min(SEATS.max, s + 1))}
-                  className={STEP_BTN}
+                  onClick={() => setSeats((s) => Math.min(MAX_SEATS_TOTAL, s + 1))}
+                  disabled={seats >= MAX_SEATS_TOTAL}
+                  className={`${STEP_BTN} disabled:cursor-not-allowed disabled:opacity-40`}
                 >
                   <Plus className="size-4" />
                 </button>
               </div>
               <p className="mt-3 text-xs text-brand-ink-secondary">
-                Reveals used this cycle
+                {usedLabel}: {seatsUsed} of {seatsTotal}
               </p>
             </div>
             <div className="px-5">
               <p className={LABEL_CLASS}>Max Seat Limit</p>
-              <div className={`${COUNT_BOX} w-[131px]`}>{SEATS.max}</div>
+              <div className={`${COUNT_BOX} w-[131px]`}>{MAX_SEATS_TOTAL}</div>
               <p className="mt-3 text-xs text-brand-ink-secondary">
                 Total plan limit
               </p>
             </div>
           </div>
+
+          {overCap ? (
+            <p className="mt-4 text-sm font-medium text-amber-700">
+              This {subjectLabel.toLowerCase()} has used {seatsUsed} seats but
+              only has {seatsTotal}. Set the total to at least {seatsUsed} to
+              clear the deficit.
+            </p>
+          ) : null}
+          {error ? (
+            <p className="mt-4 text-sm font-medium text-accent-2">{error}</p>
+          ) : null}
 
           <div className="mt-4 h-px bg-brand-border" />
           <div className="mt-5 flex items-center justify-end gap-3">
@@ -121,10 +177,11 @@ export function ChangeSeatsModal({
             </DialogClose>
             <Button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={submit}
+              disabled={pending || seats < floor}
               className="h-10 rounded-[8px] bg-brand-secondary px-5 text-sm font-semibold text-white hover:bg-brand-secondary/90"
             >
-              Update Seats
+              {pending ? "Updating…" : "Update Seats"}
             </Button>
           </div>
         </div>

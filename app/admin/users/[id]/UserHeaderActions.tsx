@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Eye, EyeOff, Pencil } from "lucide-react";
+import type { Role } from "@prisma/client";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -22,9 +23,19 @@ const BTN_UNDO = cn(
 export function UserHeaderActions({
   userId,
   name,
+  role,
+  candidateProfileId,
+  companyId,
+  seatsUsed,
+  seatsTotal,
 }: {
   userId: string;
   name: string;
+  role: Role;
+  candidateProfileId: string | null;
+  companyId: string | null;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
   const [seatsOpen, setSeatsOpen] = useState(false);
   const [hideOpen, setHideOpen] = useState(false);
@@ -37,21 +48,37 @@ export function UserHeaderActions({
           <Pencil className="size-4" /> Edit User
         </Link>
       </Button>
-      <Button
-        type="button"
-        onClick={() => setSeatsOpen(true)}
-        className={BTN_INK}
-      >
-        <Image
-          src="/icons/seat-chair.svg"
-          alt=""
-          width={16}
-          height={19}
-          unoptimized
-          className="brightness-0 invert"
-        />
-        Change Seats
-      </Button>
+      {role === "candidate" && candidateProfileId ? (
+        <Button
+          type="button"
+          onClick={() => setSeatsOpen(true)}
+          className={BTN_INK}
+        >
+          <Image
+            src="/icons/seat-chair.svg"
+            alt=""
+            width={16}
+            height={19}
+            unoptimized
+            className="brightness-0 invert"
+          />
+          Change Seats
+        </Button>
+      ) : role === "business" && companyId ? (
+        <Button asChild className={BTN_INK}>
+          <Link href={`/admin/companies/${companyId}`}>
+            <Image
+              src="/icons/seat-chair.svg"
+              alt=""
+              width={16}
+              height={19}
+              unoptimized
+              className="brightness-0 invert"
+            />
+            Manage Seats on Company
+          </Link>
+        </Button>
+      ) : null}
       <Button
         type="button"
         onClick={() => setHideOpen(true)}
@@ -68,7 +95,16 @@ export function UserHeaderActions({
         )}
       </Button>
 
-      <ChangeSeatsModal open={seatsOpen} onOpenChange={setSeatsOpen} />
+      {role === "candidate" && candidateProfileId ? (
+        <ChangeSeatsModal
+          open={seatsOpen}
+          onOpenChange={setSeatsOpen}
+          subject="candidate"
+          targetId={candidateProfileId}
+          seatsUsed={seatsUsed}
+          seatsTotal={seatsTotal}
+        />
+      ) : null}
       <HideUserDialog
         open={hideOpen}
         onOpenChange={setHideOpen}

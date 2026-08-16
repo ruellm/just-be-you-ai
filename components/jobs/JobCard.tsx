@@ -25,11 +25,13 @@ export type JobCardData = Prisma.JobGetPayload<{
 export function JobCard({
   job,
   applied = false,
+  noSeats = false,
   actions,
   className,
 }: {
   job: JobCardData;
   applied?: boolean;
+  noSeats?: boolean;
   actions?: ReactNode | null;
   className?: string;
 }) {
@@ -38,7 +40,13 @@ export function JobCard({
   const shownSkills = skills.slice(0, 3);
   const extraSkills = skills.length - shownSkills.length;
   const closed = job.status === "closed";
-  const state = applied ? "Applied" : closed ? "Closed" : null;
+  const state = applied
+    ? "Applied"
+    : closed
+      ? "Closed"
+      : noSeats
+        ? "No interview seats left"
+        : null;
 
   return (
     <article
@@ -82,7 +90,10 @@ export function JobCard({
           >
             <Link href={`/candidate/jobs/${job.id}`}>View Role</Link>
           </Button>
-          <JobCardApplyButton jobId={job.id} disabled={closed || applied} />
+          <JobCardApplyButton
+            jobId={job.id}
+            disabled={closed || applied || noSeats}
+          />
         </div>
       ) : (
         actions

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { countInterviewSeatsUsed } from "@/lib/interview-seats";
 import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import {
@@ -106,6 +107,10 @@ export default async function AdminUserDetailPage({
       : [];
 
   const profile = user.candidateProfile;
+  const interviewSeatsUsed =
+    user.role === "candidate" && profile
+      ? await countInterviewSeatsUsed(prisma, profile.id)
+      : 0;
   const name = userDisplayName(user);
   const resume = parseResumeMeta(profile?.resumeUrl ?? null);
 
@@ -143,7 +148,15 @@ export default async function AdminUserDetailPage({
             <p className="mt-1 text-base text-brand-ink-secondary">{user.email}</p>
           </div>
         </div>
-        <UserHeaderActions userId={user.id} name={name} />
+        <UserHeaderActions
+          userId={user.id}
+          name={name}
+          role={user.role}
+          candidateProfileId={profile?.id ?? null}
+          companyId={user.company?.id ?? null}
+          seatsUsed={interviewSeatsUsed}
+          seatsTotal={profile?.interviewSeatsTotal ?? 0}
+        />
       </div>
 
       <ProfileSectionCard>

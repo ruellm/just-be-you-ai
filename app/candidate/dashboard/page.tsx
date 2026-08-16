@@ -5,6 +5,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { JobCard } from "@/components/jobs/JobCard";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { getRecommendedJobs } from "@/lib/recommendations";
 
 type ProfileFields = {
@@ -77,6 +78,10 @@ export default async function CandidateDashboardPage() {
     profile?.firstName || user?.email?.split("@")[0] || "there";
 
   const recommended = profile ? await getRecommendedJobs(profile.id) : [];
+  const seatBalance = profile
+    ? await getInterviewSeatBalance(prisma, profile.id)
+    : null;
+  const noSeats = seatBalance != null && seatBalance.remaining === 0;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-10 font-body lg:px-14 lg:py-14">
@@ -150,7 +155,12 @@ export default async function CandidateDashboardPage() {
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {recommended.map(({ job, applied }) => (
-              <JobCard key={job.id} job={job} applied={applied} />
+              <JobCard
+                key={job.id}
+                job={job}
+                applied={applied}
+                noSeats={noSeats}
+              />
             ))}
           </div>
         )}

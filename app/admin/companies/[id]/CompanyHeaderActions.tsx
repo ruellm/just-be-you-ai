@@ -22,9 +22,13 @@ const BTN_UNDO = cn(
 export function CompanyHeaderActions({
   companyId,
   name,
+  seatsUsed,
+  seatsTotal,
 }: {
   companyId: string;
   name: string;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
   const [seatsOpen, setSeatsOpen] = useState(false);
   const [hideOpen, setHideOpen] = useState(false);
@@ -68,6 +72,9 @@ export function CompanyHeaderActions({
         open={seatsOpen}
         onOpenChange={setSeatsOpen}
         subject="business"
+        targetId={companyId}
+        seatsUsed={seatsUsed}
+        seatsTotal={seatsTotal}
       />
       <HideUserDialog
         open={hideOpen}

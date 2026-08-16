@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { applyToJob } from "./actions";
@@ -17,6 +18,7 @@ export function ApplyButton({
   className?: string;
   label?: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
 
   return (
@@ -27,7 +29,11 @@ export function ApplyButton({
       onClick={() =>
         startTransition(async () => {
           try {
-            await applyToJob(jobId);
+            const result = await applyToJob(jobId);
+            if (result && !result.ok) {
+              toast.error(result.message);
+              router.refresh();
+            }
           } catch (error) {
             // A redirect throws NEXT_REDIRECT — let it propagate.
             if (

@@ -2,11 +2,30 @@ import { notFound, redirect } from "next/navigation";
 import { candidateAppliedToCompany, getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
+import { parseEvidence } from "@/lib/applications";
 import {
   CandidateProfileView,
   type ApplicationDTO,
   type ProfileDTO,
 } from "./CandidateProfileView";
+
+const REDACTED_NAME = "This candidate";
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function buildNameRedactor(...names: (string | null | undefined)[]) {
+  const parts = names
+    .map((n) => (n ?? "").trim())
+    .filter((n) => n.length >= 2);
+  if (parts.length === 0) return (text: string) => text;
+  const patterns = [parts.join(" "), ...parts]
+    .filter((p, i, arr) => p && arr.indexOf(p) === i)
+    .map((p) => new RegExp(`(?<!\\w)${escapeRegExp(p)}(?!\\w)`, "gi"));
+  return (text: string) =>
+    patterns.reduce((acc, re) => acc.replace(re, REDACTED_NAME), text);
+}
 
 function initialsOf(first: string | null, last: string | null, email: string) {
   const letters = [first, last]
@@ -33,6 +52,17 @@ export default async function CandidateDetailPage({
   // Authorization: candidate must have applied to one of this company's jobs.
   const allowed = await candidateAppliedToCompany(company.id, candidateProfileId);
   if (!allowed) notFound();
+
+  const [unlock, seatsUsed] = await Promise.all([
+    prisma.profileUnlock.findUnique({
+      where: {
+        companyId_candidateProfileId: { companyId: company.id, candidateProfileId },
+      },
+      select: { id: true },
+    }),
+    prisma.profileUnlock.count({ where: { companyId: company.id } }),
+  ]);
+  const locked = unlock == null;
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { id: candidateProfileId },
@@ -65,7 +95,11 @@ export default async function CandidateDetailPage({
     typeof from === "string" && from.startsWith("job:") ? from.slice(4) : null;
   const backHref = fromJob ? `/business/jobs/${fromJob}` : "/business/jobs";
 
-  const profileDto: ProfileDTO = {
+  const redact = locked
+    ? buildNameRedactor(profile.firstName, profile.lastName)
+    : (text: string) => text;
+
+  const profileDto: ProfileDTO | null = locked ? null : {
     id: profile.id,
     fullName,
     initials: initialsOf(profile.firstName, profile.lastName, profile.user.email),
@@ -127,14 +161,18 @@ export default async function CandidateDetailPage({
           score: app.interviewResult.score,
           tier: app.interviewResult.tier,
           recommendation: app.interviewResult.recommendation,
-          fitSummary: app.interviewResult.fitSummary,
-          strengthsJson: app.interviewResult.strengthsJson,
-          concernsJson: app.interviewResult.concernsJson,
+          fitSummary: redact(app.interviewResult.fitSummary),
+          strengthsJson: parseEvidence(app.interviewResult.strengthsJson).map(
+            (item) => ({ ...item, evidence: redact(item.evidence) })
+          ),
+          concernsJson: parseEvidence(app.interviewResult.concernsJson).map(
+            (item) => ({ ...item, evidence: redact(item.evidence) })
+          ),
           rubricScoresJson: app.interviewResult.rubricScoresJson,
           compositeScore: app.interviewResult.compositeScore,
           verdict: app.interviewResult.verdict,
           gatesFiredJson: app.interviewResult.gatesFiredJson,
-          transcript: app.interviewResult.transcript,
+          transcript: locked ? null : app.interviewResult.transcript,
           completedAt: app.interviewResult.completedAt.toISOString(),
         }
       : null,
@@ -142,9 +180,12 @@ export default async function CandidateDetailPage({
 
   return (
     <CandidateProfileView
+      candidateProfileId={profile.id}
       profile={profileDto}
       applications={applicationDtos}
       backHref={backHref}
+      seatsUsed={seatsUsed}
+      seatsTotal={company.seatsTotal}
     />
   );
 }

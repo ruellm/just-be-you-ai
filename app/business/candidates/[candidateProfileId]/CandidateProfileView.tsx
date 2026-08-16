@@ -2,6 +2,7 @@
 
 import { useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ArrowLeft,
   Building2,
@@ -36,9 +37,7 @@ import {
 } from "@/lib/applications";
 import { parseResumeMeta } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
-import { getCandidateResumeSignedUrl } from "./actions";
-
-const SEAT_CREDITS = 25;
+import { getCandidateResumeSignedUrl, unlockCandidateProfile } from "./actions";
 
 export type InterviewResultDTO = {
   score: number;
@@ -51,7 +50,7 @@ export type InterviewResultDTO = {
   compositeScore: number | null;
   verdict: string | null;
   gatesFiredJson: unknown;
-  transcript: string;
+  transcript: string | null;
   completedAt: string;
 };
 
@@ -274,17 +273,16 @@ function EvidenceCard({
 
 function ResumeCard({
   profile,
-  locked,
   onUnlock,
 }: {
-  profile: ProfileDTO;
-  locked: boolean;
+  profile: ProfileDTO | null;
   onUnlock: () => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const meta = parseResumeMeta(profile.resumeUrl);
+  const meta = profile ? parseResumeMeta(profile.resumeUrl) : null;
 
   function open(download: boolean) {
+    if (!profile) return;
     startTransition(async () => {
       const result = await getCandidateResumeSignedUrl(profile.id);
       if ("error" in result) {
@@ -301,7 +299,7 @@ function ResumeCard({
 
   return (
     <Card title="Resume">
-      {locked ? (
+      {!profile ? (
         <LockedPanel caption="Unlock to View Resume" onUnlock={onUnlock} />
       ) : meta ? (
         <div className="space-y-4">
@@ -425,33 +423,60 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
         </Card>
       ) : null}
 
-      <Card>
-        <details>
-          <summary className="cursor-pointer text-base font-semibold text-brand-primary">
-            View transcript
-          </summary>
-          <p className="mt-3 text-sm whitespace-pre-line text-brand-ink-secondary">
-            {r.transcript}
-          </p>
-        </details>
-      </Card>
+      {r.transcript != null ? (
+        <Card>
+          <details>
+            <summary className="cursor-pointer text-base font-semibold text-brand-primary">
+              View transcript
+            </summary>
+            <p className="mt-3 text-sm whitespace-pre-line text-brand-ink-secondary">
+              {r.transcript}
+            </p>
+          </details>
+        </Card>
+      ) : null}
     </div>
   );
 }
 
 export function CandidateProfileView({
+  candidateProfileId,
   profile,
   applications,
   backHref,
+  seatsUsed,
+  seatsTotal,
 }: {
-  profile: ProfileDTO;
+  candidateProfileId: string;
+  profile: ProfileDTO | null;
   applications: ApplicationDTO[];
   backHref: string;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
-  const [unlocked, setUnlocked] = useState(false);
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
-  const locked = !unlocked;
+  const [insufficient, setInsufficient] = useState(false);
+  const [pending, startTransition] = useTransition();
+  const seatsRemaining = Math.max(0, seatsTotal - seatsUsed);
+  const noSeats = seatsRemaining === 0 || insufficient;
   const openModal = () => setModalOpen(true);
+
+  function confirmUnlock() {
+    startTransition(async () => {
+      const result = await unlockCandidateProfile(candidateProfileId);
+      if (result.ok) {
+        setModalOpen(false);
+        router.refresh();
+        return;
+      }
+      if (result.reason === "insufficient_seats") {
+        setInsufficient(true);
+        return;
+      }
+      toast.error(result.error);
+    });
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
@@ -463,7 +488,7 @@ export function CandidateProfileView({
       </Link>
 
       <div className="flex items-center gap-4">
-        {locked ? (
+        {!profile ? (
           <div className="flex size-[60px] shrink-0 items-center justify-center rounded-[8px] bg-brand-secondary/10">
             <Building2 className="size-9 text-brand-secondary" strokeWidth={1.5} />
           </div>
@@ -476,10 +501,12 @@ export function CandidateProfileView({
         )}
         <div className="min-w-0">
           <h1 className="truncate text-[32px] leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
-            {locked ? `Anonymous User ${anonymousNumber(profile.id)}` : profile.fullName}
+            {!profile
+              ? `Anonymous User ${anonymousNumber(candidateProfileId)}`
+              : profile.fullName}
           </h1>
           <p className="truncate text-base tracking-[-0.5px] text-brand-ink-secondary">
-            {locked ? "Anonymous Email" : profile.email}
+            {!profile ? "Anonymous Email" : profile.email}
           </p>
         </div>
       </div>
@@ -490,13 +517,13 @@ export function CandidateProfileView({
           <ApplicationResults key={app.id} app={app} />
         ))}
         <div className="grid gap-5 lg:grid-cols-2">
-          <ResumeCard profile={profile} locked={locked} onUnlock={openModal} />
+          <ResumeCard profile={profile} onUnlock={openModal} />
         </div>
       </section>
 
       <section className="space-y-4">
         <h2 className={CARD_TITLE_CLASS}>Profile Information</h2>
-        {locked ? (
+        {!profile ? (
           <LockedPanel
             caption="Unlock to View Profile"
             onUnlock={openModal}
@@ -703,9 +730,15 @@ export function CandidateProfileView({
               Current Balance
             </span>
             <span className="font-semibold text-brand-ink">
-              {SEAT_CREDITS} credits
+              {seatsUsed} of {seatsTotal} seats used ({seatsRemaining} remaining)
             </span>
           </div>
+          {noSeats ? (
+            <p className="mt-3 text-sm font-medium text-accent-2">
+              Not enough seats. You have used all {seatsTotal} of your seat
+              credits and cannot unlock more profiles right now.
+            </p>
+          ) : null}
           <div className="mt-5 flex items-center justify-end gap-3">
             <DialogClose asChild>
               <Button
@@ -718,13 +751,11 @@ export function CandidateProfileView({
             </DialogClose>
             <Button
               type="button"
-              onClick={() => {
-                setUnlocked(true);
-                setModalOpen(false);
-              }}
+              onClick={confirmUnlock}
+              disabled={pending || noSeats}
               className="h-10 rounded-[12px] bg-brand-secondary px-5 text-sm font-semibold text-white hover:bg-brand-secondary/90"
             >
-              Unlock Profile (-1)
+              {pending ? "Unlocking…" : "Unlock Profile (-1)"}
             </Button>
           </div>
         </DialogContent>

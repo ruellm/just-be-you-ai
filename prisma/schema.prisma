@@ -16,7 +16,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider  = "postgresql"
   // Supabase: pooled connection for the app, direct connection for migrations.
   url       = env("DATABASE_URL")
   directUrl = env("DIRECT_URL")
@@ -117,10 +117,26 @@ model Company {
   type         String?
   industry     String?
 
-  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  jobs Job[]
+  seatsTotal Int @default(25)
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobs           Job[]
+  profileUnlocks ProfileUnlock[]
 
   @@map("companies")
+}
+
+model ProfileUnlock {
+  id                 String   @id @default(cuid())
+  companyId          String
+  candidateProfileId String
+  createdAt          DateTime @default(now())
+
+  company          Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, candidateProfileId])
+  @@map("profile_unlocks")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -164,6 +180,8 @@ model CandidateProfile {
   totalYearsExperience Int?
   preferredRole        String?
 
+  interviewSeatsTotal Int @default(2)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -173,6 +191,7 @@ model CandidateProfile {
   projects        Project[]
   skills          CandidateSkill[]
   applications    Application[]
+  profileUnlocks  ProfileUnlock[]
 
   @@map("candidate_profiles")
 }
@@ -282,13 +301,13 @@ model ProjectSkill {
 // ─────────────────────────────────────────────────────────────────────────────
 
 model Job {
-  id            String    @id @default(cuid())
-  companyId     String
-  title         String
-  description   String
-  roleOverview  String?
-  requirements  String?
-  dayToDay      String? // "What does day-to-day look like"
+  id           String    @id @default(cuid())
+  companyId    String
+  title        String
+  description  String
+  roleOverview String?
+  requirements String?
+  dayToDay     String? // "What does day-to-day look like"
   level        Level
   location     String?
   workMode     WorkMode
@@ -362,8 +381,8 @@ model Application {
   // (LiveKit) interview.
   voiceConversationId String?
 
-  candidateProfile CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
-  job              Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateProfile CandidateProfile    @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?
   questions        GeneratedQuestion[]
 
@@ -400,10 +419,10 @@ model InterviewResult {
   // nothing writes these yet (scoring lands in a later session); old rows and
   // old-style results simply leave them null while the fit fields above keep
   // working during the transition.
-  rubricScoresJson Json?  // per-category, per-sub-criterion 1-5 score + evidence quote
+  rubricScoresJson Json? // per-category, per-sub-criterion 1-5 score + evidence quote
   compositeScore   Float? // 0-100 weighted composite
   verdict          String? // "strong_pass" | "pass" | "borderline" | "fail" (rubric scoreBands keys)
-  gatesFiredJson   Json?  // which must-have hard gates fired, if any
+  gatesFiredJson   Json? // which must-have hard gates fired, if any
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

@@ -23,7 +23,13 @@ export default async function BusinessLayout({
 
   const company = await prisma.company.findUnique({
     where: { userId: dbUser.id },
-    select: { name: true, logoUrl: true },
+    select: {
+      id: true,
+      name: true,
+      logoUrl: true,
+      seatsTotal: true,
+      _count: { select: { profileUnlocks: true } },
+    },
   });
   const companyName = company?.name.trim() || "Your company";
 
@@ -33,6 +39,8 @@ export default async function BusinessLayout({
         companyName={companyName}
         initials={initialsOf(companyName)}
         logoUrl={company?.logoUrl ?? null}
+        seatsUsed={company?._count.profileUnlocks ?? 0}
+        seatsTotal={company?.seatsTotal ?? 0}
       />
       {/* Content sits to the right of the fixed 255px sidebar on lg+. */}
       <main className="min-w-0 lg:pl-[255px]">{children}</main>

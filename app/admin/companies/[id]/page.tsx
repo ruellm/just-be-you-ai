@@ -70,6 +70,7 @@ export default async function AdminCompanyDetailPage({
     where: { id },
     include: {
       user: { select: { email: true, createdAt: true } },
+      _count: { select: { profileUnlocks: true } },
       jobs: {
         orderBy: { createdAt: "desc" },
         include: {
@@ -109,7 +110,12 @@ export default async function AdminCompanyDetailPage({
             <p className="mt-1 text-base text-brand-ink-secondary">{company.user.email}</p>
           </div>
         </div>
-        <CompanyHeaderActions companyId={company.id} name={name} />
+        <CompanyHeaderActions
+          companyId={company.id}
+          name={name}
+          seatsUsed={company._count.profileUnlocks}
+          seatsTotal={company.seatsTotal}
+        />
       </div>
 
       <ProfileSectionCard>

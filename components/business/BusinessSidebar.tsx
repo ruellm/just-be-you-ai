@@ -36,10 +36,14 @@ export function BusinessSidebar({
   companyName,
   initials,
   logoUrl,
+  seatsUsed,
+  seatsTotal,
 }: {
   companyName: string;
   initials: string;
   logoUrl: string | null;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -78,9 +82,6 @@ export function BusinessSidebar({
           );
         })}
 
-        {/* Seat Credits — STATIC PLACEHOLDER. No seat/credit system exists yet
-            (part of the deferred monetization work); "25/25" is hardcoded on
-            purpose and wired to nothing. */}
         <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-sm text-brand-ink">
           <Image
             src="/icons/seat-chair.svg"
@@ -91,7 +92,9 @@ export function BusinessSidebar({
             className="shrink-0"
           />
           <span className="font-semibold">Seat Credits:</span>
-          <span className="font-medium">25/25</span>
+          <span className="font-medium">
+            {seatsUsed}/{seatsTotal}
+          </span>
         </div>
       </nav>
 

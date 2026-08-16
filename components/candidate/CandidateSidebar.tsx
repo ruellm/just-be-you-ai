@@ -36,10 +36,14 @@ export function CandidateSidebar({
   name,
   initials,
   jobTitle,
+  seatsUsed,
+  seatsTotal,
 }: {
   name: string;
   initials: string;
   jobTitle: string | null;
+  seatsUsed: number;
+  seatsTotal: number;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
@@ -78,8 +82,6 @@ export function CandidateSidebar({
           );
         })}
 
-        {/* Seat Credits — STATIC PLACEHOLDER. The seat/credit system isn't
-            built yet; "0/2" is hardcoded on purpose and wired to nothing. */}
         <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-sm text-brand-ink">
           <Image
             src="/icons/seat-chair.svg"
@@ -90,7 +92,9 @@ export function CandidateSidebar({
             className="shrink-0"
           />
           <span className="font-semibold">Seat Credits:</span>
-          <span className="font-medium">0/2</span>
+          <span className="font-medium">
+            {seatsUsed}/{seatsTotal}
+          </span>
         </div>
       </nav>
 
