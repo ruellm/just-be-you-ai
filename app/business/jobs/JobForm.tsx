@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,10 +26,11 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ProjectSkillsPicker } from "@/components/profile/ProjectSkillsPicker";
 import type { SkillOption } from "@/components/profile/SkillCombobox";
+import { ProfileSectionCard } from "@/app/candidate/profile/ProfileSectionCard";
 import { LEVELS, LEVEL_LABELS, WORK_MODES, WORK_MODE_LABELS } from "@/lib/jobs";
 import { RUBRIC } from "@/lib/ai/rubric";
 import { cn } from "@/lib/utils";
-import { jobSchema, type JobValues } from "./schemas";
+import { jobSchema, JOB_TEXT_LIMITS, type JobValues } from "./schemas";
 import { createJob, updateJob } from "./actions";
 
 export const EMPTY_JOB: JobValues = {
@@ -55,22 +57,94 @@ export const EMPTY_JOB: JobValues = {
 };
 
 const VOICE_AGENT_OPTIONS = [
-  { value: "basic", label: "Basic AI Interview" },
-  { value: "advanced", label: "Advanced AI Interview" },
+  {
+    value: "basic",
+    label: "Basic AI Interview",
+    help: "Best for initial screening and entry-to-mid-level roles. Focuses on fixed, predefined questions to verify essential skills.",
+  },
+  {
+    value: "advanced",
+    label: "Advanced AI Interview",
+    help: "Adaptive, real-time conversational AI that dives deeper into technical skills, problem-solving, and scenario-based responses.",
+  },
 ] as const;
 
 const PASSING_BAR_OPTIONS = [
-  {
-    value: "selective",
-    label: "Selective",
-    help: "Only strong candidates pass. A candidate who merely meets expectations across the board will not pass. Best when you can be choosy.",
-  },
   {
     value: "standard",
     label: "Standard",
     help: "Candidates who solidly meet expectations pass. Best when the role is harder to fill.",
   },
+  {
+    value: "selective",
+    label: "Selective",
+    help: "Only strong candidates pass. A candidate who merely meets expectations across the board will not pass. Best when you can be choosy.",
+  },
 ] as const;
+
+const AI_TEXT_SECTIONS: {
+  name: "interviewHints" | "idealCandidateProfile" | "passingCriteria";
+  label: string;
+  placeholder: string;
+}[] = [
+  {
+    name: "interviewHints",
+    label: "Interview Hints",
+    placeholder:
+      "What questions or topics should the AI cover? Provide examples or topics. e.g. “Ask about state management in React. Probe for understanding of when to use Redux versus Context. A strong candidate explains tradeoffs.”",
+  },
+  {
+    name: "idealCandidateProfile",
+    label: "Ideal Candidate Profile",
+    placeholder:
+      "Describe the kind of person you want. Skills, traits, work ethic, values. e.g. “Someone who explains tradeoffs, admits gaps, and asks clarifying questions.”",
+  },
+  {
+    name: "passingCriteria",
+    label: "Passing Criteria",
+    placeholder:
+      "In your own words, what does a passing candidate look like? e.g. “Can explain at least one past project in technical depth and demonstrates curiosity by asking thoughtful questions back.”",
+  },
+];
+
+const PAGE_1_FIELDS: (keyof JobValues)[] = [
+  "title",
+  "location",
+  "level",
+  "workMode",
+  "status",
+  "salaryMin",
+  "salaryMax",
+  "skillIds",
+  "description",
+  "roleOverview",
+  "dayToDay",
+  "requirements",
+];
+
+const INPUT_CLASS =
+  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
+const LABEL_CLASS = "font-body text-sm leading-6 font-semibold text-brand-ink";
+const CARD_TITLE_CLASS =
+  "font-body text-2xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary";
+
+function Req() {
+  return (
+    <span aria-hidden className="text-accent-2">
+      *
+    </span>
+  );
+}
+
+const TEXT_SECTIONS: {
+  name: keyof typeof JOB_TEXT_LIMITS;
+  title: string;
+}[] = [
+  { name: "description", title: "Job Description" },
+  { name: "roleOverview", title: "Role Overview" },
+  { name: "dayToDay", title: "What does day-to-day look like" },
+  { name: "requirements", title: "Requirements" },
+];
 
 export function JobForm({
   mode,
@@ -84,10 +158,19 @@ export function JobForm({
   skillOptions: SkillOption[];
 }) {
   const router = useRouter();
+  const [step, setStep] = useState<1 | 2>(1);
   const form = useForm<JobValues>({
     resolver: zodResolver(jobSchema),
     defaultValues,
   });
+
+  async function nextPage() {
+    const ok = await form.trigger(PAGE_1_FIELDS);
+    if (ok) {
+      setStep(2);
+      window.scrollTo({ top: 0 });
+    }
+  }
 
   async function onSubmit(values: JobValues) {
     const result =
@@ -112,414 +195,453 @@ export function JobForm({
       return;
     }
     if (result.fieldErrors) {
-      for (const [field, message] of Object.entries(result.fieldErrors)) {
+      const errors = result.fieldErrors;
+      for (const [field, message] of Object.entries(errors)) {
         form.setError(field as keyof JobValues, { message });
       }
+      if (PAGE_1_FIELDS.some((f) => f in errors)) setStep(1);
     }
     toast.error(result.error ?? "Could not save your changes.");
   }
 
+  const selectField = (
+    name: "level" | "workMode" | "status",
+    label: string,
+    options: { value: string; label: string }[]
+  ) => (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel className={LABEL_CLASS}>{label}</FormLabel>
+          <Select value={field.value} onValueChange={field.onChange}>
+            <FormControl>
+              <SelectTrigger className={cn(INPUT_CLASS, "w-full")}>
+                <SelectValue />
+              </SelectTrigger>
+            </FormControl>
+            <SelectContent className="rounded-[8px] border-brand-border font-body">
+              {options.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-2xl space-y-6">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Title</FormLabel>
-              <FormControl>
-                <Input placeholder="Senior Frontend Developer" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea rows={4} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="roleOverview"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role overview</FormLabel>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="dayToDay"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>What does day-to-day look like</FormLabel>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="requirements"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Requirements</FormLabel>
-              <FormControl>
-                <Textarea rows={3} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 font-body">
+        {step === 1 ? (
+          <>
+            <ProfileSectionCard>
+              <h2 className={CARD_TITLE_CLASS}>Basic Information</h2>
 
-        <div className="grid gap-6 sm:grid-cols-2">
-          <FormField
-            control={form.control}
-            name="level"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Level</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {LEVELS.map((l) => (
-                      <SelectItem key={l} value={l}>
-                        {LEVEL_LABELS[l]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="workMode"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Work mode</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {WORK_MODES.map((m) => (
-                      <SelectItem key={m} value={m}>
-                        {WORK_MODE_LABELS[m]}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="location"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Location</FormLabel>
-                <FormControl>
-                  <Input placeholder="Makati, Metro Manila" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Status</FormLabel>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <FormControl>
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="open">Open</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="salaryMin"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Salary min (PHP / month)</FormLabel>
-                <FormControl>
-                  <Input inputMode="numeric" placeholder="50000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="salaryMax"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Salary max (PHP / month)</FormLabel>
-                <FormControl>
-                  <Input inputMode="numeric" placeholder="80000" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="title"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={LABEL_CLASS}>
+                        Job Title <Req />
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Senior Frontend Developer"
+                          className={INPUT_CLASS}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="location"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={LABEL_CLASS}>Location</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="Makati, Metro Manila"
+                          className={INPUT_CLASS}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-        <FormField
-          control={form.control}
-          name="skillIds"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Required skills</FormLabel>
-              <ProjectSkillsPicker
-                skills={skillOptions}
-                value={field.value}
-                onChange={field.onChange}
+              <div className="grid gap-5 sm:grid-cols-[315fr_266fr_381fr]">
+                {selectField(
+                  "level",
+                  "Level",
+                  LEVELS.map((l) => ({ value: l, label: LEVEL_LABELS[l] }))
+                )}
+                {selectField(
+                  "workMode",
+                  "Work Mode",
+                  WORK_MODES.map((m) => ({ value: m, label: WORK_MODE_LABELS[m] }))
+                )}
+                {selectField("status", "Status", [
+                  { value: "open", label: "Open" },
+                  { value: "closed", label: "Closed" },
+                ])}
+              </div>
+
+              <div className="grid gap-5 sm:grid-cols-2">
+                <FormField
+                  control={form.control}
+                  name="salaryMin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={LABEL_CLASS}>
+                        Salary Min (PHP / month)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="50000"
+                          className={INPUT_CLASS}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="salaryMax"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={LABEL_CLASS}>
+                        Salary Max (PHP / month)
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          inputMode="numeric"
+                          placeholder="80000"
+                          className={INPUT_CLASS}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="skillIds"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LABEL_CLASS}>Required Skills</FormLabel>
+                    <ProjectSkillsPicker
+                      skills={skillOptions}
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Add a required skill…"
+                      triggerClassName={cn(
+                        INPUT_CLASS,
+                        "w-full font-normal hover:bg-brand-surface data-[state=open]:bg-brand-surface"
+                      )}
+                      chipClassName="h-[26px] rounded-[6px] border-transparent bg-tag-1 px-2.5 font-body text-xs font-normal text-brand-ink hover:bg-tag-1"
+                    />
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+            </ProfileSectionCard>
 
-        {/* AI Interview Configuration (optional) */}
-        <div className="space-y-4 border-t pt-6">
-          <div>
-            <h2 className="text-sm font-semibold">
-              AI Interview Configuration (optional)
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              These fields guide the AI interviewer to produce better, more
-              relevant questions. They&apos;re optional — the AI will still
-              generate questions without them, but providing detail here
-              significantly improves quality.
-            </p>
-          </div>
-          <FormField
-            control={form.control}
-            name="voiceAgentType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Interview type</FormLabel>
-                <FormControl>
-                  <div role="radiogroup" className="grid max-w-md grid-cols-2 gap-2">
-                    {VOICE_AGENT_OPTIONS.map((option) => (
-                      <Button
-                        key={option.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={field.value === option.value}
-                        variant={
-                          field.value === option.value ? "default" : "outline"
-                        }
-                        onClick={() => field.onChange(option.value)}
-                      >
-                        {option.label}
-                      </Button>
-                    ))}
-                  </div>
-                </FormControl>
-                <p className="text-muted-foreground text-sm">
-                  Which voice agent conducts this job&apos;s interviews.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="interviewHints"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Interview hints</FormLabel>
-                <FormControl>
-                  <Textarea
-                    rows={3}
-                    placeholder="What questions or topics should the AI cover? Provide examples or topics. e.g. 'Ask about state management in React. Probe for understanding of when to use Redux vs Context. A strong candidate explains tradeoffs.'"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="idealCandidateProfile"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ideal candidate profile</FormLabel>
-                <FormControl>
-                  <Textarea
-                    rows={3}
-                    placeholder="Describe the kind of person you want — skills, traits, work ethic, values. e.g. 'Someone who explains tradeoffs, admits gaps, and asks clarifying questions.'"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="passingCriteria"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Passing criteria</FormLabel>
-                <FormControl>
-                  <Textarea
-                    rows={3}
-                    placeholder="In your own words, what does a passing candidate look like? e.g. 'Can explain at least one past project in technical depth and demonstrates curiosity by asking thoughtful questions back.'"
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="passingBar"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Passing bar</FormLabel>
-                <FormControl>
-                  <div role="radiogroup" className="grid gap-2 sm:grid-cols-2">
-                    {PASSING_BAR_OPTIONS.map((option) => (
-                      <button
-                        key={option.value}
-                        type="button"
-                        role="radio"
-                        aria-checked={field.value === option.value}
-                        onClick={() => field.onChange(option.value)}
-                        className={cn(
-                          "rounded-md border p-3 text-left transition-colors",
-                          field.value === option.value
-                            ? "border-primary ring-primary ring-1"
-                            : "hover:bg-muted/50"
-                        )}
-                      >
-                        <span className="text-sm font-medium">{option.label}</span>
-                        <p className="text-muted-foreground mt-1 text-xs">
-                          {option.help}
+            {TEXT_SECTIONS.map(({ name, title }) => (
+              <ProfileSectionCard key={name}>
+                <h2 className={CARD_TITLE_CLASS}>{title}</h2>
+                <FormField
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Textarea
+                          maxLength={JOB_TEXT_LIMITS[name]}
+                          className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none"
+                          {...field}
+                        />
+                      </FormControl>
+                      <div className="flex items-start justify-between gap-4">
+                        <FormMessage />
+                        <p
+                          className={cn(
+                            "ml-auto text-xs",
+                            field.value.length > JOB_TEXT_LIMITS[name]
+                              ? "text-accent-2"
+                              : "text-brand-ink-secondary"
+                          )}
+                        >
+                          {field.value.length}/{JOB_TEXT_LIMITS[name]} characters
                         </p>
-                      </button>
-                    ))}
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="mustHaveCriteria"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Must-have criteria</FormLabel>
-                <p className="text-muted-foreground text-sm">
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              </ProfileSectionCard>
+            ))}
+
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+              <p className="text-xs text-brand-ink-secondary">Page 1 of 2</p>
+              <Button
+                type="button"
+                onClick={nextPage}
+                className="h-9 rounded-[8px] bg-brand-secondary px-8 text-sm font-semibold text-brand-canvas hover:bg-brand-secondary/90"
+              >
+                Next Page
+              </Button>
+              <span />
+            </div>
+          </>
+        ) : (
+          <>
+            <ProfileSectionCard>
+              <div className="space-y-2">
+                <h2 className={CARD_TITLE_CLASS}>
+                  AI Interview Configuration (Optional)
+                </h2>
+                <p className="text-base leading-[21px] text-brand-ink-secondary">
+                  These fields guide the AI interviewer to produce better, more
+                  relevant questions. They&apos;re optional — the AI will still
+                  generate questions without them, but providing detail here
+                  significantly improves quality.
+                </p>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="voiceAgentType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LABEL_CLASS}>Interview Type</FormLabel>
+                    <FormControl>
+                      <OptionCards
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={VOICE_AGENT_OPTIONS}
+                        minHeightClass="min-h-[113px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {AI_TEXT_SECTIONS.map(({ name, label, placeholder }) => (
+                <FormField
+                  key={name}
+                  control={form.control}
+                  name={name}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className={LABEL_CLASS}>{label}</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          maxLength={JOB_TEXT_LIMITS[name]}
+                          placeholder={placeholder}
+                          className="min-h-[76px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
+                          {...field}
+                        />
+                      </FormControl>
+                      <div className="flex items-start justify-between gap-4">
+                        <FormMessage />
+                        <p
+                          className={cn(
+                            "ml-auto text-xs",
+                            field.value.length > JOB_TEXT_LIMITS[name]
+                              ? "text-accent-2"
+                              : "text-brand-ink-secondary"
+                          )}
+                        >
+                          {field.value.length}/{JOB_TEXT_LIMITS[name]} characters
+                        </p>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+              ))}
+
+              <FormField
+                control={form.control}
+                name="passingBar"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={LABEL_CLASS}>Passing Bar</FormLabel>
+                    <FormControl>
+                      <OptionCards
+                        value={field.value}
+                        onChange={field.onChange}
+                        options={PASSING_BAR_OPTIONS}
+                        minHeightClass="min-h-[127px]"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="interviewMaxMinutes"
+                render={({ field }) => (
+                  <FormItem className="max-w-[313px]">
+                    <FormLabel className={LABEL_CLASS}>
+                      Maximum Interview Duration (Minutes)
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        inputMode="numeric"
+                        min={5}
+                        max={60}
+                        placeholder="30"
+                        className={cn(INPUT_CLASS, "h-[38px] rounded-[12px]")}
+                        {...field}
+                      />
+                    </FormControl>
+                    <p className="text-xs text-brand-ink-secondary">
+                      Leave blank for default (30 minutes). Recommend: 15-20 for
+                      most roles.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </ProfileSectionCard>
+
+            <ProfileSectionCard>
+              <div className="space-y-2">
+                <h2 className={CARD_TITLE_CLASS}>Must-have Criteria</h2>
+                <p className="text-base leading-[21px] text-brand-ink-secondary">
                   If a candidate scores very low on a must-have skill, they
                   cannot receive a Pass regardless of their overall score.
                 </p>
-                <div className="space-y-2">
-                  {RUBRIC.categories.map((category) => (
-                    <div key={category.key} className="rounded-md border p-3">
-                      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                        {category.displayName}
-                      </p>
-                      <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                        {category.subCriteria.map((sub) => (
-                          <label
-                            key={sub.key}
-                            className="flex cursor-pointer items-center gap-2 text-sm"
-                          >
-                            <Checkbox
-                              checked={field.value.includes(sub.key)}
-                              onCheckedChange={(checked) =>
-                                field.onChange(
-                                  checked === true
-                                    ? [...field.value, sub.key]
-                                    : field.value.filter((k) => k !== sub.key)
-                                )
-                              }
-                            />
-                            {sub.displayName}
-                          </label>
-                        ))}
-                      </div>
+              </div>
+              <FormField
+                control={form.control}
+                name="mustHaveCriteria"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="space-y-5">
+                      {RUBRIC.categories.map((category) => (
+                        <div key={category.key} className="space-y-2">
+                          <p className={LABEL_CLASS}>{category.displayName}</p>
+                          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                            {category.subCriteria.map((sub) => (
+                              <label
+                                key={sub.key}
+                                className="flex cursor-pointer items-center gap-3 text-sm leading-[19px] text-brand-ink"
+                              >
+                                <Checkbox
+                                  checked={field.value.includes(sub.key)}
+                                  onCheckedChange={(checked) =>
+                                    field.onChange(
+                                      checked === true
+                                        ? [...field.value, sub.key]
+                                        : field.value.filter((k) => k !== sub.key)
+                                    )
+                                  }
+                                  className="size-7 rounded-[8px] border-brand-border bg-brand-surface data-checked:border-brand-secondary data-checked:bg-brand-secondary data-checked:text-white [&_svg]:size-4"
+                                />
+                                {sub.displayName}
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="interviewMaxMinutes"
-            render={({ field }) => (
-              <FormItem className="max-w-xs">
-                <FormLabel>Maximum interview duration (minutes)</FormLabel>
-                <FormControl>
-                  <Input
-                    inputMode="numeric"
-                    min={5}
-                    max={60}
-                    placeholder="30"
-                    {...field}
-                  />
-                </FormControl>
-                <p className="text-muted-foreground text-sm">
-                  Leave blank for default (30 minutes). Recommended: 15-20 for
-                  most roles.
-                </p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </ProfileSectionCard>
 
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting
-            ? "Saving…"
-            : mode === "create"
-              ? "Post job"
-              : "Save changes"}
-        </Button>
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+              <p className="text-xs text-brand-ink-secondary">Page 2 of 2</p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  disabled={form.formState.isSubmitting}
+                  className="h-9 rounded-[8px] bg-brand-ink px-6 text-sm font-semibold text-brand-canvas hover:bg-brand-ink/90"
+                >
+                  Back
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={form.formState.isSubmitting}
+                  className="h-9 rounded-[8px] bg-brand-secondary px-6 text-sm font-semibold text-brand-canvas hover:bg-brand-secondary/90"
+                >
+                  {form.formState.isSubmitting
+                    ? "Saving…"
+                    : mode === "create"
+                      ? "Post Job"
+                      : "Edit Job"}
+                </Button>
+              </div>
+              <span />
+            </div>
+          </>
+        )}
       </form>
     </Form>
+  );
+}
+
+function OptionCards<T extends string>({
+  value,
+  onChange,
+  options,
+  minHeightClass,
+}: {
+  value: T;
+  onChange: (value: T) => void;
+  options: readonly { value: T; label: string; help: string }[];
+  minHeightClass: string;
+}) {
+  return (
+    <div role="radiogroup" className="grid gap-4 sm:grid-cols-2">
+      {options.map((option) => {
+        const selected = value === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "flex flex-col justify-center gap-1 rounded-[12px] border border-brand-border px-6 py-4 text-left transition-colors focus-visible:ring-2 focus-visible:ring-brand-secondary/50 focus-visible:outline-none",
+              minHeightClass,
+              selected
+                ? "bg-brand-secondary text-brand-canvas"
+                : "bg-brand-surface text-brand-ink hover:bg-brand-container/60"
+            )}
+          >
+            <span className="text-xl font-semibold tracking-[-0.96px]">
+              {option.label}
+            </span>
+            <span className="text-sm leading-[19px]">{option.help}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

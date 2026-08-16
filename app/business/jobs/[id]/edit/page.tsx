@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -52,8 +54,21 @@ export default async function EditJobPage({
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-      <h1 className="text-2xl font-semibold">Edit job</h1>
+    <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
+      <Link
+        href="/business/jobs"
+        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.96px] text-brand-primary hover:underline"
+      >
+        <ArrowLeft className="size-5" /> Back to Jobs
+      </Link>
+      <div className="space-y-2 border-b border-brand-border pb-5">
+        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          Edit Job Posting
+        </h1>
+        <p className="text-base leading-5 tracking-[-0.5px] text-brand-ink-secondary">
+          Update role details, adjust requirements, or modify interview settings for this posting.
+        </p>
+      </div>
       <JobForm
         mode="edit"
         jobId={job.id}

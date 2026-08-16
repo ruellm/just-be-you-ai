@@ -7,13 +7,27 @@ export const jobWorkModeSchema = z.enum(["onsite", "remote", "hybrid"]);
 export const jobStatusSchema = z.enum(["open", "closed"]);
 export const jobVoiceAgentTypeSchema = z.enum(["basic", "advanced"]);
 
+export const JOB_TEXT_LIMITS = {
+  description: 300,
+  roleOverview: 500,
+  dayToDay: 300,
+  requirements: 800,
+  interviewHints: 500,
+  idealCandidateProfile: 500,
+  passingCriteria: 500,
+} as const;
+
 export const jobSchema = z
   .object({
     title: z.string().trim().min(1, "Title is required").max(150),
-    description: z.string().trim().min(1, "Description is required").max(5000),
-    roleOverview: z.string().trim().max(5000),
-    requirements: z.string().trim().max(5000),
-    dayToDay: z.string().trim().max(5000),
+    description: z
+      .string()
+      .trim()
+      .min(1, "Description is required")
+      .max(JOB_TEXT_LIMITS.description),
+    roleOverview: z.string().trim().max(JOB_TEXT_LIMITS.roleOverview),
+    requirements: z.string().trim().max(JOB_TEXT_LIMITS.requirements),
+    dayToDay: z.string().trim().max(JOB_TEXT_LIMITS.dayToDay),
     level: jobLevelSchema,
     workMode: jobWorkModeSchema,
     location: z.string().trim().max(150),
@@ -22,9 +36,12 @@ export const jobSchema = z
     status: jobStatusSchema,
     skillIds: z.array(z.string()).max(50),
     // AI interview configuration (optional)
-    interviewHints: z.string().trim().max(5000),
-    idealCandidateProfile: z.string().trim().max(5000),
-    passingCriteria: z.string().trim().max(5000),
+    interviewHints: z.string().trim().max(JOB_TEXT_LIMITS.interviewHints),
+    idealCandidateProfile: z
+      .string()
+      .trim()
+      .max(JOB_TEXT_LIMITS.idealCandidateProfile),
+    passingCriteria: z.string().trim().max(JOB_TEXT_LIMITS.passingCriteria),
     // Voice engine for this job's interviews. Stored/displayed only for now.
     voiceAgentType: jobVoiceAgentTypeSchema,
     // Rubric passing curve ("selective" = default strict bar).

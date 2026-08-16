@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   SkillCombobox,
   type SkillOption,
@@ -15,12 +16,14 @@ export function ProjectSkillsPicker({
   onChange,
   placeholder = "Add a skill used…",
   triggerClassName,
+  chipClassName,
 }: {
   skills: SkillOption[];
   value: string[];
   onChange: (ids: string[]) => void;
   placeholder?: string;
   triggerClassName?: string; // passed through to the combobox trigger
+  chipClassName?: string; // optional override for the selected-skill chips
 }) {
   const byId = new Map(skills.map((s) => [s.id, s.name]));
 
@@ -44,7 +47,7 @@ export function ProjectSkillsPicker({
       {value.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
           {value.map((id) => (
-            <Badge key={id} variant="secondary" className="gap-1">
+            <Badge key={id} variant="secondary" className={cn("gap-1", chipClassName)}>
               {byId.get(id) ?? "Unknown"}
               <button
                 type="button"

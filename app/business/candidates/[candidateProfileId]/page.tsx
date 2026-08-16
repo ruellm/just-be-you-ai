@@ -1,37 +1,21 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
 import { candidateAppliedToCompany, getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
 import {
-  RecommendationBadge,
-  StatusBadge,
-  TierBadge,
-  VerdictBadge,
-} from "@/components/applications/Badges";
-import { FitEvaluation } from "@/components/applications/FitEvaluation";
-import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
-import { parseRubricBreakdown, scoreToPercent } from "@/lib/applications";
-import { ViewResumeButton } from "./ViewResumeButton";
+  CandidateProfileView,
+  type ApplicationDTO,
+  type ProfileDTO,
+} from "./CandidateProfileView";
 
-function monthRange(start: Date | null, end: Date | null, present: boolean) {
-  const s = start ? start.toISOString().slice(0, 7) : "";
-  const e = present ? "Present" : end ? end.toISOString().slice(0, 7) : "";
-  if (!s && !e) return "";
-  return [s, e].filter(Boolean).join(" – ");
+function initialsOf(first: string | null, last: string | null, email: string) {
+  const letters = [first, last]
+    .filter(Boolean)
+    .map((p) => (p as string).charAt(0).toUpperCase());
+  return letters.join("") || email.charAt(0).toUpperCase() || "?";
 }
 
-function Field({ label, value }: { label: string; value: string | null }) {
-  if (!value) return null;
-  return (
-    <div>
-      <dt className="text-muted-foreground text-xs">{label}</dt>
-      <dd className="text-sm">{value}</dd>
-    </div>
-  );
-}
+const iso = (d: Date | null | undefined) => (d ? d.toISOString() : null);
 
 export default async function CandidateDetailPage({
   params,
@@ -76,274 +60,91 @@ export default async function CandidateDetailPage({
   const fullName =
     [profile.firstName, profile.lastName].filter(Boolean).join(" ") ||
     profile.user.email;
-  const location = [profile.city, profile.country].filter(Boolean).join(", ");
 
   const fromJob =
     typeof from === "string" && from.startsWith("job:") ? from.slice(4) : null;
   const backHref = fromJob ? `/business/jobs/${fromJob}` : "/business/jobs";
 
+  const profileDto: ProfileDTO = {
+    id: profile.id,
+    fullName,
+    initials: initialsOf(profile.firstName, profile.lastName, profile.user.email),
+    email: profile.user.email,
+    resumeUrl: profile.resumeUrl,
+    country: profile.country,
+    city: profile.city,
+    nationality: profile.nationality,
+    phone: profile.phone,
+    linkedinUrl: profile.linkedinUrl,
+    expectedSalary: profile.expectedSalary,
+    totalYearsExperience: profile.totalYearsExperience,
+    preferredRole: profile.preferredRole,
+    languages: profile.languages,
+    joinedAt: profile.createdAt.toISOString(),
+    summary: profile.summary,
+    skills: profile.skills.map((s) => ({
+      id: s.id,
+      name: s.skill.name,
+      years: s.yearsOfExperience,
+    })),
+    workExperiences: profile.workExperiences.map((w) => ({
+      id: w.id,
+      position: w.position,
+      companyName: w.companyName,
+      employmentType: EMPLOYMENT_TYPE_LABELS[w.employmentType],
+      startDate: iso(w.startDate),
+      endDate: iso(w.endDate),
+      currentlyWorking: w.currentlyWorking,
+      description: w.description,
+    })),
+    educations: profile.educations.map((e) => ({
+      id: e.id,
+      school: e.school,
+      degree: e.degree,
+      fieldOfStudy: e.fieldOfStudy,
+      country: e.country,
+      startDate: iso(e.startDate),
+      endDate: iso(e.endDate),
+      currentlyStudying: e.currentlyStudying,
+    })),
+    projects: profile.projects.map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      startDate: iso(p.startDate),
+      endDate: iso(p.endDate),
+      ongoing: p.ongoing,
+      skills: p.skills.map((ps) => ps.skill.name),
+    })),
+  };
+
+  const applicationDtos: ApplicationDTO[] = applications.map((app) => ({
+    id: app.id,
+    status: app.status,
+    jobTitle: app.job.title,
+    interviewResult: app.interviewResult
+      ? {
+          score: app.interviewResult.score,
+          tier: app.interviewResult.tier,
+          recommendation: app.interviewResult.recommendation,
+          fitSummary: app.interviewResult.fitSummary,
+          strengthsJson: app.interviewResult.strengthsJson,
+          concernsJson: app.interviewResult.concernsJson,
+          rubricScoresJson: app.interviewResult.rubricScoresJson,
+          compositeScore: app.interviewResult.compositeScore,
+          verdict: app.interviewResult.verdict,
+          gatesFiredJson: app.interviewResult.gatesFiredJson,
+          transcript: app.interviewResult.transcript,
+          completedAt: app.interviewResult.completedAt.toISOString(),
+        }
+      : null,
+  }));
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
-      <Link
-        href={backHref}
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
-      >
-        <ArrowLeft className="size-4" /> Back to applicants
-      </Link>
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{fullName}</h1>
-          <p className="text-muted-foreground text-sm">{profile.user.email}</p>
-        </div>
-        {profile.resumeUrl ? (
-          <ViewResumeButton candidateProfileId={profile.id} />
-        ) : null}
-      </div>
-
-      {/* Interview results with this company */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Interview results</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {applications.map((app) => {
-            // Rubric-scored result? (detected by data presence, not by date)
-            const hasRubric =
-              app.interviewResult != null &&
-              parseRubricBreakdown(app.interviewResult.rubricScoresJson) != null;
-            return (
-              <div key={app.id} className="rounded-md border p-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium">{app.job.title}</span>
-                  <StatusBadge status={app.status} />
-                  {app.interviewResult ? (
-                    <>
-                      <RecommendationBadge
-                        recommendation={app.interviewResult.recommendation}
-                      />
-                      {hasRubric ? (
-                        // Verdict + composite carry the rubric outcome; the
-                        // legacy tier/percent would duplicate them.
-                        <>
-                          <VerdictBadge verdict={app.interviewResult.verdict} />
-                          {app.interviewResult.compositeScore != null ? (
-                            <span className="text-muted-foreground text-sm">
-                              {app.interviewResult.compositeScore} / 100
-                            </span>
-                          ) : null}
-                        </>
-                      ) : (
-                        <>
-                          <TierBadge tier={app.interviewResult.tier} />
-                          <span className="text-muted-foreground text-sm">
-                            {scoreToPercent(app.interviewResult.score)}%
-                          </span>
-                        </>
-                      )}
-                    </>
-                  ) : null}
-                </div>
-                {app.interviewResult ? (
-                  <>
-                    <p className="text-muted-foreground mt-1 text-xs">
-                      Completed{" "}
-                      {app.interviewResult.completedAt.toLocaleDateString()}
-                    </p>
-                    {hasRubric ? (
-                      <div className="mt-3">
-                        <RubricBreakdown
-                          rubricScoresJson={app.interviewResult.rubricScoresJson}
-                          compositeScore={app.interviewResult.compositeScore}
-                          verdict={app.interviewResult.verdict}
-                          gatesFiredJson={app.interviewResult.gatesFiredJson}
-                        />
-                      </div>
-                    ) : null}
-                    <div className="mt-3">
-                      <FitEvaluation
-                        fitSummary={app.interviewResult.fitSummary}
-                        strengthsJson={app.interviewResult.strengthsJson}
-                        concernsJson={app.interviewResult.concernsJson}
-                      />
-                    </div>
-                    <details className="mt-3">
-                      <summary className="cursor-pointer text-sm font-medium">
-                        View transcript
-                      </summary>
-                      <p className="text-muted-foreground mt-2 text-sm whitespace-pre-line">
-                        {app.interviewResult.transcript}
-                      </p>
-                    </details>
-                  </>
-                ) : (
-                  <p className="text-muted-foreground mt-1 text-xs">
-                    Interview not completed yet.
-                  </p>
-                )}
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
-
-      {/* Basic info */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Basic information</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid grid-cols-2 gap-4">
-            <Field label="Location" value={location || null} />
-            <Field label="Phone" value={profile.phone} />
-            <Field label="LinkedIn" value={profile.linkedinUrl} />
-            <Field label="Nationality" value={profile.nationality} />
-            <Field
-              label="Expected salary"
-              value={
-                profile.expectedSalary != null
-                  ? `₱${profile.expectedSalary.toLocaleString("en-PH")} / month`
-                  : null
-              }
-            />
-            <Field
-              label="Years of experience"
-              value={
-                profile.totalYearsExperience != null
-                  ? String(profile.totalYearsExperience)
-                  : null
-              }
-            />
-            <Field label="Preferred role" value={profile.preferredRole} />
-            <Field
-              label="Languages"
-              value={
-                profile.languages.length ? profile.languages.join(", ") : null
-              }
-            />
-          </dl>
-        </CardContent>
-      </Card>
-
-      {/* Summary */}
-      {profile.summary ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Profile summary</CardTitle>
-          </CardHeader>
-          <CardContent className="text-muted-foreground text-sm whitespace-pre-line">
-            {profile.summary}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Skills */}
-      {profile.skills.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Skills</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-1.5">
-            {profile.skills.map((s) => (
-              <Badge key={s.id} variant="secondary" className="font-normal">
-                {s.skill.name} · {s.yearsOfExperience}y
-              </Badge>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Education */}
-      {profile.educations.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Education</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {profile.educations.map((e) => (
-              <div key={e.id}>
-                <p className="text-sm font-medium">{e.school}</p>
-                <p className="text-muted-foreground text-sm">
-                  {[e.degree, e.fieldOfStudy].filter(Boolean).join(", ")}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {[
-                    e.country,
-                    monthRange(e.startDate, e.endDate, e.currentlyStudying),
-                  ]
-                    .filter(Boolean)
-                    .join(" · ")}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Work experience */}
-      {profile.workExperiences.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Work experience</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {profile.workExperiences.map((w) => (
-              <div key={w.id} className="space-y-2">
-                <div>
-                  <p className="text-sm font-medium">
-                    {w.position} · {w.companyName}
-                  </p>
-                  <p className="text-muted-foreground text-xs">
-                    {monthRange(w.startDate, w.endDate, w.currentlyWorking)}
-                  </p>
-                </div>
-                {w.description ? (
-                  <p className="text-muted-foreground text-sm whitespace-pre-line">
-                    {w.description}
-                  </p>
-                ) : null}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-
-      {/* Projects (standalone section since profile redesign P3) */}
-      {profile.projects.length ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Projects</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {profile.projects.map((p) => (
-              <div key={p.id}>
-                <p className="text-sm font-medium">{p.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  {monthRange(p.startDate, p.endDate, p.ongoing)}
-                </p>
-                {p.description ? (
-                  <p className="text-muted-foreground text-sm">
-                    {p.description}
-                  </p>
-                ) : null}
-                {p.skills.length ? (
-                  <div className="mt-1 flex flex-wrap gap-1">
-                    {p.skills.map((ps) => (
-                      <Badge
-                        key={ps.id}
-                        variant="secondary"
-                        className="text-xs font-normal"
-                      >
-                        {ps.skill.name}
-                      </Badge>
-                    ))}
-                  </div>
-                ) : null}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      ) : null}
-    </div>
+    <CandidateProfileView
+      profile={profileDto}
+      applications={applicationDtos}
+      backHref={backHref}
+    />
   );
 }
