@@ -18,7 +18,7 @@ import {
   DateField,
   SearchField,
   SelectField,
-} from "@/components/business/FilterFields";
+} from "@/components/data-table/FilterFields";
 import {
   ACTION_BTN,
   dayRangeFrom,
@@ -28,7 +28,7 @@ import {
   TD_CLASS,
   TH_CLASS,
   TR_CLASS,
-} from "@/components/business/TableCard";
+} from "@/components/data-table/TableCard";
 import {
   DarkTag,
   SectionCard,

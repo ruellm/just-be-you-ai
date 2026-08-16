@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Plus } from "lucide-react";
 import { Prisma, type Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { userDisplayName } from "@/lib/admin";
+import { formatLongDate } from "@/lib/dates";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -12,54 +14,63 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RoleBadge } from "@/components/admin/RoleBadge";
-import { cn } from "@/lib/utils";
-import { AdminSearch } from "./AdminSearch";
+import {
+  DateField,
+  SearchField,
+  SelectField,
+} from "@/components/data-table/FilterFields";
+import {
+  dayRangeFrom,
+  firstParam as first,
+  PAGE_SIZE,
+  TableCard,
+  TD_CLASS,
+  TH_CLASS,
+  TR_CLASS,
+} from "@/components/data-table/TableCard";
 import { UserRowActions } from "./UserRowActions";
 
-const PAGE_SIZE = 20;
+const ROLES: Role[] = ["candidate", "business", "admin"];
 
-const ROLE_FILTERS: { key: string; label: string; role: Role | null }[] = [
-  { key: "all", label: "All", role: null },
-  { key: "candidate", label: "Candidate", role: "candidate" },
-  { key: "business", label: "Business", role: "business" },
-  { key: "admin", label: "Admin", role: "admin" },
-];
-
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
+const ROLE_LABELS: Record<Role, string> = {
+  candidate: "Candidate",
+  business: "Business",
+  admin: "Admin",
+};
 
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; role?: string; page?: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const sp = await searchParams;
-  const q = (sp.q ?? "").trim();
-  const activeRole = ROLE_FILTERS.find((r) => r.key === sp.role) ?? ROLE_FILTERS[0];
-  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+  const q = first(sp.q).trim();
+  const dateStr = first(sp.date).trim();
+  const roleParam = first(sp.role);
+  const role = ROLES.includes(roleParam as Role) ? (roleParam as Role) : null;
+  const page = Math.max(1, Number.parseInt(first(sp.page), 10) || 1);
+  const dayRange = dayRangeFrom(dateStr);
 
-  const where: Prisma.UserWhereInput = {};
-  if (activeRole.role) where.role = activeRole.role;
-  if (q) {
-    where.OR = [
-      { email: { contains: q, mode: "insensitive" } },
-      {
-        candidateProfile: {
+  const where: Prisma.UserWhereInput = {
+    ...(role ? { role } : {}),
+    ...(dayRange ? { createdAt: dayRange } : {}),
+    ...(q
+      ? {
           OR: [
-            { firstName: { contains: q, mode: "insensitive" } },
-            { lastName: { contains: q, mode: "insensitive" } },
+            { email: { contains: q, mode: "insensitive" } },
+            {
+              candidateProfile: {
+                OR: [
+                  { firstName: { contains: q, mode: "insensitive" } },
+                  { lastName: { contains: q, mode: "insensitive" } },
+                ],
+              },
+            },
+            { company: { name: { contains: q, mode: "insensitive" } } },
           ],
-        },
-      },
-      { company: { name: { contains: q, mode: "insensitive" } } },
-    ];
-  }
+        }
+      : {}),
+  };
 
   const [total, users] = await Promise.all([
     prisma.user.count({ where }),
@@ -75,144 +86,115 @@ export default async function AdminUsersPage({
     }),
   ]);
 
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
   function pageHref(target: number) {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
-    if (activeRole.role) params.set("role", activeRole.key);
+    if (dateStr) params.set("date", dateStr);
+    if (role) params.set("role", role);
     if (target > 1) params.set("page", String(target));
     const query = params.toString();
     return `/admin/users${query ? `?${query}` : ""}`;
   }
 
-  function displayName(u: (typeof users)[number]): string {
-    const candidateName = [
-      u.candidateProfile?.firstName,
-      u.candidateProfile?.lastName,
-    ]
-      .filter(Boolean)
-      .join(" ");
-    if (candidateName) return candidateName;
-    if (u.company?.name) return u.company.name;
-    return u.email;
-  }
-
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Users</h1>
-        <Button asChild>
+    <div className="space-y-6 px-6 py-8 font-body lg:px-14">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-brand-border pb-5">
+        <div>
+          <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+            List of Accounts
+          </h1>
+          <p className="mt-3 text-base text-brand-ink-secondary">
+            Manage registered account holders, adjust user roles, and monitor
+            active account statuses.
+          </p>
+        </div>
+        <Button
+          asChild
+          className="h-[35px] rounded-[8px] bg-brand-secondary px-4 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+        >
           <Link href="/admin/users/new">
-            <Plus /> Create user
+            <Plus className="size-5" /> Create User
           </Link>
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <AdminSearch placeholder="Search by name or email…" />
-        <div className="flex flex-wrap gap-1">
-          {ROLE_FILTERS.map((f) => (
-            <Link
-              key={f.key}
-              href={f.role ? `/admin/users?role=${f.key}` : "/admin/users"}
-              className={cn(
-                "rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
-                activeRole.key === f.key
-                  ? "bg-muted text-foreground"
-                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-              )}
-            >
-              {f.label}
-            </Link>
-          ))}
-        </div>
+      <div className="flex flex-wrap gap-3">
+        <SearchField param="q" placeholder="Search name or email" />
+        <DateField param="date" />
+        <SelectField
+          param="role"
+          placeholder="Filter by role"
+          clearLabel="All roles"
+          options={ROLES.map((r) => ({ value: r, label: ROLE_LABELS[r] }))}
+        />
       </div>
 
-      <p className="text-muted-foreground text-sm">
-        Showing {users.length} of {total} {total === 1 ? "user" : "users"}
-      </p>
-
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Created</TableHead>
-              <TableHead className="w-12" />
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} className="text-muted-foreground text-center">
-                  No users found.
-                </TableCell>
+      <TableCard
+        page={page}
+        total={total}
+        noun={["account", "accounts"]}
+        pageHref={pageHref}
+      >
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-brand-border hover:bg-transparent">
+                <TableHead className={TH_CLASS}>Name</TableHead>
+                <TableHead className={TH_CLASS}>Joined Date</TableHead>
+                <TableHead className={TH_CLASS}>Email</TableHead>
+                <TableHead className={TH_CLASS}>Role</TableHead>
+                <TableHead className={TH_CLASS}>Actions</TableHead>
               </TableRow>
-            ) : (
-              users.map((u) => (
-                <TableRow key={u.id}>
-                  <TableCell className="font-medium">
-                    <Link href={`/admin/users/${u.id}`} className="hover:underline">
-                      {displayName(u)}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {u.email}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <RoleBadge role={u.role} />
-                      {u.requiresPasswordChange ? (
-                        <Badge
-                          variant="outline"
-                          className="text-amber-700 dark:text-amber-300"
-                        >
-                          Pending password change
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(u.createdAt)}
-                  </TableCell>
-                  <TableCell>
-                    <UserRowActions userId={u.id} role={u.role} />
+            </TableHeader>
+            <TableBody>
+              {users.length === 0 ? (
+                <TableRow className={TR_CLASS}>
+                  <TableCell
+                    colSpan={5}
+                    className="px-4 py-10 text-center text-sm text-brand-ink-secondary"
+                  >
+                    No accounts found.
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      {totalPages > 1 ? (
-        <div className="flex items-center justify-between">
-          {page > 1 ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={pageHref(page - 1)}>Previous</Link>
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" disabled>
-              Previous
-            </Button>
-          )}
-          <span className="text-muted-foreground text-sm">
-            Page {page} of {totalPages}
-          </span>
-          {page < totalPages ? (
-            <Button asChild variant="outline" size="sm">
-              <Link href={pageHref(page + 1)}>Next</Link>
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm" disabled>
-              Next
-            </Button>
-          )}
+              ) : (
+                users.map((u) => (
+                  <TableRow key={u.id} className={TR_CLASS}>
+                    <TableCell
+                      className={`${TD_CLASS} text-sm font-medium text-brand-ink`}
+                    >
+                      {userDisplayName(u)}
+                    </TableCell>
+                    <TableCell className={`${TD_CLASS} whitespace-nowrap`}>
+                      {formatLongDate(u.createdAt)}
+                    </TableCell>
+                    <TableCell className={TD_CLASS}>{u.email}</TableCell>
+                    <TableCell className={TD_CLASS}>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span>{ROLE_LABELS[u.role]}</span>
+                        {u.requiresPasswordChange ? (
+                          <Badge
+                            variant="outline"
+                            className="border-brand-border text-[10px] font-medium text-amber-700"
+                          >
+                            Pending password change
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className={TD_CLASS}>
+                      <UserRowActions
+                        userId={u.id}
+                        role={u.role}
+                        name={userDisplayName(u)}
+                      />
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
-      ) : null}
+      </TableCard>
     </div>
   );
 }

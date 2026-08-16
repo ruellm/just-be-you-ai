@@ -4,7 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ACTION_BTN } from "@/components/business/TableCard";
+import { ACTION_BTN } from "@/components/data-table/TableCard";
 import { cn } from "@/lib/utils";
 import { toggleJobStatus } from "./actions";
 

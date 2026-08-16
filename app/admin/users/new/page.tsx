@@ -4,16 +4,18 @@ import { CreateUserForm } from "./CreateUserForm";
 
 export default function NewUserPage() {
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
+    <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <Link
         href="/admin/users"
-        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm"
+        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
       >
-        <ArrowLeft className="size-4" /> Back to users
+        <ArrowLeft className="size-5" /> Back to Users
       </Link>
-      <div>
-        <h1 className="text-2xl font-semibold">Create user</h1>
-        <p className="text-muted-foreground mt-1 text-sm">
+      <div className="border-b border-brand-border pb-5">
+        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          Create a New User
+        </h1>
+        <p className="mt-3 text-base text-brand-ink-secondary">
           Provision a business or admin account. Candidates sign up themselves
           with Google.
         </p>

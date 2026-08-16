@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Copy, RefreshCw } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,11 +24,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  BTN_INK,
+  BTN_PRIMARY,
+  ProfileSectionCard,
+} from "@/app/candidate/profile/ProfileSectionCard";
+import { MODAL_INPUT, MODAL_LABEL, Req } from "@/components/profile/FormModal";
 import { provisionUserSchema, type ProvisionUserValues } from "./schemas";
 import { provisionUser } from "./actions";
 
+const FIELD_LABEL = "text-sm font-semibold text-brand-ink";
+const FIELD_INPUT = cn(MODAL_INPUT, "h-9");
+
 function generatePassword(): string {
-  // Ambiguity-free charset; guarantee at least one digit.
   const chars =
     "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
   const bytes = new Uint32Array(16);
@@ -41,6 +50,7 @@ export function CreateUserForm() {
   const [created, setCreated] = useState<{ email: string; password: string } | null>(
     null
   );
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<ProvisionUserValues>({
     resolver: zodResolver(provisionUserSchema),
@@ -71,138 +81,205 @@ export function CreateUserForm() {
 
   if (created) {
     return (
-      <div className="max-w-md space-y-4">
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 dark:border-green-900 dark:bg-green-950">
-          <p className="font-medium">User created</p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-muted-foreground text-xs">Email</p>
-          <p className="text-sm font-medium">{created.email}</p>
-        </div>
-        <div className="space-y-1">
-          <p className="text-muted-foreground text-xs">Temporary password</p>
-          <div className="flex items-center gap-2">
-            <code className="bg-muted rounded px-2 py-1 text-sm">
-              {created.password}
-            </code>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                navigator.clipboard.writeText(created.password);
-                toast.success("Password copied");
-              }}
-            >
-              <Copy /> Copy
-            </Button>
+      <ProfileSectionCard className="max-w-xl">
+        <div className="space-y-4">
+          <div className="rounded-[12px] border border-brand-border bg-status-success p-4">
+            <p className="text-sm font-semibold text-brand-ink">User created</p>
           </div>
+          <div className="space-y-1">
+            <p className={MODAL_LABEL}>Email</p>
+            <p className="text-sm font-medium text-brand-ink">{created.email}</p>
+          </div>
+          <div className="space-y-1">
+            <p className={MODAL_LABEL}>Temporary password</p>
+            <div className="flex items-center gap-2">
+              <code className="rounded-[8px] border border-brand-border bg-brand-container px-3 py-1.5 text-sm text-brand-ink">
+                {created.password}
+              </code>
+              <Button
+                type="button"
+                size="sm"
+                className={cn(BTN_INK, "h-8 px-3 text-xs")}
+                onClick={() => {
+                  navigator.clipboard.writeText(created.password);
+                  toast.success("Password copied");
+                }}
+              >
+                <Copy /> Copy
+              </Button>
+            </div>
+          </div>
+          <p className="text-sm text-brand-ink-secondary">
+            Copy this password and share it with the user. They&apos;ll be
+            required to change it on first login. This password will not be
+            shown again.
+          </p>
+          <Button asChild className={BTN_PRIMARY}>
+            <Link href="/admin/users">Back to Users</Link>
+          </Button>
         </div>
-        <p className="text-muted-foreground text-sm">
-          Copy this password and share it with the user. They&apos;ll be required
-          to change it on first login. This password will not be shown again.
-        </p>
-        <Button asChild variant="outline">
-          <Link href="/admin/users">Back to users</Link>
-        </Button>
-      </div>
+      </ProfileSectionCard>
     );
   }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="max-w-md space-y-6">
-        <FormField
-          control={form.control}
-          name="role"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Role</FormLabel>
-              <Select value={field.value} onValueChange={field.onChange}>
-                <FormControl>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  <SelectItem value="business">Business</SelectItem>
-                  <SelectItem value="admin">Admin</SelectItem>
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
-              <FormControl>
-                <Input type="email" placeholder="user@company.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="fullName"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Full name</FormLabel>
-              <FormControl>
-                <Input placeholder="Juan Dela Cruz" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        {role === "business" ? (
-          <FormField
-            control={form.control}
-            name="companyName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Company name</FormLabel>
-                <FormControl>
-                  <Input placeholder="Acme Inc." {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        ) : null}
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Temporary password</FormLabel>
-              <div className="flex gap-2">
-                <FormControl>
-                  <Input {...field} />
-                </FormControl>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    form.setValue("password", generatePassword(), {
-                      shouldValidate: true,
-                    })
-                  }
-                >
-                  <RefreshCw /> Generate
-                </Button>
-              </div>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Creating…" : "Create user"}
-        </Button>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <ProfileSectionCard>
+          <h2 className="text-2xl font-semibold text-brand-primary">
+            Basic Information
+          </h2>
+          <div className="grid gap-5 md:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="fullName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={FIELD_LABEL}>
+                    Full Name
+                    <Req />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="Juan Dela Cruz"
+                      className={FIELD_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={FIELD_LABEL}>
+                    Email
+                    <Req />
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="email"
+                      placeholder="user@company.com"
+                      className={FIELD_INPUT}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={FIELD_LABEL}>
+                    Password
+                    <Req />
+                  </FormLabel>
+                  <div className="relative">
+                    <FormControl>
+                      <Input
+                        type={showPassword ? "text" : "password"}
+                        className={cn(FIELD_INPUT, "pr-[130px]")}
+                        {...field}
+                      />
+                    </FormControl>
+                    <div className="absolute inset-y-0 right-1.5 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="flex size-6 items-center justify-center text-brand-border hover:text-brand-ink-secondary"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
+                      </button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-6 rounded-[5px] bg-brand-ink px-3 text-xs font-semibold text-white hover:bg-brand-ink/90"
+                        onClick={() =>
+                          form.setValue("password", generatePassword(), {
+                            shouldValidate: true,
+                          })
+                        }
+                      >
+                        <RefreshCw className="size-3" /> Generate
+                      </Button>
+                    </div>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="role"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className={FIELD_LABEL}>
+                    User Role
+                    <Req />
+                  </FormLabel>
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <FormControl>
+                      <SelectTrigger className={cn(FIELD_INPUT, "w-full")}>
+                        <SelectValue />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent className="rounded-[8px] border-brand-border font-body">
+                      <SelectItem value="business">Business</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {role === "business" ? (
+              <FormField
+                control={form.control}
+                name="companyName"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className={FIELD_LABEL}>
+                      Company Name
+                      <Req />
+                    </FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Acme Inc."
+                        className={FIELD_INPUT}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : null}
+          </div>
+        </ProfileSectionCard>
+
+        <div className="flex justify-center gap-3">
+          <Button asChild className={BTN_INK}>
+            <Link href="/admin/users">Cancel</Link>
+          </Button>
+          <Button
+            type="submit"
+            disabled={form.formState.isSubmitting}
+            className={BTN_PRIMARY}
+          >
+            {form.formState.isSubmitting ? "Creating…" : "Create User"}
+          </Button>
+        </div>
       </form>
     </Form>
   );

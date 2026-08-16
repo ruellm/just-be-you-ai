@@ -26,12 +26,14 @@ export function ConfirmDelete({
   title = "Delete this entry?",
   description = "This action cannot be undone.",
   successMessage = "Deleted",
+  confirmLabel = "Delete",
 }: {
   trigger: ReactNode;
   onConfirm: () => Promise<DeleteResult>;
   title?: string;
-  description?: string;
+  description?: ReactNode;
   successMessage?: string;
+  confirmLabel?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
@@ -75,7 +77,7 @@ export function ConfirmDelete({
             }}
             className="h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-sm font-semibold text-white hover:bg-accent-2/90"
           >
-            {pending ? "Deleting…" : "Delete"}
+            {pending ? "Deleting…" : confirmLabel}
           </AlertDialogAction>
           <AlertDialogCancel
             disabled={pending}

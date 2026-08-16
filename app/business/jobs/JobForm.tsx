@@ -30,7 +30,12 @@ import { ProfileSectionCard } from "@/app/candidate/profile/ProfileSectionCard";
 import { LEVELS, LEVEL_LABELS, WORK_MODES, WORK_MODE_LABELS } from "@/lib/jobs";
 import { RUBRIC } from "@/lib/ai/rubric";
 import { cn } from "@/lib/utils";
-import { jobSchema, JOB_TEXT_LIMITS, type JobValues } from "./schemas";
+import {
+  jobSchema,
+  JOB_TEXT_LIMITS,
+  type JobActionResult,
+  type JobValues,
+} from "./schemas";
 import { createJob, updateJob } from "./actions";
 
 export const EMPTY_JOB: JobValues = {
@@ -151,11 +156,13 @@ export function JobForm({
   jobId,
   defaultValues,
   skillOptions,
+  onSave,
 }: {
   mode: "create" | "edit";
   jobId?: string;
   defaultValues: JobValues;
   skillOptions: SkillOption[];
+  onSave?: (values: JobValues) => Promise<JobActionResult>;
 }) {
   const router = useRouter();
   const [step, setStep] = useState<1 | 2>(1);
@@ -173,8 +180,9 @@ export function JobForm({
   }
 
   async function onSubmit(values: JobValues) {
-    const result =
-      mode === "create"
+    const result = onSave
+      ? await onSave(values)
+      : mode === "create"
         ? await createJob(values)
         : await updateJob(jobId as string, values);
 

@@ -1,21 +1,74 @@
 import Link from "next/link";
+import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { RoleBadge } from "@/components/admin/RoleBadge";
+import { userDisplayName } from "@/lib/admin";
+import { formatLongDate } from "@/lib/dates";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+const ROLE_LABELS: Record<Role, string> = {
+  candidate: "Candidate",
+  business: "Business",
+  admin: "Admin",
+};
+
+const FOOTER_BTN =
+  "h-8 rounded-[5px] bg-brand-secondary px-4 text-xs font-semibold text-brand-canvas hover:bg-brand-secondary/90";
+
+function ListCard({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
+      <div className="h-[11px] bg-brand-primary" aria-hidden />
+      <div className="flex-1">{children}</div>
+      <div className="flex justify-center border-t border-brand-border px-4 py-4">
+        {footer}
+      </div>
+    </div>
+  );
+}
+
+function ListRow({
+  title,
+  subtitle,
+  date,
+  href,
+}: {
+  title: string;
+  subtitle: string;
+  date: Date;
+  href?: string;
+}) {
+  const inner = (
+    <>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-semibold text-brand-ink">{title}</p>
+        <p className="truncate text-xs text-brand-ink-secondary">{subtitle}</p>
+      </div>
+      <span className="shrink-0 text-right text-xs font-medium text-brand-ink-secondary">
+        {formatLongDate(date)}
+      </span>
+    </>
+  );
+  const cls =
+    "flex items-center justify-between gap-4 border-b border-brand-border px-6 py-3 last:border-b-0";
+  return href ? (
+    <Link href={href} className={cn(cls, "transition-colors hover:bg-brand-canvas/60")}>
+      {inner}
+    </Link>
+  ) : (
+    <div className={cls}>{inner}</div>
+  );
 }
 
 export default async function AdminDashboardPage() {
   const [
     candidates,
-    businesses,
-    admins,
     companies,
     jobs,
     applications,
@@ -24,8 +77,6 @@ export default async function AdminDashboardPage() {
     recentJobs,
   ] = await Promise.all([
     prisma.user.count({ where: { role: "candidate" } }),
-    prisma.user.count({ where: { role: "business" } }),
-    prisma.user.count({ where: { role: "admin" } }),
     prisma.company.count(),
     prisma.job.count(),
     prisma.application.count(),
@@ -33,7 +84,14 @@ export default async function AdminDashboardPage() {
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,
-      select: { id: true, email: true, role: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+        candidateProfile: { select: { firstName: true, lastName: true } },
+        company: { select: { name: true } },
+      },
     }),
     prisma.job.findMany({
       orderBy: { createdAt: "desc" },
@@ -49,88 +107,95 @@ export default async function AdminDashboardPage() {
 
   const stats = [
     { label: "Candidates", value: candidates },
-    { label: "Businesses", value: businesses },
-    { label: "Admins", value: admins },
     { label: "Companies", value: companies },
     { label: "Jobs", value: jobs },
     { label: "Applications", value: applications },
-    { label: "Passed candidates", value: passed },
+    { label: "Passed Candidates", value: passed },
   ];
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6 px-6 py-8">
-      <h1 className="text-2xl font-semibold">Admin dashboard</h1>
+    <div className="space-y-8 px-6 py-8 font-body lg:px-14">
+      <div>
+        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          Admin Dashboard
+        </h1>
+        <p className="mt-3 text-base text-brand-ink-secondary">
+          Overview of key platform metrics, total active users, and recent
+          system activity.
+        </p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {stats.map((s) => (
-          <Card key={s.label}>
-            <CardContent>
-              <p className="text-2xl font-semibold">{s.value}</p>
-              <p className="text-muted-foreground text-sm">{s.label}</p>
-            </CardContent>
-          </Card>
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-5">
+        {stats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex min-h-[129px] flex-col items-center justify-center gap-2 rounded-[20px] border border-brand-border bg-brand-surface px-4 py-6 text-center"
+          >
+            <p className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+              {stat.value}
+            </p>
+            <p className="text-sm text-brand-ink-secondary">{stat.label}</p>
+          </div>
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent signups</CardTitle>
-          </CardHeader>
-          <CardContent>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-brand-primary">
+            Recent Signups
+          </h2>
+          <ListCard
+            footer={
+              <Button asChild className={FOOTER_BTN}>
+                <Link href="/admin/users">View All Accounts</Link>
+              </Button>
+            }
+          >
             {recentUsers.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No users yet.</p>
+              <p className="px-6 py-6 text-sm text-brand-ink-secondary">
+                No users yet.
+              </p>
             ) : (
-              <div className="divide-y">
-                {recentUsers.map((u) => (
-                  <Link
-                    key={u.id}
-                    href={`/admin/users/${u.id}`}
-                    className="hover:bg-muted/40 -mx-2 flex items-center justify-between gap-2 rounded-md px-2 py-2"
-                  >
-                    <span className="truncate text-sm">{u.email}</span>
-                    <span className="flex shrink-0 items-center gap-2">
-                      <RoleBadge role={u.role} />
-                      <span className="text-muted-foreground text-xs">
-                        {formatDate(u.createdAt)}
-                      </span>
-                    </span>
-                  </Link>
-                ))}
-              </div>
+              recentUsers.map((u) => (
+                <ListRow
+                  key={u.id}
+                  href={`/admin/users/${u.id}`}
+                  title={userDisplayName(u)}
+                  subtitle={ROLE_LABELS[u.role]}
+                  date={u.createdAt}
+                />
+              ))
             )}
-          </CardContent>
-        </Card>
+          </ListCard>
+        </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Recent jobs</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <section className="space-y-4">
+          <h2 className="text-2xl font-semibold text-brand-primary">
+            Recent Job Postings
+          </h2>
+          <ListCard
+            footer={
+              <Button asChild className={FOOTER_BTN}>
+                <Link href="/admin/companies">View All Companies</Link>
+              </Button>
+            }
+          >
             {recentJobs.length === 0 ? (
-              <p className="text-muted-foreground text-sm">No jobs yet.</p>
+              <p className="px-6 py-6 text-sm text-brand-ink-secondary">
+                No jobs yet.
+              </p>
             ) : (
-              <div className="divide-y">
-                {recentJobs.map((j) => (
-                  <div
-                    key={j.id}
-                    className="flex items-center justify-between gap-2 py-2"
-                  >
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-medium">{j.title}</p>
-                      <p className="text-muted-foreground truncate text-xs">
-                        {j.company.name}
-                      </p>
-                    </div>
-                    <span className="text-muted-foreground shrink-0 text-xs">
-                      {formatDate(j.createdAt)}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              recentJobs.map((j) => (
+                <ListRow
+                  key={j.id}
+                  title={j.title}
+                  subtitle={j.company.name}
+                  date={j.createdAt}
+                />
+              ))
             )}
-          </CardContent>
-        </Card>
+          </ListCard>
+        </section>
       </div>
     </div>
   );

@@ -1,6 +1,12 @@
 import { redirect } from "next/navigation";
-import { AppNav } from "@/components/AppNav";
+import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
+
+function initialsOf(name: string): string {
+  const parts = name.trim().split(/[\s._@-]+/).filter(Boolean);
+  const letters = parts.slice(0, 2).map((p) => p.charAt(0).toUpperCase());
+  return letters.join("") || "?";
+}
 
 export default async function AdminLayout({
   children,
@@ -14,19 +20,12 @@ export default async function AdminLayout({
     redirect(getDashboardPath(dbUser.role));
   }
 
+  const displayName = dbUser.email || "Administrator";
+
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppNav
-        email={dbUser.email}
-        logoHref={getDashboardPath(dbUser.role)}
-        links={[
-          { label: "Dashboard", href: "/admin/dashboard" },
-          { label: "Users", href: "/admin/users" },
-          { label: "Companies", href: "/admin/companies" },
-          { label: "AI Config", href: "/admin/ai-config" },
-        ]}
-      />
-      <div className="flex-1">{children}</div>
+    <div className="min-h-screen bg-brand-canvas">
+      <AdminSidebar displayName={displayName} initials={initialsOf(displayName)} />
+      <main className="min-w-0 lg:pl-[255px]">{children}</main>
     </div>
   );
 }

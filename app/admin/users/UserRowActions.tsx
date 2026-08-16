@@ -3,23 +3,20 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal } from "lucide-react";
 import { toast } from "sonner";
 import type { Role } from "@prisma/client";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Dialog,
+  DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { HideUserDialog } from "@/components/admin/HideUserDialog";
 import {
   Select,
   SelectContent,
@@ -27,19 +24,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ACTION_BTN } from "@/components/data-table/TableCard";
 import { changeUserRole } from "./actions";
+
+const ROW_BTN = cn(ACTION_BTN, "font-medium");
 
 export function UserRowActions({
   userId,
   role,
+  name,
 }: {
   userId: string;
   role: Role;
+  name: string;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
+  const [roleOpen, setRoleOpen] = useState(false);
   const [value, setValue] = useState<Role>(role);
   const [pending, startTransition] = useTransition();
+  const [hidden, setHidden] = useState(false);
+  const [hideOpen, setHideOpen] = useState(false);
 
   function save() {
     startTransition(async () => {
@@ -49,57 +53,96 @@ export function UserRowActions({
         return;
       }
       toast.success("Role updated");
-      setOpen(false);
+      setRoleOpen(false);
       router.refresh();
     });
   }
 
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon-sm" aria-label="Actions">
-            <MoreHorizontal />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onSelect={(e) => {
-              e.preventDefault();
-              setValue(role);
-              setOpen(true);
-            }}
-          >
-            Change role
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href={`/admin/users/${userId}`}>View</Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+    <div className="flex flex-wrap items-center gap-2">
+      <Button
+        asChild
+        size="sm"
+        className={cn(ROW_BTN, "bg-brand-secondary hover:bg-brand-secondary/90")}
+      >
+        <Link href={`/admin/users/${userId}`}>View Profile</Link>
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => {
+          setValue(role);
+          setRoleOpen(true);
+        }}
+        className={cn(ROW_BTN, "bg-brand-ink hover:bg-brand-ink/90")}
+      >
+        Change Role
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => setHideOpen(true)}
+        className={cn(
+          ROW_BTN,
+          hidden
+            ? "bg-accent-1 hover:bg-accent-1/90"
+            : "bg-accent-2 hover:bg-accent-2/90"
+        )}
+      >
+        {hidden ? "Unhide User" : "Hide User"}
+      </Button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-sm">
+      <Dialog open={roleOpen} onOpenChange={setRoleOpen}>
+        <DialogContent className="rounded-[16px] font-body sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Change role</DialogTitle>
+            <DialogTitle className="text-xl font-semibold tracking-[-0.5px] text-brand-primary">
+              Change role
+            </DialogTitle>
+            <DialogDescription className="text-sm text-brand-ink-secondary">
+              Update the role for {name}.
+            </DialogDescription>
           </DialogHeader>
           <Select value={value} onValueChange={(v) => setValue(v as Role)}>
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="h-10 w-full rounded-[12px] border-brand-border font-body">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-[12px] border-brand-border font-body">
               <SelectItem value="candidate">Candidate</SelectItem>
               <SelectItem value="business">Business</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
             </SelectContent>
           </Select>
           <DialogFooter>
-            <Button onClick={save} disabled={pending}>
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 rounded-[8px] px-5 text-sm font-medium text-brand-ink hover:bg-brand-container"
+              >
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              onClick={save}
+              disabled={pending}
+              className="h-9 rounded-[8px] bg-brand-secondary px-5 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+            >
               {pending ? "Saving…" : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+
+      <HideUserDialog
+        open={hideOpen}
+        onOpenChange={setHideOpen}
+        hidden={hidden}
+        name={name}
+        onConfirm={() => {
+          setHidden((v) => !v);
+          setHideOpen(false);
+        }}
+      />
+    </div>
   );
 }
