@@ -110,17 +110,17 @@ export default async function BusinessJobsPage({
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <div className="flex flex-col gap-4 border-b border-brand-border pb-6 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+          <h1 className="text-page-title font-semibold text-brand-primary">
             Job Postings
           </h1>
-          <p className="text-base text-brand-ink-secondary">
+          <p className="text-body text-brand-ink-secondary">
             Manage active listings, track candidate applications, and publish
             new job opportunities.
           </p>
         </div>
         <Button
           asChild
-          className="h-[35px] shrink-0 rounded-[8px] bg-brand-secondary px-4 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+          className="h-[35px] shrink-0 rounded-[8px] bg-brand-secondary px-4 text-small font-semibold text-white hover:bg-brand-secondary/90"
         >
           <Link href="/business/jobs/new">
             <Plus /> Post a New Job
@@ -210,7 +210,7 @@ export default async function BusinessJobsPage({
               {jobs.map((job) => (
                 <TableRow key={job.id} className={TR_CLASS}>
                   <TableCell
-                    className={cn(TD_CLASS, "max-w-[280px] text-sm font-medium text-brand-ink")}
+                    className={cn(TD_CLASS, "max-w-[280px] text-small font-medium text-brand-ink")}
                   >
                     <Link
                       href={`/business/jobs/${job.id}`}

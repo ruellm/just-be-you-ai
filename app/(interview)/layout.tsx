@@ -25,13 +25,13 @@ export default async function InterviewLayout({
         <div className="mx-auto flex h-20 max-w-6xl items-center justify-between gap-4 px-6">
           <Link
             href="/candidate/dashboard"
-            className="text-2xl font-semibold text-brand-primary"
+            className="text-heading font-semibold text-brand-primary"
           >
             Just Be You.
           </Link>
           <Button
             asChild
-            className="h-[41px] rounded-[12px] bg-brand-secondary px-5 text-sm font-medium text-white hover:bg-brand-secondary/90"
+            className="h-[41px] rounded-[12px] bg-brand-secondary px-5 text-small font-medium text-white hover:bg-brand-secondary/90"
           >
             <Link href="/candidate/dashboard">Return to Home</Link>
           </Button>

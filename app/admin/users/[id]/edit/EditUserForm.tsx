@@ -26,9 +26,9 @@ import {
   FIELD_LIMITS,
 } from "@/app/candidate/profile/schemas";
 
-const LABEL = "text-sm font-semibold text-brand-ink";
+const LABEL = "text-small font-semibold text-brand-ink";
 const INPUT = cn(MODAL_INPUT, "h-9 placeholder:text-brand-ink-secondary/60");
-const SMALL_BTN = "h-8 rounded-[8px] px-3 text-xs font-semibold text-white";
+const SMALL_BTN = "h-8 rounded-[8px] px-3 text-meta font-semibold text-white";
 
 type Resume = { filename: string; uploadedAt: string | null } | null;
 
@@ -157,15 +157,15 @@ export function EditUserForm({
           <>
             <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
               <Avatar className="size-[60px] after:border-brand-border">
-                <AvatarFallback className="bg-brand-surface text-lg font-semibold text-brand-primary">
+                <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                   {initialsOf(displayName)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <p className="text-base font-semibold text-brand-ink">
+                <p className="text-body font-semibold text-brand-ink">
                   LinkedIn Profile Image
                 </p>
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Pulled from LinkedIn when available.
                 </p>
               </div>
@@ -256,9 +256,9 @@ export function EditUserForm({
               value={summary}
               onChange={(e) => setSummary(e.target.value)}
               maxLength={FIELD_LIMITS.summary}
-              className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none"
+              className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
             />
-            <p className="-mt-4 text-right text-sm text-brand-ink-secondary">
+            <p className="-mt-4 text-right text-small text-brand-ink-secondary">
               {summary.length}/{FIELD_LIMITS.summary} characters
             </p>
           </ProfileSectionCard>
@@ -272,8 +272,8 @@ export function EditUserForm({
                 <div className="flex min-w-0 items-center gap-4">
                   <FileText className="size-10 shrink-0 text-brand-ink-secondary" strokeWidth={1.25} />
                   <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-brand-ink">{profile.resume.filename}</p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="truncate text-body font-semibold text-brand-ink">{profile.resume.filename}</p>
+                    <p className="text-small text-brand-ink-secondary">
                       {profile.resume.uploadedAt
                         ? `Uploaded on ${formatLongDate(new Date(profile.resume.uploadedAt))}`
                         : "Uploaded"}
@@ -293,7 +293,7 @@ export function EditUserForm({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-brand-ink-secondary">No resume uploaded.</p>
+              <p className="text-small text-brand-ink-secondary">No resume uploaded.</p>
             )}
           </ProfileSectionCard>
 
@@ -308,17 +308,17 @@ export function EditUserForm({
               }
             />
             {profile.educations.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No education added.</p>
+              <p className="text-small text-brand-ink-secondary">No education added.</p>
             ) : (
               <div className="space-y-4">
                 {profile.educations.map((e) => (
                   <div key={e.id} className={cn(INSET_PANEL, "flex items-start justify-between gap-4 bg-brand-surface p-5")}>
                     <div className="min-w-0">
-                      <p className="text-base font-semibold text-brand-ink">{e.school}</p>
-                      <p className="text-sm text-brand-ink-secondary">
+                      <p className="text-body font-semibold text-brand-ink">{e.school}</p>
+                      <p className="text-small text-brand-ink-secondary">
                         {[e.degree, e.fieldOfStudy].filter(Boolean).join(" in ") || "—"}
                       </p>
-                      <p className="text-sm text-brand-ink-secondary">
+                      <p className="text-small text-brand-ink-secondary">
                         {e.country ? (
                           <>
                             {e.country}
@@ -347,12 +347,12 @@ export function EditUserForm({
             />
             <div className={cn(INSET_PANEL, "flex min-h-[70px] flex-wrap gap-2 bg-brand-surface p-4")}>
               {profile.skills.length === 0 ? (
-                <p className="text-sm text-brand-ink-secondary">No skills added.</p>
+                <p className="text-small text-brand-ink-secondary">No skills added.</p>
               ) : (
                 profile.skills.map((s) => (
                   <span
                     key={s.id}
-                    className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-brand-tertiary px-3 text-sm text-brand-ink"
+                    className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-brand-tertiary px-3 text-small text-brand-ink"
                   >
                     {s.name}
                     <span className="size-1 rounded-full bg-brand-ink" aria-hidden />
@@ -377,27 +377,27 @@ export function EditUserForm({
               }
             />
             {profile.workExperiences.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No work experience added.</p>
+              <p className="text-small text-brand-ink-secondary">No work experience added.</p>
             ) : (
               <div className="space-y-4">
                 {profile.workExperiences.map((w) => (
                   <div key={w.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-brand-ink">{w.position}</p>
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-body font-semibold text-brand-ink">{w.position}</p>
+                        <p className="text-small text-brand-ink-secondary">
                           {w.companyName}
                           <span className="mx-2">•</span>
                           {EMPLOYMENT_TYPE_LABELS[w.employmentType]}
                         </p>
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-small text-brand-ink-secondary">
                           {displayDateRange(w.start, w.end, w.current)}
                         </p>
                       </div>
                       <RowActions />
                     </div>
                     {w.description ? (
-                      <p className="mt-4 text-sm leading-5 whitespace-pre-line text-brand-ink">{w.description}</p>
+                      <p className="mt-4 text-small whitespace-pre-line text-brand-ink">{w.description}</p>
                     ) : null}
                   </div>
                 ))}
@@ -416,35 +416,35 @@ export function EditUserForm({
               }
             />
             {profile.projects.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No projects added.</p>
+              <p className="text-small text-brand-ink-secondary">No projects added.</p>
             ) : (
               <div className="space-y-4">
                 {profile.projects.map((pr) => (
                   <div key={pr.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="text-base font-semibold text-brand-ink">{pr.name}</p>
+                        <p className="text-body font-semibold text-brand-ink">{pr.name}</p>
                         {pr.url ? (
-                          <p className="text-sm text-brand-ink-secondary">
+                          <p className="text-small text-brand-ink-secondary">
                             URL:{" "}
                             <a href={pr.url} target="_blank" rel="noreferrer" className="underline">
                               {pr.url}
                             </a>
                           </p>
                         ) : null}
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-small text-brand-ink-secondary">
                           {displayDateRange(pr.start, pr.end, pr.ongoing)}
                         </p>
                       </div>
                       <RowActions />
                     </div>
                     {pr.description ? (
-                      <p className="mt-4 line-clamp-2 text-sm leading-5 text-brand-ink">{pr.description}</p>
+                      <p className="mt-4 line-clamp-2 text-small text-brand-ink">{pr.description}</p>
                     ) : null}
                     {pr.skills.length > 0 ? (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {pr.skills.map((s) => (
-                          <span key={s} className="rounded-[6px] bg-brand-tertiary px-3 py-0.5 text-xs text-brand-ink">
+                          <span key={s} className="rounded-[6px] bg-brand-tertiary px-3 py-0.5 text-meta text-brand-ink">
                             {s}
                           </span>
                         ))}
@@ -460,7 +460,7 @@ export function EditUserForm({
 
       {dirty ? (
         <div className="fixed right-4 bottom-4 left-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-accent-4 bg-status-pending px-4 py-3 shadow-lg lg:right-14 lg:left-[calc(255px+3.5rem)]">
-          <p className="text-sm text-brand-ink">
+          <p className="text-small text-brand-ink">
             You have unsaved changes. Make sure you save them before navigating
             to other pages.
           </p>
@@ -469,7 +469,7 @@ export function EditUserForm({
               type="button"
               variant="outline"
               onClick={() => router.push(`/admin/users/${userId}`)}
-              className="h-9 rounded-[8px] border-brand-border bg-brand-surface px-4 text-sm font-medium text-brand-ink hover:bg-brand-container"
+              className="h-9 rounded-[8px] border-brand-border bg-brand-surface px-4 text-small font-medium text-brand-ink hover:bg-brand-container"
             >
               Discard
             </Button>

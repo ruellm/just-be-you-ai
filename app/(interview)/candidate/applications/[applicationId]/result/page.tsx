@@ -96,10 +96,10 @@ export default async function ResultPage({
       {/* Header */}
       <div className="mx-auto max-w-3xl space-y-5 text-center">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold text-brand-primary">
+          <h1 className="text-page-title font-semibold text-brand-primary">
             Thank you for participating!
           </h1>
-          <p className="text-base text-brand-ink-secondary">
+          <p className="text-body text-brand-ink-secondary">
             Your interview results are ready below. Review your performance
             summary and key feedback points to see how you did. Your result has
             been shared with <span className="font-bold">{company}</span>.
@@ -108,13 +108,13 @@ export default async function ResultPage({
         <div className="flex flex-wrap justify-center gap-3">
           <Button
             asChild
-            className="h-9 rounded-[8px] bg-brand-ink px-5 text-sm font-medium text-white hover:bg-brand-ink/90"
+            className="h-9 rounded-[8px] bg-brand-ink px-5 text-small font-medium text-white hover:bg-brand-ink/90"
           >
             <Link href="/candidate/jobs">Browse Other Jobs</Link>
           </Button>
           <Button
             asChild
-            className="h-9 rounded-[8px] bg-brand-secondary px-5 text-sm font-medium text-white hover:bg-brand-secondary/90"
+            className="h-9 rounded-[8px] bg-brand-secondary px-5 text-small font-medium text-white hover:bg-brand-secondary/90"
           >
             <Link href="/candidate/applications">View My Applications</Link>
           </Button>
@@ -133,16 +133,16 @@ export default async function ResultPage({
       >
         <p
           className={cn(
-            "text-xs font-semibold tracking-[1.2px] uppercase",
+            "text-meta font-semibold tracking-[1.2px] uppercase",
             passed ? "text-accent-3" : "text-brand-ink-secondary"
           )}
         >
           {passed ? "Passed" : "Needs review"}
         </p>
-        <p className="mt-1 text-xl font-semibold text-brand-ink">
+        <p className="mt-1 text-subheading font-semibold text-brand-ink">
           {passed ? "Congratulations, you passed!" : "Thanks for interviewing"}
         </p>
-        <p className="mt-1 text-sm text-brand-ink-secondary">
+        <p className="mt-1 text-small text-brand-ink-secondary">
           {passed
             ? "Your interview met the bar for this role."
             : "You didn't meet the bar for this role this time — keep going, you can apply to other roles."}
@@ -153,10 +153,10 @@ export default async function ResultPage({
       <div className="grid gap-5 lg:grid-cols-3">
         <ResultCard>
           <div className="space-y-1">
-            <h2 className="text-2xl font-semibold text-brand-primary">
+            <h2 className="text-heading font-semibold text-brand-primary">
               {application.job.title}
             </h2>
-            <p className="text-sm text-brand-ink-secondary">{company}</p>
+            <p className="text-small text-brand-ink-secondary">{company}</p>
           </div>
           {/* Pre-rubric (old) rows have no category data → block omitted;
               they never show the old tier/score/recommendation row. */}
@@ -171,7 +171,7 @@ export default async function ResultPage({
           <>
             {fitSummary ? (
               <ResultCard title="Fit Summary">
-                <p className="text-base whitespace-pre-line text-brand-ink-secondary">
+                <p className="text-body whitespace-pre-line text-brand-ink-secondary">
                   {fitSummary}
                 </p>
               </ResultCard>
@@ -187,10 +187,10 @@ export default async function ResultPage({
 
       {/* Transcript (kept from the previous page — collapsible, out of the way). */}
       <details className="mx-auto max-w-3xl rounded-[12px] border border-brand-border bg-brand-surface">
-        <summary className="cursor-pointer list-none px-5 py-3 text-sm font-medium text-brand-ink">
+        <summary className="cursor-pointer list-none px-5 py-3 text-small font-medium text-brand-ink">
           View transcript
         </summary>
-        <p className="border-t border-brand-border px-5 py-4 text-sm whitespace-pre-line text-brand-ink-secondary">
+        <p className="border-t border-brand-border px-5 py-4 text-small whitespace-pre-line text-brand-ink-secondary">
           {result.transcript}
         </p>
       </details>

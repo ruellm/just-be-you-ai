@@ -9,7 +9,7 @@ export const INSET_PANEL =
 
 // Section button system: 35px, rounded-[8px], white 14px semibold + icon.
 const BTN_BASE =
-  "h-[35px] rounded-[8px] px-4 font-body text-sm font-semibold text-white";
+  "h-[35px] rounded-[8px] px-4 font-body text-small font-semibold text-white";
 export const BTN_PRIMARY = cn(
   BTN_BASE,
   "bg-brand-secondary hover:bg-brand-secondary/90"
@@ -30,10 +30,10 @@ export function ProfileSectionHeader({
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div className="space-y-1">
-        <h2 className="font-body text-2xl font-semibold text-brand-primary">
+        <h2 className="font-body text-heading font-semibold text-brand-primary">
           {title}
         </h2>
-        <p className="font-body text-sm text-brand-ink-secondary">{subtitle}</p>
+        <p className="font-body text-small text-brand-ink-secondary">{subtitle}</p>
       </div>
       {action ? <div className="shrink-0">{action}</div> : null}
     </div>

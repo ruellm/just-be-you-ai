@@ -18,7 +18,7 @@ export function StatusBadge({ status }: { status: ApplicationStatus }) {
   return (
     <Badge
       className={cn(
-        "rounded-[8px] border-transparent font-body text-xs font-medium",
+        "rounded-[8px] border-transparent font-body text-meta font-medium",
         APPLICATION_STATUS_BADGE_CLASS[status]
       )}
     >

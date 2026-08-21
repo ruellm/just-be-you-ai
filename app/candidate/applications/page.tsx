@@ -33,7 +33,7 @@ function formatDate(date: Date): string {
 }
 
 const ACTION_BTN =
-  "h-[35px] rounded-[8px] px-3 font-body text-sm font-medium text-white";
+  "h-[35px] rounded-[8px] px-3 font-body text-small font-medium text-white";
 
 export default async function ApplicationsPage({
   searchParams,
@@ -68,10 +68,10 @@ export default async function ApplicationsPage({
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <div className="space-y-2 border-b border-brand-border pb-6">
-        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+        <h1 className="text-page-title font-semibold text-brand-primary">
           My Applications
         </h1>
-        <p className="max-w-2xl text-base text-brand-ink-secondary">
+        <p className="max-w-2xl text-body text-brand-ink-secondary">
           Keep track of your journey. Manage your submissions, interview
           stages, and feedback in one place.
         </p>
@@ -89,7 +89,7 @@ export default async function ApplicationsPage({
             }
             aria-current={active.key === f.key ? "page" : undefined}
             className={cn(
-              "inline-flex h-[39px] items-center rounded-[8px] border px-4 text-sm font-medium transition-colors",
+              "inline-flex h-[39px] items-center rounded-[8px] border px-4 text-small font-medium transition-colors",
               active.key === f.key
                 ? "border-brand-secondary bg-brand-secondary text-white"
                 : "border-brand-border bg-brand-surface text-brand-ink-secondary hover:bg-brand-container"
@@ -116,7 +116,7 @@ export default async function ApplicationsPage({
           action={
             <Button
               asChild
-              className="h-[46px] min-w-[174px] rounded-[12px] bg-brand-secondary px-6 text-sm font-medium text-white hover:bg-brand-secondary/90"
+              className="h-[46px] min-w-[174px] rounded-[12px] bg-brand-secondary px-6 text-small font-medium text-white hover:bg-brand-secondary/90"
             >
               <Link href="/candidate/jobs">Browse Jobs</Link>
             </Button>
@@ -131,14 +131,14 @@ export default async function ApplicationsPage({
                 key={app.id}
                 className="flex flex-col gap-4 rounded-[12px] border border-brand-border bg-brand-surface px-6 py-6 md:flex-row md:items-center md:justify-between"
               >
-                <div className="min-w-0 space-y-1.5">
+                <div className="min-w-0 space-y-0.5">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-semibold text-brand-primary">
+                    <h2 className="text-subheading font-semibold text-brand-primary">
                       {app.job.title}
                     </h2>
                     <StatusBadge status={app.status} />
                   </div>
-                  <p className="flex flex-wrap items-center gap-2 text-sm text-brand-ink-secondary">
+                  <p className="flex flex-wrap items-center gap-2 text-small text-brand-ink-secondary">
                     <span>{app.job.company.name}</span>
                     <span
                       aria-hidden

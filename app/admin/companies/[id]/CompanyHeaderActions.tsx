@@ -15,7 +15,7 @@ import { ChangeSeatsModal } from "@/components/admin/ChangeSeatsModal";
 import { HideUserDialog } from "@/components/admin/HideUserDialog";
 
 const BTN_UNDO = cn(
-  "h-[35px] rounded-[8px] px-4 font-body text-sm font-semibold text-white",
+  "h-[35px] rounded-[8px] px-4 font-body text-small font-semibold text-white",
   "bg-accent-1 hover:bg-accent-1/90"
 );
 
@@ -59,11 +59,11 @@ export function CompanyHeaderActions({
       >
         {hidden ? (
           <>
-            <Eye className="size-4" /> Unhide Company
+            <Eye className="size-4" /> Unhide Account
           </>
         ) : (
           <>
-            <EyeOff className="size-4" /> Hide Company
+            <EyeOff className="size-4" /> Hide Account
           </>
         )}
       </Button>
@@ -81,7 +81,6 @@ export function CompanyHeaderActions({
         onOpenChange={setHideOpen}
         hidden={hidden}
         name={name}
-        subject="company"
         onConfirm={() => {
           setHidden((v) => !v);
           setHideOpen(false);

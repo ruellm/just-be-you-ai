@@ -32,15 +32,15 @@ export function RubricBreakdown({
     <div className="space-y-4">
       {/* Verdict + composite + bar */}
       <div>
-        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+        <p className="text-muted-foreground text-meta font-medium tracking-wide uppercase">
           Rubric result
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <VerdictBadge verdict={verdict} className="px-3 py-1 text-sm" />
+          <VerdictBadge verdict={verdict} className="px-3 py-1 text-small" />
           {compositeScore != null ? (
-            <span className="text-sm font-semibold">{compositeScore} / 100</span>
+            <span className="text-small font-semibold">{compositeScore} / 100</span>
           ) : null}
-          <span className="text-muted-foreground text-sm">
+          <span className="text-muted-foreground text-small">
             Scored against the{" "}
             {breakdown.passingBar === "standard" ? "Standard" : "Selective"} bar
           </span>
@@ -53,7 +53,7 @@ export function RubricBreakdown({
           {gates.map((gate, i) => (
             <div
               key={i}
-              className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+              className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-small text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
             >
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               <span>{gateDescription(gate, breakdown)}</span>
@@ -67,33 +67,33 @@ export function RubricBreakdown({
         {breakdown.categories.map((cat) => (
           <div key={cat.key} className="rounded-md border p-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <p className="text-sm font-medium">
+              <p className="text-small font-medium">
                 {cat.displayName}
                 {cat.weightPercent ? (
-                  <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+                  <span className="text-muted-foreground ml-1.5 text-meta font-normal">
                     {cat.weightPercent}% weight
                   </span>
                 ) : null}
               </p>
-              <p className="text-sm font-semibold">
+              <p className="text-small font-semibold">
                 {formatCategoryScore(cat.categoryScore)} / 5
               </p>
             </div>
             <ul className="mt-2 space-y-2">
               {cat.subCriteria.map((sub) => (
-                <li key={sub.key} className="text-sm">
+                <li key={sub.key} className="text-small">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-muted-foreground w-8 shrink-0 font-mono text-xs">
+                    <span className="text-muted-foreground w-8 shrink-0 font-mono text-meta">
                       {sub.score}/5
                     </span>
                     <span className="font-medium">{sub.displayName}</span>
                   </div>
                   {sub.evidence ? (
-                    <p className="text-muted-foreground mt-0.5 pl-10 text-xs italic">
+                    <p className="text-muted-foreground mt-0.5 pl-10 text-meta italic">
                       &ldquo;{sub.evidence}&rdquo;
                     </p>
                   ) : (
-                    <p className="text-muted-foreground mt-0.5 pl-10 text-xs">
+                    <p className="text-muted-foreground mt-0.5 pl-10 text-meta">
                       Not enough evidence in this interview
                     </p>
                   )}

@@ -16,7 +16,7 @@ export default async function ChangePasswordPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Set a new password</CardTitle>
+        <CardTitle className="text-heading">Set a new password</CardTitle>
         <CardDescription>
           Choose a new password to finish setting up your account.
         </CardDescription>

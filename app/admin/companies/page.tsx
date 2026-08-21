@@ -73,10 +73,10 @@ export default async function AdminCompaniesPage({
   return (
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <div className="border-b border-brand-border pb-5">
-        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+        <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
           List of Companies
         </h1>
-        <p className="mt-3 text-base text-brand-ink-secondary">
+        <p className="mt-3 text-body text-brand-ink-secondary">
           Browse and manage affiliated company profiles, company details, and
           linked user accounts.
         </p>
@@ -110,7 +110,7 @@ export default async function AdminCompaniesPage({
                 <TableRow className={TR_CLASS}>
                   <TableCell
                     colSpan={6}
-                    className="px-4 py-10 text-center text-sm text-brand-ink-secondary"
+                    className="px-4 py-10 text-center text-small text-brand-ink-secondary"
                   >
                     No companies found.
                   </TableCell>
@@ -118,7 +118,7 @@ export default async function AdminCompaniesPage({
               ) : (
                 companies.map((c) => (
                   <TableRow key={c.id} className={TR_CLASS}>
-                    <TableCell className={`${TD_CLASS} text-sm font-medium text-brand-ink`}>
+                    <TableCell className={`${TD_CLASS} text-small font-medium text-brand-ink`}>
                       {c.name || "(unnamed)"}
                     </TableCell>
                     <TableCell className={`${TD_CLASS} whitespace-nowrap`}>

@@ -133,7 +133,7 @@ export function AdvancedInterviewExperience({
         title="Connecting you to our AI Interviewer.."
         body="Please hang tight while we prepare your workspace. Take a deep breath, you've got this!"
         footer={
-          <p className="text-base text-brand-ink-secondary">
+          <p className="text-body text-brand-ink-secondary">
             <span className="font-bold text-brand-primary">
               Tip for a smooth interview:
             </span>{" "}
@@ -156,24 +156,24 @@ export function AdvancedInterviewExperience({
   if (phase === "error") {
     return (
       <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-xl flex-col items-center justify-center gap-4 px-6 text-center font-body">
-        <h1 className="text-2xl font-semibold text-brand-primary">
+        <h1 className="text-heading font-semibold text-brand-primary">
           We couldn’t start your interview
         </h1>
-        <p className="max-w-sm text-base text-brand-ink-secondary">
+        <p className="max-w-sm text-body text-brand-ink-secondary">
           Something went wrong connecting to the interview. Please check your
           microphone permissions and try again.
         </p>
         <div className="flex gap-3 pt-2">
           <Button
             onClick={() => window.location.reload()}
-            className="h-10 rounded-[8px] bg-brand-secondary px-5 text-sm font-medium text-white hover:bg-brand-secondary/90"
+            className="h-10 rounded-[8px] bg-brand-secondary px-5 text-small font-medium text-white hover:bg-brand-secondary/90"
           >
             Try again
           </Button>
           <Button
             variant="outline"
             onClick={() => router.push("/candidate/applications")}
-            className="h-10 rounded-[8px] border-brand-border bg-brand-surface px-5 text-sm font-medium text-brand-ink hover:bg-brand-container"
+            className="h-10 rounded-[8px] border-brand-border bg-brand-surface px-5 text-small font-medium text-brand-ink hover:bg-brand-container"
           >
             Back to applications
           </Button>

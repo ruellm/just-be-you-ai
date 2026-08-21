@@ -1,3 +1,5 @@
+import type { Role } from "@prisma/client";
+
 export type UserNameSource = {
   email: string;
   candidateProfile?: { firstName: string | null; lastName: string | null } | null;
@@ -13,3 +15,13 @@ export function userDisplayName(u: UserNameSource): string {
 }
 
 export const MAX_SEATS_TOTAL = 1000;
+
+export function adminProfilePath(u: {
+  id: string;
+  role: Role;
+  companyId: string | null;
+}): string {
+  return u.role === "business" && u.companyId
+    ? `/admin/companies/${u.companyId}`
+    : `/admin/users/${u.id}`;
+}

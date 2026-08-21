@@ -49,7 +49,7 @@ export function LoginForm() {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
+              <FormLabel className="text-meta font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
                 Email
               </FormLabel>
               <div className="relative">
@@ -57,7 +57,7 @@ export function LoginForm() {
                   <Input
                     type="email"
                     autoComplete="email"
-                    className="h-14 rounded-[8px] border-brand-border bg-brand-surface pr-11"
+                    className="h-12 rounded-[8px] border-brand-border bg-brand-surface pr-11 sm:h-14"
                     {...field}
                   />
                 </FormControl>
@@ -72,7 +72,7 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-xs font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
+              <FormLabel className="text-meta font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
                 Password
               </FormLabel>
               <div className="relative">
@@ -80,7 +80,7 @@ export function LoginForm() {
                   <Input
                     type="password"
                     autoComplete="current-password"
-                    className="h-14 rounded-[8px] border-brand-border bg-brand-surface pr-11"
+                    className="h-12 rounded-[8px] border-brand-border bg-brand-surface pr-11 sm:h-14"
                     {...field}
                   />
                 </FormControl>
@@ -91,7 +91,7 @@ export function LoginForm() {
           )}
         />
         {form.formState.errors.root ? (
-          <p className="text-destructive text-sm">
+          <p className="text-destructive text-small">
             {form.formState.errors.root.message}
           </p>
         ) : null}
@@ -104,7 +104,7 @@ export function LoginForm() {
         </Button>
         <Link
           href="/forgot-password"
-          className="block text-center text-sm text-brand-ink-secondary hover:text-brand-primary"
+          className="block text-center text-small text-brand-ink-secondary hover:text-brand-primary"
         >
           Forgot password?
         </Link>

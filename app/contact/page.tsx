@@ -39,48 +39,48 @@ export default function ContactPage() {
       <PublicNav />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl section-x section-y">
           {/* Header */}
           <div className="space-y-4 text-center">
-            <h1 className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+            <h1 className="font-display text-page-title font-bold text-brand-primary">
               Get In Touch
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-brand-ink-secondary">
+            <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
               Have questions or need support? Our team is always here to help
               you.
             </p>
           </div>
 
-          <div className="mx-auto mt-12 grid max-w-4xl items-stretch gap-8 lg:grid-cols-[3fr_2fr]">
+          <div className="mx-auto mt-8 grid sm:mt-12 max-w-4xl items-stretch gap-8 lg:grid-cols-[3fr_2fr]">
             {/* Form card */}
-            <div className="rounded-[12px] border border-brand-border bg-brand-surface p-7 sm:p-9">
+            <div className="rounded-[12px] border border-brand-border bg-brand-surface card-pad">
               <ContactForm />
             </div>
 
             {/* Other ways to connect */}
-            <div className="flex flex-col gap-6 rounded-[12px] bg-brand-card p-7">
-              <h2 className="text-2xl font-semibold text-white">
+            <div className="flex flex-col gap-6 rounded-[12px] bg-brand-card card-pad">
+              <h2 className="text-heading font-semibold text-white">
                 Other Ways to Connect
               </h2>
               <ul className="space-y-5">
                 {CONNECT_ROWS.map((row) => (
                   <li key={row.label} className="flex items-start gap-4">
-                    <span className="flex size-[50px] shrink-0 items-center justify-center rounded-full bg-brand-tertiary">
-                      <row.icon className="size-6 text-brand-card" />
+                    <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-tertiary">
+                      <row.icon className="size-5 text-brand-card" />
                     </span>
                     <span className="space-y-0.5">
-                      <span className="block font-medium text-white">
+                      <span className="block text-body font-medium text-white">
                         {row.label}
                       </span>
                       {"href" in row ? (
                         <a
                           href={row.href}
-                          className="text-sm text-white hover:underline"
+                          className="text-small text-white hover:underline"
                         >
                           {row.value}
                         </a>
                       ) : (
-                        <span className="block text-sm text-white">
+                        <span className="block text-small text-white">
                           {row.value}
                         </span>
                       )}

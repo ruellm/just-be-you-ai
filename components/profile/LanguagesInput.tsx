@@ -71,7 +71,7 @@ export function LanguagesInput({
             <span
               key={`${lang}-${i}`}
               className={cn(
-                "inline-flex h-[26px] items-center gap-1 rounded bg-brand-container pr-1 pl-2.5 font-body text-xs font-medium text-brand-ink"
+                "inline-flex h-[26px] items-center gap-1 rounded bg-brand-container pr-1 pl-2.5 font-body text-meta font-medium text-brand-ink"
               )}
             >
               {lang}

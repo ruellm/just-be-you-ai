@@ -33,17 +33,17 @@ export function WorkExperienceCard({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <p className="text-lg font-semibold text-brand-ink">{experience.position}</p>
-        <p className="flex flex-wrap items-center gap-2 text-sm text-brand-ink-secondary">
+        <p className="text-body font-semibold text-brand-ink">{experience.position}</p>
+        <p className="flex flex-wrap items-center gap-2 text-small text-brand-ink-secondary">
           <span>{experience.companyName}</span>
           <span aria-hidden className="size-1 rounded-full bg-brand-ink-secondary" />
           <span>{EMPLOYMENT_TYPE_LABELS[experience.employmentType]}</span>
         </p>
         {range ? (
-          <p className="text-sm text-brand-ink-secondary">{range}</p>
+          <p className="text-small text-brand-ink-secondary">{range}</p>
         ) : null}
         {experience.description ? (
-          <p className="pt-1 text-sm whitespace-pre-line text-brand-ink-secondary">
+          <p className="pt-1 text-small whitespace-pre-line text-brand-ink-secondary">
             {experience.description}
           </p>
         ) : null}

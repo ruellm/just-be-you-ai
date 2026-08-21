@@ -47,13 +47,13 @@ export default async function GeneratedQuestionsPage({
     <div className="mx-auto max-w-3xl space-y-6 px-6 py-8">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">Generated questions</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
+          <h1 className="text-heading font-semibold">Generated questions</h1>
+          <p className="text-muted-foreground mt-1 text-small">
             {candidateName} · {application.job.title} ·{" "}
             {application.job.company.name}
           </p>
           {generatedAt ? (
-            <p className="text-muted-foreground text-xs">
+            <p className="text-muted-foreground text-meta">
               Generated {generatedAt.toLocaleString()}
             </p>
           ) : null}
@@ -63,7 +63,7 @@ export default async function GeneratedQuestionsPage({
 
       {application.questions.length === 0 ? (
         <Card>
-          <CardContent className="text-muted-foreground text-sm">
+          <CardContent className="text-muted-foreground text-small">
             No questions have been generated for this application yet (generation
             may have failed, or hasn&apos;t run). Use “Regenerate questions”.
           </CardContent>
@@ -74,16 +74,16 @@ export default async function GeneratedQuestionsPage({
             <Card key={q.id}>
               <CardContent className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-sm font-medium">
+                  <span className="text-muted-foreground text-small font-medium">
                     {q.order}.
                   </span>
                   <Badge className={cn("border-transparent", CATEGORY_CLASS[q.category])}>
                     {q.category}
                   </Badge>
                 </div>
-                <p className="text-sm font-medium">{q.text}</p>
+                <p className="text-small font-medium">{q.text}</p>
                 {q.rationale ? (
-                  <p className="text-muted-foreground text-sm">{q.rationale}</p>
+                  <p className="text-muted-foreground text-small">{q.rationale}</p>
                 ) : null}
               </CardContent>
             </Card>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { userDisplayName } from "@/lib/admin";
+import { adminProfilePath, userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ const ROLE_LABELS: Record<Role, string> = {
 };
 
 const FOOTER_BTN =
-  "h-8 rounded-[5px] bg-brand-secondary px-4 text-xs font-semibold text-brand-canvas hover:bg-brand-secondary/90";
+  "h-8 rounded-[5px] bg-brand-secondary px-4 text-meta font-semibold text-brand-canvas hover:bg-brand-secondary/90";
 
 function ListCard({
   children,
@@ -47,10 +47,10 @@ function ListRow({
   const inner = (
     <>
       <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-brand-ink">{title}</p>
-        <p className="truncate text-xs text-brand-ink-secondary">{subtitle}</p>
+        <p className="truncate text-small font-semibold text-brand-ink">{title}</p>
+        <p className="truncate text-meta text-brand-ink-secondary">{subtitle}</p>
       </div>
-      <span className="shrink-0 text-right text-xs font-medium text-brand-ink-secondary">
+      <span className="shrink-0 text-right text-meta font-medium text-brand-ink-secondary">
         {formatLongDate(date)}
       </span>
     </>
@@ -90,7 +90,7 @@ export default async function AdminDashboardPage() {
         role: true,
         createdAt: true,
         candidateProfile: { select: { firstName: true, lastName: true } },
-        company: { select: { name: true } },
+        company: { select: { id: true, name: true } },
       },
     }),
     prisma.job.findMany({
@@ -116,10 +116,10 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-8 px-6 py-8 font-body lg:px-14">
       <div>
-        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+        <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
           Admin Dashboard
         </h1>
-        <p className="mt-3 text-base text-brand-ink-secondary">
+        <p className="mt-3 text-body text-brand-ink-secondary">
           Overview of key platform metrics, total active users, and recent
           system activity.
         </p>
@@ -131,17 +131,17 @@ export default async function AdminDashboardPage() {
             key={stat.label}
             className="flex min-h-[129px] flex-col items-center justify-center gap-2 rounded-[20px] border border-brand-border bg-brand-surface px-4 py-6 text-center"
           >
-            <p className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+            <p className="font-display text-display font-bold text-brand-primary">
               {stat.value}
             </p>
-            <p className="text-sm text-brand-ink-secondary">{stat.label}</p>
+            <p className="text-small text-brand-ink-secondary">{stat.label}</p>
           </div>
         ))}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-brand-primary">
+          <h2 className="text-heading font-semibold text-brand-primary">
             Recent Signups
           </h2>
           <ListCard
@@ -152,14 +152,18 @@ export default async function AdminDashboardPage() {
             }
           >
             {recentUsers.length === 0 ? (
-              <p className="px-6 py-6 text-sm text-brand-ink-secondary">
+              <p className="px-6 py-6 text-small text-brand-ink-secondary">
                 No users yet.
               </p>
             ) : (
               recentUsers.map((u) => (
                 <ListRow
                   key={u.id}
-                  href={`/admin/users/${u.id}`}
+                  href={adminProfilePath({
+                    id: u.id,
+                    role: u.role,
+                    companyId: u.company?.id ?? null,
+                  })}
                   title={userDisplayName(u)}
                   subtitle={ROLE_LABELS[u.role]}
                   date={u.createdAt}
@@ -170,7 +174,7 @@ export default async function AdminDashboardPage() {
         </section>
 
         <section className="space-y-4">
-          <h2 className="text-2xl font-semibold text-brand-primary">
+          <h2 className="text-heading font-semibold text-brand-primary">
             Recent Job Postings
           </h2>
           <ListCard
@@ -181,7 +185,7 @@ export default async function AdminDashboardPage() {
             }
           >
             {recentJobs.length === 0 ? (
-              <p className="px-6 py-6 text-sm text-brand-ink-secondary">
+              <p className="px-6 py-6 text-small text-brand-ink-secondary">
                 No jobs yet.
               </p>
             ) : (

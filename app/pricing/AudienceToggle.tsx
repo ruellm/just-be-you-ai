@@ -19,7 +19,7 @@ export function AudienceToggle({
           option.key === active ? (
             <span
               key={option.key}
-              className="rounded-[8px] bg-brand-secondary px-6 py-1.5 text-sm font-semibold text-white"
+              className="rounded-[8px] bg-brand-secondary px-6 py-1.5 text-small font-semibold text-white"
             >
               {option.label}
             </span>
@@ -27,7 +27,7 @@ export function AudienceToggle({
             <Link
               key={option.key}
               href={option.href}
-              className="rounded-[8px] px-6 py-1.5 text-sm font-semibold text-brand-ink transition-colors hover:bg-brand-container"
+              className="rounded-[8px] px-6 py-1.5 text-small font-semibold text-brand-ink transition-colors hover:bg-brand-container"
             >
               {option.label}
             </Link>

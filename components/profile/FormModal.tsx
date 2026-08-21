@@ -25,14 +25,14 @@ import { cn } from "@/lib/utils";
 
 // ── Field styling (apply to shadcn Form primitives) ─────────────────────────
 export const MODAL_LABEL =
-  "pb-1.5 font-body text-xs font-semibold tracking-[1.2px] text-brand-ink uppercase";
+  "pb-1.5 font-body text-meta font-semibold tracking-[1.2px] text-brand-ink uppercase";
 export const MODAL_INPUT =
-  "h-[42px] rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface px-4 py-2.5 font-body text-sm text-brand-ink shadow-none placeholder:text-brand-border";
+  "h-[42px] rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface px-4 py-2.5 font-body text-small text-brand-ink shadow-none placeholder:text-brand-border";
 export const MODAL_TEXTAREA =
-  "rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface px-4 py-2.5 font-body text-sm text-brand-ink shadow-none placeholder:text-brand-border";
+  "rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface px-4 py-2.5 font-body text-small text-brand-ink shadow-none placeholder:text-brand-border";
 export const MODAL_CHECKBOX =
   "size-4 rounded-[4px] border-[0.8px] border-brand-border shadow-none data-[state=checked]:border-brand-secondary data-[state=checked]:bg-brand-secondary";
-export const MODAL_CHECK_LABEL = "font-body text-sm font-normal text-brand-ink";
+export const MODAL_CHECK_LABEL = "font-body text-small font-normal text-brand-ink";
 // Two-column pair (single column on small screens).
 export const MODAL_PAIR = "grid gap-4 sm:grid-cols-2";
 
@@ -99,7 +99,7 @@ export function FormModalContent({
         <div className="flex size-10 shrink-0 items-center justify-center rounded-[10px] bg-brand-secondary text-white">
           <Icon className="size-5" />
         </div>
-        <DialogTitle className="flex-1 font-body text-xl leading-none font-semibold text-brand-primary">
+        <DialogTitle className="flex-1 font-body text-subheading font-semibold text-brand-primary">
           {title}
         </DialogTitle>
         <DialogClose asChild>
@@ -152,7 +152,7 @@ export function FormModalFooter({
           <Button
             type="button"
             variant="ghost"
-            className="h-9 rounded-[8px] px-5 font-body text-sm font-medium text-brand-ink hover:bg-brand-container"
+            className="h-9 rounded-[8px] px-5 font-body text-small font-medium text-brand-ink hover:bg-brand-container"
           >
             Cancel
           </Button>
@@ -161,7 +161,7 @@ export function FormModalFooter({
           type={saveType}
           onClick={onSave}
           disabled={pending}
-          className="h-10 rounded-[8px] bg-brand-secondary px-5 font-body text-sm font-semibold text-white hover:bg-brand-secondary/90"
+          className="h-10 rounded-[8px] bg-brand-secondary px-5 font-body text-small font-semibold text-white hover:bg-brand-secondary/90"
         >
           {pending ? "Saving…" : saveLabel}
         </Button>

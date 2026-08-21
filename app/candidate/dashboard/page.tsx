@@ -86,10 +86,10 @@ export default async function CandidateDashboardPage() {
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-10 font-body lg:px-14 lg:py-14">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+        <h1 className="text-page-title font-semibold text-brand-primary">
           Welcome back, {firstName}!
         </h1>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           You&apos;re making great progress towards your dream career.
         </p>
       </div>
@@ -103,10 +103,10 @@ export default async function CandidateDashboardPage() {
             </div>
             <div className="min-w-0 flex-1 space-y-3">
               <div>
-                <p className="text-base font-semibold text-brand-ink">
+                <p className="text-body font-semibold text-brand-ink">
                   Profile Strength
                 </p>
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Almost there! Complete your profile for better job matches.
                 </p>
               </div>
@@ -125,7 +125,7 @@ export default async function CandidateDashboardPage() {
                     style={{ width: `${percent}%` }}
                   />
                 </div>
-                <span className="shrink-0 text-sm text-brand-ink-secondary">
+                <span className="shrink-0 text-small text-brand-ink-secondary">
                   {percent}/100
                 </span>
               </div>
@@ -133,7 +133,7 @@ export default async function CandidateDashboardPage() {
           </div>
           <Button
             asChild
-            className="h-[46px] shrink-0 rounded-[12px] bg-brand-secondary px-6 text-sm font-medium text-white hover:bg-brand-secondary/90"
+            className="h-[46px] shrink-0 rounded-[12px] bg-brand-secondary px-6 text-small font-medium text-white hover:bg-brand-secondary/90"
           >
             <Link href="/candidate/profile">Complete Your Profile</Link>
           </Button>
@@ -142,7 +142,7 @@ export default async function CandidateDashboardPage() {
 
       {/* Recommended For You */}
       <section className="space-y-5">
-        <h2 className="text-2xl font-semibold text-brand-primary">
+        <h2 className="text-heading font-semibold text-brand-primary">
           Recommended For You
         </h2>
         {recommended.length === 0 ? (

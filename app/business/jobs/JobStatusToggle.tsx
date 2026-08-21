@@ -43,7 +43,7 @@ export function JobStatusToggle({
       disabled={pending}
       className={cn(
         variant === "header"
-          ? "h-9 rounded-[8px] px-5 font-body text-sm font-medium text-white"
+          ? "h-9 rounded-[8px] px-5 font-body text-small font-medium text-white"
           : ACTION_BTN,
         status === "open"
           ? "bg-accent-2 hover:bg-accent-2/90"

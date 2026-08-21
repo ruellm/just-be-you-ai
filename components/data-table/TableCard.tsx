@@ -36,7 +36,7 @@ function pageItems(current: number, total: number): (number | "…")[] {
 }
 
 const pageBtn =
-  "inline-flex h-[26px] min-w-[24px] items-center justify-center rounded-[8px] border px-1.5 text-xs font-medium transition-colors";
+  "inline-flex h-[26px] min-w-[24px] items-center justify-center rounded-[8px] border px-1.5 text-meta font-medium transition-colors";
 const pageBtnIdle =
   "border-brand-border bg-brand-canvas text-brand-ink-secondary hover:bg-brand-container";
 const pageBtnActive =
@@ -69,7 +69,7 @@ export function TableCard({
       {children}
 
       <div className="flex flex-wrap items-center justify-between gap-3 border-t border-brand-border px-4 py-3">
-        <p className="text-xs text-brand-ink-secondary">
+        <p className="text-meta text-brand-ink-secondary">
           Showing {from}
           {to !== from ? `–${to}` : ""} of {total}{" "}
           {total === 1 ? noun[0] : noun[1]}
@@ -78,7 +78,7 @@ export function TableCard({
           <nav aria-label="Pagination" className="flex flex-wrap items-center gap-1.5">
             {pageItems(page, totalPages).map((item, i) =>
               item === "…" ? (
-                <span key={`gap-${i}`} className="px-1 text-xs text-brand-ink-secondary">
+                <span key={`gap-${i}`} className="px-1 text-meta text-brand-ink-secondary">
                   …
                 </span>
               ) : item === page ? (
@@ -112,10 +112,10 @@ export function TableCard({
 
 // Header/body cell classes shared by both tables.
 export const TH_CLASS =
-  "h-12 px-4 text-sm font-semibold whitespace-nowrap text-brand-ink";
+  "h-12 px-4 text-small font-semibold whitespace-nowrap text-brand-ink";
 export const TR_CLASS =
-  "border-brand-border text-xs font-medium text-brand-ink-secondary hover:bg-brand-canvas/60";
+  "border-brand-border text-meta font-medium text-brand-ink-secondary hover:bg-brand-canvas/60";
 export const TD_CLASS = "px-4 py-3";
 // Small action button (24px, 5px radius, 12px semibold, canvas text).
 export const ACTION_BTN =
-  "h-6 rounded-[5px] px-3 text-xs font-semibold text-brand-canvas";
+  "h-6 rounded-[5px] px-3 text-meta font-semibold text-brand-canvas";

@@ -22,7 +22,7 @@ export function SectionCard({
         tone === "container" ? "bg-brand-container" : "bg-brand-surface"
       )}
     >
-      <h2 className="text-2xl font-semibold text-brand-primary">{title}</h2>
+      <h2 className="text-heading font-semibold text-brand-primary">{title}</h2>
       {children}
     </section>
   );
@@ -50,13 +50,13 @@ export function TextSection({
   return (
     <SectionCard title={title}>
       {asList ? (
-        <ul className="list-disc space-y-1.5 pl-5 text-base text-brand-ink">
+        <ul className="list-disc space-y-1.5 pl-5 text-body text-brand-ink">
           {lines.map((line, i) => (
             <li key={i}>{line}</li>
           ))}
         </ul>
       ) : (
-        <p className="text-base whitespace-pre-line text-brand-ink">{body}</p>
+        <p className="text-body whitespace-pre-line text-brand-ink">{body}</p>
       )}
     </SectionCard>
   );
@@ -65,7 +65,7 @@ export function TextSection({
 // Dark tag (tag-2) for work mode / location / level in the header.
 export function DarkTag({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-[23px] items-center rounded-[6px] bg-tag-2 px-2.5 text-xs text-white">
+    <span className="inline-flex h-[23px] items-center rounded-[6px] bg-tag-2 px-2.5 text-meta text-white">
       {children}
     </span>
   );
@@ -74,7 +74,7 @@ export function DarkTag({ children }: { children: ReactNode }) {
 // Light skill chip (tag-1) for the Required Skills section.
 export function SkillChip({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-xs text-brand-ink">
+    <span className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink">
       {children}
     </span>
   );

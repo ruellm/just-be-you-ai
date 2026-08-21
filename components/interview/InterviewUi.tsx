@@ -36,8 +36,8 @@ export function StatusScreen({
     <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-2xl flex-col items-center justify-center gap-6 px-6 py-12 text-center font-body">
       <BigSpinner />
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-brand-primary">{title}</h1>
-        <p className="text-base text-brand-ink-secondary">{body}</p>
+        <h1 className="text-heading font-semibold text-brand-primary">{title}</h1>
+        <p className="text-body text-brand-ink-secondary">{body}</p>
       </div>
       {children}
       {footer ? <div className="pt-10">{footer}</div> : null}
@@ -128,10 +128,10 @@ export function LiveStage({
   return (
     <div className="mx-auto flex max-w-5xl flex-col items-center gap-10 px-6 py-12 text-center font-body">
       <div className="space-y-2">
-        <h1 className="text-2xl font-semibold text-brand-primary">
+        <h1 className="text-heading font-semibold text-brand-primary">
           AI Interview In Progress
         </h1>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           Application for <span className="font-bold">{jobTitle}</span> from{" "}
           <span className="font-bold">{companyName}</span>.
         </p>
@@ -141,10 +141,10 @@ export function LiveStage({
         <VoiceOrb speaking={speaking} />
 
         <div className="flex w-full max-w-[420px] flex-col gap-4">
-          <div className="flex min-h-[126px] items-center rounded-[12px] border border-brand-border bg-brand-surface px-6 py-5 text-left text-base text-brand-ink-secondary">
+          <div className="flex min-h-[126px] items-center rounded-[12px] border border-brand-border bg-brand-surface px-6 py-5 text-left text-body text-brand-ink-secondary">
             {latestMessage ?? "The interviewer will begin shortly…"}
           </div>
-          <div className="flex h-[47px] items-center justify-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface text-base text-brand-ink-secondary">
+          <div className="flex h-[47px] items-center justify-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface text-body text-brand-ink-secondary">
             <span aria-hidden className="size-2.5 rounded-full bg-accent-2" />
             Recording in Progress
           </div>
@@ -152,7 +152,7 @@ export function LiveStage({
             type="button"
             onClick={onEnd}
             disabled={endDisabled}
-            className="h-10 w-full rounded-[8px] bg-accent-2 text-base font-normal text-white hover:bg-accent-2/90"
+            className="h-10 w-full rounded-[8px] bg-accent-2 text-body font-normal text-white hover:bg-accent-2/90"
           >
             Done answering? End Interview
           </Button>
@@ -160,12 +160,12 @@ export function LiveStage({
       </div>
 
       <div className="flex flex-col items-center gap-6">
-        <p className="max-w-3xl text-base text-brand-ink-secondary">
+        <p className="max-w-3xl text-body text-brand-ink-secondary">
           Speak clearly into your microphone and converse with the interviewer.
           Please remain on this screen until the session is complete. Your
           responses are being recorded.
         </p>
-        <div className="flex h-[47px] w-[240px] items-center justify-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface text-sm font-bold text-brand-ink-secondary">
+        <div className="flex h-[47px] w-[240px] items-center justify-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface text-small font-bold text-brand-ink-secondary">
           <Clock className="size-4" />
           Time Elapsed: {formatElapsed(elapsedSeconds)}
         </div>

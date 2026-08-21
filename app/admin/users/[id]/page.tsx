@@ -27,7 +27,7 @@ import { UserHeaderActions } from "./UserHeaderActions";
 
 function SectionTitle({ children }: { children: ReactNode }) {
   return (
-    <h2 className="text-2xl font-semibold text-brand-primary">{children}</h2>
+    <h2 className="text-heading font-semibold text-brand-primary">{children}</h2>
   );
 }
 
@@ -43,8 +43,8 @@ function Field({
   const text = value === null || value === undefined || value === "" ? "—" : String(value);
   return (
     <div className="min-w-0">
-      <dt className="text-sm font-semibold text-brand-ink">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-brand-ink">
+      <dt className="text-small font-semibold text-brand-ink">{label}</dt>
+      <dd className="mt-0.5 truncate text-small text-brand-ink">
         {href && text !== "—" ? (
           <a
             href={href}
@@ -118,7 +118,7 @@ export default async function AdminUserDetailPage({
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <Link
         href="/admin/users"
-        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>
@@ -126,13 +126,13 @@ export default async function AdminUserDetailPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar className="size-[60px] rounded-[8px] after:rounded-[8px] after:border-brand-border">
-            <AvatarFallback className="rounded-[8px] bg-brand-container text-lg font-semibold text-brand-primary">
+            <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
               {initialsOf(name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-[32px] leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+              <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
                 {name}
               </h1>
               <RoleBadge role={user.role} />
@@ -145,7 +145,7 @@ export default async function AdminUserDetailPage({
                 </Badge>
               ) : null}
             </div>
-            <p className="mt-1 text-base text-brand-ink-secondary">{user.email}</p>
+            <p className="mt-1 text-body text-brand-ink-secondary">{user.email}</p>
           </div>
         </div>
         <UserHeaderActions
@@ -217,7 +217,7 @@ export default async function AdminUserDetailPage({
         <>
           <ProfileSectionCard>
             <SectionTitle>Profile Summary</SectionTitle>
-            <p className="text-base leading-6 text-brand-ink">
+            <p className="text-body text-brand-ink">
               {profile.summary?.trim() || "No summary provided."}
             </p>
           </ProfileSectionCard>
@@ -225,18 +225,18 @@ export default async function AdminUserDetailPage({
           <ProfileSectionCard>
             <SectionTitle>Work Experience</SectionTitle>
             {profile.workExperiences.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No work experience added.</p>
+              <p className="text-small text-brand-ink-secondary">No work experience added.</p>
             ) : (
               <div className="space-y-4">
                 {profile.workExperiences.map((w) => (
                   <div key={w.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
-                    <p className="text-base font-semibold text-brand-ink">{w.position}</p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-body font-semibold text-brand-ink">{w.position}</p>
+                    <p className="text-small text-brand-ink-secondary">
                       {w.companyName}
                       <span className="mx-2">•</span>
                       {EMPLOYMENT_TYPE_LABELS[w.employmentType]}
                     </p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-small text-brand-ink-secondary">
                       {displayDateRange(
                         dateToInput(w.startDate),
                         dateToInput(w.endDate),
@@ -244,7 +244,7 @@ export default async function AdminUserDetailPage({
                       )}
                     </p>
                     {w.description ? (
-                      <p className="mt-4 text-sm leading-5 whitespace-pre-line text-brand-ink">
+                      <p className="mt-4 text-small whitespace-pre-line text-brand-ink">
                         {w.description}
                       </p>
                     ) : null}
@@ -257,16 +257,16 @@ export default async function AdminUserDetailPage({
           <ProfileSectionCard>
             <SectionTitle>Education</SectionTitle>
             {profile.educations.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No education added.</p>
+              <p className="text-small text-brand-ink-secondary">No education added.</p>
             ) : (
               <div className="space-y-4">
                 {profile.educations.map((e) => (
                   <div key={e.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
-                    <p className="text-base font-semibold text-brand-ink">{e.school}</p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-body font-semibold text-brand-ink">{e.school}</p>
+                    <p className="text-small text-brand-ink-secondary">
                       {[e.degree, e.fieldOfStudy].filter(Boolean).join(" in ") || "—"}
                     </p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-small text-brand-ink-secondary">
                       {e.country ? (
                         <>
                           {e.country}
@@ -288,13 +288,13 @@ export default async function AdminUserDetailPage({
           <ProfileSectionCard>
             <SectionTitle>Skills</SectionTitle>
             {profile.skills.length === 0 ? (
-              <p className="text-sm text-brand-ink-secondary">No skills added.</p>
+              <p className="text-small text-brand-ink-secondary">No skills added.</p>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {profile.skills.map((s) => (
                   <span
                     key={s.id}
-                    className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-brand-tertiary px-3 text-sm text-brand-ink"
+                    className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-brand-tertiary px-3 text-small text-brand-ink"
                   >
                     {s.skill.name}
                     <span className="size-1 rounded-full bg-brand-ink" aria-hidden />
@@ -317,10 +317,10 @@ export default async function AdminUserDetailPage({
                 <div className="flex min-w-0 items-center gap-4">
                   <FileText className="size-10 shrink-0 text-brand-ink-secondary" strokeWidth={1.25} />
                   <div className="min-w-0">
-                    <p className="truncate text-base font-semibold text-brand-ink">
+                    <p className="truncate text-body font-semibold text-brand-ink">
                       {resume.filename}
                     </p>
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-small text-brand-ink-secondary">
                       {resume.uploadedAt
                         ? `Uploaded on ${formatLongDate(new Date(resume.uploadedAt))}`
                         : "Uploaded"}
@@ -337,16 +337,16 @@ export default async function AdminUserDetailPage({
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-brand-ink-secondary">Not uploaded.</p>
+              <p className="text-small text-brand-ink-secondary">Not uploaded.</p>
             )}
           </ProfileSectionCard>
 
           {profile.parsedResumeText ? (
             <details className="rounded-[12px] border border-brand-border bg-brand-surface">
-              <summary className="cursor-pointer px-6 py-4 text-sm font-medium text-brand-ink-secondary">
+              <summary className="cursor-pointer px-6 py-4 text-small font-medium text-brand-ink-secondary">
                 Parsed resume text ({profile.parsedResumeText.length} chars) — debug
               </summary>
-              <pre className="max-h-96 overflow-auto border-t border-brand-border px-6 py-4 font-mono text-xs whitespace-pre-wrap text-brand-ink-secondary">
+              <pre className="max-h-96 overflow-auto border-t border-brand-border px-6 py-4 font-mono text-meta whitespace-pre-wrap text-brand-ink-secondary">
                 {profile.parsedResumeText}
               </pre>
             </details>
@@ -361,12 +361,12 @@ export default async function AdminUserDetailPage({
                     key={app.id}
                     className="flex items-center justify-between gap-3 py-3"
                   >
-                    <span className="truncate text-sm font-medium text-brand-ink">
+                    <span className="truncate text-small font-medium text-brand-ink">
                       {app.job.title}
                     </span>
                     <Link
                       href={`/admin/applications/${app.id}/questions`}
-                      className="shrink-0 text-sm font-semibold text-brand-primary hover:underline"
+                      className="shrink-0 text-small font-semibold text-brand-primary hover:underline"
                     >
                       View generated questions
                     </Link>

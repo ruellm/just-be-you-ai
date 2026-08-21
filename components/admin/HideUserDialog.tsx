@@ -11,35 +11,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-const COPY = {
-  user: {
-    noun: "User",
-    thing: "user profile",
-    audience: "other companies",
-  },
-  company: {
-    noun: "Company",
-    thing: "company profile",
-    audience: "other users",
-  },
-} as const;
-
 export function HideUserDialog({
   open,
   onOpenChange,
   hidden,
   name,
   onConfirm,
-  subject = "user",
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   hidden: boolean;
   name: string;
   onConfirm: () => void;
-  subject?: keyof typeof COPY;
 }) {
-  const copy = COPY[subject];
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -59,21 +43,21 @@ export function HideUserDialog({
               <Ban className="size-7 text-accent-2" />
             )}
           </div>
-          <DialogTitle className="text-xl leading-6 font-semibold tracking-[-0.5px] text-brand-ink">
-            {hidden ? `Unhide ${copy.noun} Profile` : `Hide ${copy.noun} Profile`}
+          <DialogTitle className="text-subheading font-semibold tracking-[-0.5px] text-brand-ink">
+            {hidden ? "Unhide Account" : "Hide Account"}
           </DialogTitle>
-          <DialogDescription className="mt-3 max-w-[567px] text-sm leading-[25px] text-brand-ink">
+          <DialogDescription className="mt-3 max-w-[567px] text-small text-brand-ink">
             {hidden ? (
               <>
-                Are you sure you want to unhide this {copy.thing}?{" "}
-                <span className="font-semibold">{name}</span> will be visible to{" "}
-                {copy.audience} again.
+                Are you sure you want to unhide this account?{" "}
+                <span className="font-semibold">{name}</span> will be visible to
+                other users again.
               </>
             ) : (
               <>
-                Are you sure you want to hide this {copy.thing}?{" "}
+                Are you sure you want to hide this account?{" "}
                 <span className="font-semibold">{name}</span> will no longer be
-                visible to {copy.audience}.
+                visible to other users.
               </>
             )}
           </DialogDescription>
@@ -82,7 +66,7 @@ export function HideUserDialog({
               type="button"
               onClick={onConfirm}
               className={cn(
-                "h-11 w-full rounded-[8px] text-sm font-semibold text-white",
+                "h-11 w-full rounded-[8px] text-small font-semibold text-white",
                 hidden
                   ? "bg-accent-1 hover:bg-accent-1/90"
                   : "bg-accent-2 hover:bg-accent-2/90"
@@ -90,11 +74,11 @@ export function HideUserDialog({
             >
               {hidden ? (
                 <>
-                  <Eye className="size-4" /> Unhide {copy.noun} Profile
+                  <Eye className="size-4" /> Unhide Account
                 </>
               ) : (
                 <>
-                  <EyeOff className="size-4" /> Hide {copy.noun} Profile
+                  <EyeOff className="size-4" /> Hide Account
                 </>
               )}
             </Button>
@@ -102,7 +86,7 @@ export function HideUserDialog({
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 w-full rounded-[8px] border-brand-border text-sm font-medium text-brand-ink hover:bg-brand-container"
+                className="h-11 w-full rounded-[8px] border-brand-border text-small font-medium text-brand-ink hover:bg-brand-container"
               >
                 Cancel
               </Button>

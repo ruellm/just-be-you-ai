@@ -159,3 +159,64 @@
     @apply font-sans;
   }
 }
+@utility text-display {
+  font-size: clamp(2.125rem, 1.783rem + 1.522vw, 3rem);
+  line-height: 1.1;
+}
+@utility text-page-title {
+  font-size: clamp(1.625rem, 1.38rem + 1.087vw, 2.25rem);
+  line-height: 1.15;
+}
+@utility text-section {
+  font-size: clamp(1.375rem, 1.13rem + 1.087vw, 2rem);
+  line-height: 1.2;
+}
+@utility text-heading {
+  font-size: clamp(1.188rem, 1.065rem + 0.543vw, 1.5rem);
+  line-height: 1.25;
+}
+@utility text-subheading {
+  font-size: clamp(1.062rem, 0.9891rem + 0.326vw, 1.25rem);
+  line-height: 1.35;
+}
+@utility text-body {
+  font-size: clamp(0.9375rem, 0.913rem + 0.109vw, 1rem);
+  line-height: 1.5;
+}
+@utility text-small {
+  font-size: clamp(0.8125rem, 0.788rem + 0.109vw, 0.875rem);
+  line-height: 1.45;
+}
+@utility text-meta {
+  font-size: clamp(0.7188rem, 0.7065rem + 0.054vw, 0.75rem);
+  line-height: 1.4;
+}
+@utility text-price {
+  font-size: clamp(1.625rem, 1.478rem + 0.652vw, 2rem);
+  line-height: 1.1;
+}
+
+@utility section-y {
+  padding-block: clamp(2.5rem, 1.522rem + 4.348vw, 5rem);
+}
+@utility section-x {
+  padding-inline: clamp(1rem, 0.8043rem + 0.870vw, 1.5rem);
+}
+@utility card-pad {
+  padding: clamp(1.25rem, 1.054rem + 0.870vw, 1.75rem);
+}
+@utility stack-gap {
+  gap: clamp(1rem, 0.8043rem + 0.870vw, 1.5rem);
+}
+@utility section-gap {
+  margin-bottom: clamp(2rem, 1.609rem + 1.739vw, 3rem);
+}
+
+@utility empty-tile {
+  width: clamp(3rem, 2.609rem + 1.739vw, 4rem);
+  height: clamp(3rem, 2.609rem + 1.739vw, 4rem);
+}
+@utility empty-icon {
+  width: clamp(1.375rem, 1.228rem + 0.652vw, 1.75rem);
+  height: clamp(1.375rem, 1.228rem + 0.652vw, 1.75rem);
+}

@@ -17,11 +17,11 @@ import {
 } from "@/components/ui/dialog";
 
 const LABEL_CLASS =
-  "mb-1.5 text-xs font-semibold tracking-[1.2px] text-brand-ink uppercase";
+  "mb-1.5 text-meta font-semibold tracking-[1.2px] text-brand-ink uppercase";
 const STEP_BTN =
   "flex size-12 items-center justify-center rounded-[12px] bg-brand-container text-brand-ink hover:bg-brand-border/60";
 const COUNT_BOX =
-  "flex h-12 items-center justify-center rounded-[12px] border-[0.8px] border-brand-border text-xl font-bold text-brand-ink";
+  "flex h-12 items-center justify-center rounded-[12px] border-[0.8px] border-brand-border text-subheading font-bold text-brand-ink";
 
 export function ChangeSeatsModal({
   open,
@@ -104,7 +104,7 @@ export function ChangeSeatsModal({
               className="brightness-0 invert"
             />
           </div>
-          <DialogTitle className="text-xl leading-7 font-semibold text-brand-primary">
+          <DialogTitle className="text-subheading font-semibold text-brand-primary">
             Change Seats for {subjectLabel}
           </DialogTitle>
           <DialogClose
@@ -140,28 +140,28 @@ export function ChangeSeatsModal({
                   <Plus className="size-4" />
                 </button>
               </div>
-              <p className="mt-3 text-xs text-brand-ink-secondary">
+              <p className="mt-3 text-meta text-brand-ink-secondary">
                 {usedLabel}: {seatsUsed} of {seatsTotal}
               </p>
             </div>
             <div className="px-5">
               <p className={LABEL_CLASS}>Max Seat Limit</p>
               <div className={`${COUNT_BOX} w-[131px]`}>{MAX_SEATS_TOTAL}</div>
-              <p className="mt-3 text-xs text-brand-ink-secondary">
+              <p className="mt-3 text-meta text-brand-ink-secondary">
                 Total plan limit
               </p>
             </div>
           </div>
 
           {overCap ? (
-            <p className="mt-4 text-sm font-medium text-amber-700">
+            <p className="mt-4 text-small font-medium text-amber-700">
               This {subjectLabel.toLowerCase()} has used {seatsUsed} seats but
               only has {seatsTotal}. Set the total to at least {seatsUsed} to
               clear the deficit.
             </p>
           ) : null}
           {error ? (
-            <p className="mt-4 text-sm font-medium text-accent-2">{error}</p>
+            <p className="mt-4 text-small font-medium text-accent-2">{error}</p>
           ) : null}
 
           <div className="mt-4 h-px bg-brand-border" />
@@ -170,7 +170,7 @@ export function ChangeSeatsModal({
               <Button
                 type="button"
                 variant="ghost"
-                className="h-9 rounded-[8px] px-5 text-sm font-medium text-brand-ink hover:bg-brand-container"
+                className="h-9 rounded-[8px] px-5 text-small font-medium text-brand-ink hover:bg-brand-container"
               >
                 Cancel
               </Button>
@@ -179,7 +179,7 @@ export function ChangeSeatsModal({
               type="button"
               onClick={submit}
               disabled={pending || seats < floor}
-              className="h-10 rounded-[8px] bg-brand-secondary px-5 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+              className="h-10 rounded-[8px] bg-brand-secondary px-5 text-small font-semibold text-white hover:bg-brand-secondary/90"
             >
               {pending ? "Updating…" : "Update Seats"}
             </Button>

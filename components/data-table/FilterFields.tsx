@@ -18,7 +18,7 @@ import { cn } from "@/lib/utils";
 // param; any change resets `page`. The server does the filtering.
 
 const FIELD_CLASS =
-  "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-sm font-normal text-brand-ink shadow-none";
+  "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-small font-normal text-brand-ink shadow-none";
 
 // "Clear" item value — Radix Select shows the placeholder for value "" (no
 // filter) but a SelectItem itself can't have an empty value.

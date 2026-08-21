@@ -187,11 +187,11 @@ export function ResumeSection({
               <FileText className="size-5" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-brand-ink">
+              <p className="truncate text-body font-semibold text-brand-ink">
                 {filename}
               </p>
               {uploadedAt ? (
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Uploaded on {formatDate(uploadedAt)}
                 </p>
               ) : null}
@@ -258,23 +258,23 @@ export function ResumeSection({
                 />
               )}
               <p
-                className="pt-1 text-base font-semibold text-brand-ink"
+                className="pt-1 text-body font-semibold text-brand-ink"
                 role="status"
                 aria-live="polite"
               >
                 {STAGE_LABELS[stage]}
               </p>
               {stage !== "done" ? (
-                <p className="text-sm text-brand-ink-secondary">{STAGE_SUBLINE}</p>
+                <p className="text-small text-brand-ink-secondary">{STAGE_SUBLINE}</p>
               ) : null}
             </>
           ) : (
             <>
               <UploadCloud className="size-6 text-brand-primary" />
-              <p className="text-sm font-medium text-brand-ink">
+              <p className="text-small font-medium text-brand-ink">
                 Drag &amp; drop your resume here
               </p>
-              <p className="text-xs text-brand-ink-secondary">
+              <p className="text-meta text-brand-ink-secondary">
                 PDF or DOCX, up to 5MB
               </p>
               <Button

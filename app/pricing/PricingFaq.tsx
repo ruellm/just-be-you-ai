@@ -27,7 +27,7 @@ export function PricingFaq({ items }: { items: FaqItem[] }) {
               type="button"
               onClick={() => setOpenIndex(open ? null : index)}
               aria-expanded={open}
-              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left font-semibold text-brand-ink"
+              className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-body font-semibold text-brand-ink"
             >
               {item.question}
               <ChevronDown
@@ -37,7 +37,7 @@ export function PricingFaq({ items }: { items: FaqItem[] }) {
               />
             </button>
             {open ? (
-              <p className="px-5 pb-5 text-sm text-brand-ink-secondary">
+              <p className="px-5 pb-5 text-small text-brand-ink-secondary">
                 {item.answer}
               </p>
             ) : null}

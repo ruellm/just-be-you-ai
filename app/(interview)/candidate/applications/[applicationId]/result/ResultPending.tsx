@@ -34,15 +34,15 @@ export function ResultPending() {
   if (gaveUp) {
     return (
       <div className="mx-auto flex min-h-[70vh] max-w-2xl flex-col items-center justify-center gap-4 px-6 text-center font-body">
-        <h1 className="text-2xl font-semibold text-brand-primary">
+        <h1 className="text-heading font-semibold text-brand-primary">
           Taking longer than expected
         </h1>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           Your results are still being finalized. Refresh to check again.
         </p>
         <Button
           onClick={() => router.refresh()}
-          className="mt-2 h-10 rounded-[8px] bg-brand-secondary px-5 text-sm font-medium text-white hover:bg-brand-secondary/90"
+          className="mt-2 h-10 rounded-[8px] bg-brand-secondary px-5 text-small font-medium text-white hover:bg-brand-secondary/90"
         >
           Refresh
         </Button>

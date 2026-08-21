@@ -35,8 +35,8 @@ function Field({
     value === null || value === undefined || value === "" ? "—" : String(value);
   return (
     <div className="min-w-0">
-      <dt className="text-sm font-semibold text-brand-ink">{label}</dt>
-      <dd className="mt-0.5 truncate text-sm text-brand-ink">
+      <dt className="text-small font-semibold text-brand-ink">{label}</dt>
+      <dd className="mt-0.5 truncate text-small text-brand-ink">
         {href && text !== "—" ? (
           <a
             href={href}
@@ -55,9 +55,9 @@ function Field({
 }
 
 const DARK_CHIP =
-  "rounded-[6px] bg-tag-2 px-2.5 py-0.5 text-xs font-medium text-white";
+  "rounded-[6px] bg-tag-2 px-2.5 py-0.5 text-meta font-medium text-white";
 const LIGHT_CHIP =
-  "rounded-[6px] bg-brand-tertiary px-2.5 py-0.5 text-xs font-medium text-brand-ink";
+  "rounded-[6px] bg-brand-tertiary px-2.5 py-0.5 text-meta font-medium text-brand-ink";
 
 export default async function AdminCompanyDetailPage({
   params,
@@ -88,7 +88,7 @@ export default async function AdminCompanyDetailPage({
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <Link
         href="/admin/companies"
-        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>
@@ -99,15 +99,15 @@ export default async function AdminCompanyDetailPage({
             {company.logoUrl ? (
               <AvatarImage src={company.logoUrl} alt="" className="rounded-[8px]" />
             ) : null}
-            <AvatarFallback className="rounded-[8px] bg-brand-container text-lg font-semibold text-brand-primary">
+            <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
               {companyInitial(name)}
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <h1 className="truncate text-[32px] leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+            <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
               {name}
             </h1>
-            <p className="mt-1 text-base text-brand-ink-secondary">{company.user.email}</p>
+            <p className="mt-1 text-body text-brand-ink-secondary">{company.user.email}</p>
           </div>
         </div>
         <CompanyHeaderActions
@@ -119,7 +119,7 @@ export default async function AdminCompanyDetailPage({
       </div>
 
       <ProfileSectionCard>
-        <h2 className="text-2xl font-semibold text-brand-primary">Basic Information</h2>
+        <h2 className="text-heading font-semibold text-brand-primary">Basic Information</h2>
         <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
           <Field label="Year Founded" value={company.yearFounded} />
           <Field label="Contact Mail" value={company.contactEmail} />
@@ -139,21 +139,21 @@ export default async function AdminCompanyDetailPage({
       </ProfileSectionCard>
 
       <ProfileSectionCard>
-        <h2 className="text-2xl font-semibold text-brand-primary">Company Description</h2>
-        <p className="text-base leading-6 whitespace-pre-line text-brand-ink">
+        <h2 className="text-heading font-semibold text-brand-primary">Company Description</h2>
+        <p className="text-body whitespace-pre-line text-brand-ink">
           {company.description?.trim() || "No description provided."}
         </p>
       </ProfileSectionCard>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-brand-primary">
+        <h2 className="text-heading font-semibold text-brand-primary">
           Jobs Posted{" "}
-          <span className="text-base font-semibold text-brand-ink-secondary">
+          <span className="text-body font-semibold text-brand-ink-secondary">
             ({company.jobs.length})
           </span>
         </h2>
         {company.jobs.length === 0 ? (
-          <p className="text-sm text-brand-ink-secondary">No jobs posted yet.</p>
+          <p className="text-small text-brand-ink-secondary">No jobs posted yet.</p>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             {company.jobs.map((job) => {
@@ -166,10 +166,10 @@ export default async function AdminCompanyDetailPage({
                   className="flex flex-col gap-3 rounded-[12px] border border-brand-border bg-brand-surface p-5"
                 >
                   <div>
-                    <p className="text-xl leading-6 font-semibold text-brand-primary">
+                    <p className="text-subheading font-semibold text-brand-primary">
                       {job.title}
                     </p>
-                    <p className="mt-1 text-sm text-brand-ink">
+                    <p className="mt-1 text-small text-brand-ink">
                       {salary ?? "Salary not specified"}
                     </p>
                   </div>
@@ -181,7 +181,7 @@ export default async function AdminCompanyDetailPage({
                     <span className={DARK_CHIP}>{LEVEL_LABELS[job.level]}</span>
                     <span
                       className={cn(
-                        "rounded-[6px] px-2.5 py-0.5 text-xs font-medium",
+                        "rounded-[6px] px-2.5 py-0.5 text-meta font-medium",
                         job.status === "open"
                           ? "bg-status-success text-accent-3"
                           : "bg-brand-container text-brand-ink-secondary"
@@ -210,7 +210,7 @@ export default async function AdminCompanyDetailPage({
                       <Link href={`/admin/jobs/${job.id}/edit`}>Edit Role</Link>
                     </Button>
                   </div>
-                  <p className="text-xs text-brand-ink-secondary">
+                  <p className="text-meta text-brand-ink-secondary">
                     {postedAgo(job.createdAt)}
                     <span className="mx-1.5">•</span>
                     {job._count.applications}{" "}

@@ -11,7 +11,7 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen flex-col bg-brand-canvas font-body text-brand-ink">
       <PublicNav />
-      <main className="flex flex-1 items-center justify-center p-6">
+      <main className="flex flex-1 items-center justify-center section-x py-8 sm:py-12">
         {children}
       </main>
     </div>

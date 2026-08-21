@@ -22,7 +22,7 @@ import {
 } from "@/components/jobs/JobSections";
 import { ApplyButton } from "./ApplyButton";
 
-const CTA_CLASS = "h-9 rounded-[8px] px-5 font-body text-sm font-medium text-white";
+const CTA_CLASS = "h-9 rounded-[8px] px-5 font-body text-small font-medium text-white";
 
 export default async function JobDetailPage({
   params,
@@ -84,7 +84,7 @@ export default async function JobDetailPage({
         >
           Apply Now
         </Button>
-        <p className="text-xs text-brand-ink-secondary">
+        <p className="text-meta text-brand-ink-secondary">
           Complete your{" "}
           <Link
             href="/candidate/profile"
@@ -118,7 +118,7 @@ export default async function JobDetailPage({
         >
           Apply Now
         </Button>
-        <p className="text-xs text-brand-ink-secondary">{OUT_OF_SEATS_SHORT}</p>
+        <p className="text-meta text-brand-ink-secondary">{OUT_OF_SEATS_SHORT}</p>
       </div>
     );
   } else {
@@ -135,13 +135,13 @@ export default async function JobDetailPage({
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <Link
         href="/candidate/jobs"
-        className="inline-flex items-center gap-2 text-xl font-semibold text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
 
       {closed ? (
-        <div className="rounded-[12px] border border-brand-border bg-status-fail px-4 py-3 text-sm text-accent-2">
+        <div className="rounded-[12px] border border-brand-border bg-status-fail px-4 py-3 text-small text-accent-2">
           This job is no longer accepting applications.
         </div>
       ) : null}
@@ -150,15 +150,15 @@ export default async function JobDetailPage({
       <div className="flex flex-col gap-6 border-b border-brand-border pb-8 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold text-brand-primary">
+            <h1 className="text-page-title font-semibold text-brand-primary">
               {job.title}
             </h1>
-            <p className="text-base text-brand-ink-secondary">
+            <p className="text-body text-brand-ink-secondary">
               {job.company.name}
             </p>
           </div>
           {salary ? (
-            <p className="text-base font-semibold text-brand-ink-secondary">
+            <p className="text-body font-semibold text-brand-ink-secondary">
               {salary}
             </p>
           ) : null}
@@ -171,7 +171,7 @@ export default async function JobDetailPage({
 
         <div className="flex shrink-0 flex-col items-start gap-2 md:items-end">
           {cta}
-          <p className="text-xs text-brand-ink-secondary">
+          <p className="text-meta text-brand-ink-secondary">
             {postedAgo(job.createdAt)}
           </p>
         </div>
@@ -199,7 +199,7 @@ export default async function JobDetailPage({
         ) : null}
 
         <SectionCard title="Evaluation Process" tone="container">
-          <p className="text-base text-brand-ink">
+          <p className="text-body text-brand-ink">
             After you apply, you&apos;ll complete a short AI interview. Results
             are shared with {job.company.name} along with your profile.
           </p>

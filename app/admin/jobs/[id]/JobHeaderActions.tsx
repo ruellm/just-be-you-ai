@@ -65,10 +65,10 @@ export function JobHeaderActions({
             <Trash2 className="size-7" />
           </div>
           <AlertDialogHeader className="items-center gap-2 pt-5 text-center sm:text-center">
-            <AlertDialogTitle className="font-body text-xl font-semibold text-brand-ink">
+            <AlertDialogTitle className="font-body text-subheading font-semibold text-brand-ink">
               Are you sure?
             </AlertDialogTitle>
-            <AlertDialogDescription className="font-body text-sm leading-[21px] text-brand-ink">
+            <AlertDialogDescription className="font-body text-small text-brand-ink">
               This action cannot be undone. The job posting{" "}
               <span className="font-semibold">&quot;{title}&quot;</span> at{" "}
               {companyName} will be permanently removed.
@@ -79,12 +79,12 @@ export function JobHeaderActions({
               type="button"
               disabled
               className={cn(
-                "h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-sm font-semibold text-white hover:bg-accent-2/90"
+                "h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-small font-semibold text-white hover:bg-accent-2/90"
               )}
             >
               Delete Job Posting
             </Button>
-            <AlertDialogCancel className="h-auto w-full rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface py-3 font-body text-sm font-medium text-brand-ink hover:bg-brand-container">
+            <AlertDialogCancel className="h-auto w-full rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface py-3 font-body text-small font-medium text-brand-ink hover:bg-brand-container">
               Cancel
             </AlertDialogCancel>
           </AlertDialogFooter>

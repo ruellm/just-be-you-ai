@@ -68,7 +68,7 @@ export function BusinessSidebar({
               aria-current={active ? "page" : undefined}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex h-12 items-center gap-3 rounded-[8px] px-4 text-base text-brand-ink-sidebar transition-colors",
+                "flex h-12 items-center gap-3 rounded-[8px] px-4 text-body text-brand-ink-sidebar transition-colors",
                 active
                   ? "bg-brand-tertiary font-semibold"
                   : "font-medium hover:bg-brand-container"
@@ -82,7 +82,7 @@ export function BusinessSidebar({
           );
         })}
 
-        <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-sm text-brand-ink">
+        <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-small text-brand-ink">
           <Image
             src="/icons/seat-chair.svg"
             alt=""
@@ -110,15 +110,15 @@ export function BusinessSidebar({
           {logoUrl ? (
             <AvatarImage src={logoUrl} alt="" className="rounded-[12px]" />
           ) : null}
-          <AvatarFallback className="rounded-[12px] bg-brand-container text-sm font-semibold text-brand-primary">
+          <AvatarFallback className="rounded-[12px] bg-brand-container text-small font-semibold text-brand-primary">
             {initials}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-brand-ink">
+          <p className="truncate text-small font-semibold text-brand-ink">
             {companyName}
           </p>
-          <p className="truncate text-xs text-brand-ink-secondary">Company</p>
+          <p className="truncate text-meta text-brand-ink-secondary">Company</p>
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -153,7 +153,7 @@ export function BusinessSidebar({
     <>
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-brand-border bg-brand-surface px-4 font-body lg:hidden">
-        <Link href="/business/dashboard" className="text-lg font-semibold text-brand-primary">
+        <Link href="/business/dashboard" className="text-body font-semibold text-brand-primary">
           Just Be You.
         </Link>
         <Button

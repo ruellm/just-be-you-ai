@@ -31,7 +31,7 @@ export function ResultCard({
       )}
     >
       {title ? (
-        <h2 className="text-2xl font-semibold text-brand-primary">{title}</h2>
+        <h2 className="text-heading font-semibold text-brand-primary">{title}</h2>
       ) : null}
       {children}
     </section>
@@ -47,7 +47,7 @@ export function ImpressionList({
 }) {
   return (
     <div className="space-y-2">
-      <p className="text-xs font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
+      <p className="text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
         How you came across
       </p>
       <ul className="grid gap-2">
@@ -56,7 +56,7 @@ export function ImpressionList({
           return (
             <li
               key={category.key}
-              className="flex items-center justify-between gap-2 rounded-[8px] border border-brand-border bg-brand-container px-3 py-2 text-sm text-brand-ink"
+              className="flex items-center justify-between gap-2 rounded-[8px] border border-brand-border bg-brand-container px-3 py-2 text-small text-brand-ink"
             >
               <span>{category.displayName}</span>
               <Badge
@@ -79,7 +79,7 @@ export function StrengthsList({ items }: { items: EvidenceItem[] }) {
   return (
     <ul className="space-y-4">
       {items.map((item, i) => (
-        <li key={i} className="flex gap-3 text-base text-brand-ink-secondary">
+        <li key={i} className="flex gap-3 text-body text-brand-ink-secondary">
           <CircleCheck className="mt-0.5 size-5 shrink-0 text-accent-3" />
           <span>
             <span className="font-medium text-brand-ink">
@@ -113,14 +113,14 @@ export function LockedFeedbackPanel() {
         <div className="mx-6 mt-3 h-3 w-2/3 rounded bg-white/40" />
       </div>
       <Lock className="relative size-7" />
-      <p className="relative text-base font-medium">Unlock to View Feedback</p>
-      <p className="relative max-w-xs text-sm text-white/90">
+      <p className="relative text-body font-medium">Unlock to View Feedback</p>
+      <p className="relative max-w-xs text-small text-white/90">
         Full score &amp; detailed feedback are only visible to those who are
         part of the Professional plan.
       </p>
       <Button
         type="button"
-        className="relative mt-2 h-[39px] rounded-[12px] bg-brand-tertiary px-5 text-sm font-medium text-brand-ink hover:bg-brand-tertiary/90"
+        className="relative mt-2 h-[39px] rounded-[12px] bg-brand-tertiary px-5 text-small font-medium text-brand-ink hover:bg-brand-tertiary/90"
       >
         Upgrade to Professional
       </Button>

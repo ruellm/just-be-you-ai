@@ -188,7 +188,7 @@ export function SkillsSection({
           {candidateSkills.map((cs) => (
             <span
               key={cs.id}
-              className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-tag-1 pr-1.5 pl-3 text-sm text-brand-ink"
+              className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-tag-1 pr-1.5 pl-3 text-small text-brand-ink"
             >
               {/* Chip body opens the existing edit-years dialog */}
               <button

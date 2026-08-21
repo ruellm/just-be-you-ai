@@ -33,7 +33,7 @@ import { MODAL_INPUT, MODAL_LABEL, Req } from "@/components/profile/FormModal";
 import { provisionUserSchema, type ProvisionUserValues } from "./schemas";
 import { provisionUser } from "./actions";
 
-const FIELD_LABEL = "text-sm font-semibold text-brand-ink";
+const FIELD_LABEL = "text-small font-semibold text-brand-ink";
 const FIELD_INPUT = cn(MODAL_INPUT, "h-9");
 
 function generatePassword(): string {
@@ -84,22 +84,22 @@ export function CreateUserForm() {
       <ProfileSectionCard className="max-w-xl">
         <div className="space-y-4">
           <div className="rounded-[12px] border border-brand-border bg-status-success p-4">
-            <p className="text-sm font-semibold text-brand-ink">User created</p>
+            <p className="text-small font-semibold text-brand-ink">User created</p>
           </div>
           <div className="space-y-1">
             <p className={MODAL_LABEL}>Email</p>
-            <p className="text-sm font-medium text-brand-ink">{created.email}</p>
+            <p className="text-small font-medium text-brand-ink">{created.email}</p>
           </div>
           <div className="space-y-1">
             <p className={MODAL_LABEL}>Temporary password</p>
             <div className="flex items-center gap-2">
-              <code className="rounded-[8px] border border-brand-border bg-brand-container px-3 py-1.5 text-sm text-brand-ink">
+              <code className="rounded-[8px] border border-brand-border bg-brand-container px-3 py-1.5 text-small text-brand-ink">
                 {created.password}
               </code>
               <Button
                 type="button"
                 size="sm"
-                className={cn(BTN_INK, "h-8 px-3 text-xs")}
+                className={cn(BTN_INK, "h-8 px-3 text-meta")}
                 onClick={() => {
                   navigator.clipboard.writeText(created.password);
                   toast.success("Password copied");
@@ -109,7 +109,7 @@ export function CreateUserForm() {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-brand-ink-secondary">
+          <p className="text-small text-brand-ink-secondary">
             Copy this password and share it with the user. They&apos;ll be
             required to change it on first login. This password will not be
             shown again.
@@ -126,7 +126,7 @@ export function CreateUserForm() {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ProfileSectionCard>
-          <h2 className="text-2xl font-semibold text-brand-primary">
+          <h2 className="text-heading font-semibold text-brand-primary">
             Basic Information
           </h2>
           <div className="grid gap-5 md:grid-cols-2">
@@ -204,7 +204,7 @@ export function CreateUserForm() {
                       <Button
                         type="button"
                         size="sm"
-                        className="h-6 rounded-[5px] bg-brand-ink px-3 text-xs font-semibold text-white hover:bg-brand-ink/90"
+                        className="h-6 rounded-[5px] bg-brand-ink px-3 text-meta font-semibold text-white hover:bg-brand-ink/90"
                         onClick={() =>
                           form.setValue("password", generatePassword(), {
                             shouldValidate: true,

@@ -68,7 +68,7 @@ export function CandidateSidebar({
               aria-current={active ? "page" : undefined}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex h-12 items-center gap-3 rounded-[8px] px-4 text-base text-brand-ink-sidebar transition-colors",
+                "flex h-12 items-center gap-3 rounded-[8px] px-4 text-body text-brand-ink-sidebar transition-colors",
                 active
                   ? "bg-brand-tertiary font-semibold"
                   : "font-medium hover:bg-brand-container"
@@ -82,7 +82,7 @@ export function CandidateSidebar({
           );
         })}
 
-        <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-sm text-brand-ink">
+        <div className="mt-auto mb-4 flex h-10 items-center gap-2 rounded-[12px] border border-brand-border bg-brand-surface px-3 text-small text-brand-ink">
           <Image
             src="/icons/seat-chair.svg"
             alt=""
@@ -105,14 +105,14 @@ export function CandidateSidebar({
             unmounted when the menu closes. */}
         <form ref={signOutFormRef} action={signOut} className="hidden" />
         <Avatar className="size-10 rounded-[12px] after:rounded-[12px] after:border-brand-border">
-          <AvatarFallback className="rounded-[12px] bg-brand-container text-sm font-semibold text-brand-primary">
+          <AvatarFallback className="rounded-[12px] bg-brand-container text-small font-semibold text-brand-primary">
             {initials}
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-brand-ink">{name}</p>
+          <p className="truncate text-small font-semibold text-brand-ink">{name}</p>
           {jobTitle ? (
-            <p className="truncate text-xs text-brand-ink-secondary">{jobTitle}</p>
+            <p className="truncate text-meta text-brand-ink-secondary">{jobTitle}</p>
           ) : null}
         </div>
         <DropdownMenu>
@@ -148,7 +148,7 @@ export function CandidateSidebar({
     <>
       {/* Mobile top bar */}
       <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-brand-border bg-brand-surface px-4 font-body lg:hidden">
-        <Link href="/candidate/dashboard" className="text-lg font-semibold text-brand-primary">
+        <Link href="/candidate/dashboard" className="text-body font-semibold text-brand-primary">
           Just Be You.
         </Link>
         <Button

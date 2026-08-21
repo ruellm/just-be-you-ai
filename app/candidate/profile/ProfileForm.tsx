@@ -29,8 +29,8 @@ import { saveBasicInfo, saveSummary } from "./actions";
 import { ProfileSectionCard } from "./ProfileSectionCard";
 
 const INPUT_CLASS =
-  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
-const LABEL_CLASS = "font-body text-base font-semibold text-brand-ink";
+  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
+const LABEL_CLASS = "font-body text-body font-semibold text-brand-ink";
 
 function Req() {
   return (
@@ -125,15 +125,15 @@ export function ProfileForm({
               block with an initials fallback only. */}
           <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
             <Avatar className="size-[60px] after:border-brand-border">
-              <AvatarFallback className="bg-brand-surface text-lg font-semibold text-brand-primary">
+              <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-body text-base font-semibold text-brand-ink">
+              <p className="font-body text-body font-semibold text-brand-ink">
                 LinkedIn Profile Image
               </p>
-              <p className="font-body text-sm text-brand-ink-secondary">
+              <p className="font-body text-small text-brand-ink-secondary">
                 Pulled from LinkedIn when available.
               </p>
             </div>
@@ -280,7 +280,7 @@ export function ProfileForm({
                 <FormControl>
                   <Textarea
                     maxLength={FIELD_LIMITS.summary}
-                    className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none"
+                    className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
                     {...field}
                   />
                 </FormControl>
@@ -288,7 +288,7 @@ export function ProfileForm({
                   <FormMessage />
                   <p
                     className={cn(
-                      "ml-auto font-body text-sm",
+                      "ml-auto font-body text-small",
                       summaryLength > FIELD_LIMITS.summary
                         ? "text-accent-2"
                         : "text-brand-ink-secondary"
@@ -308,7 +308,7 @@ export function ProfileForm({
             role="status"
             className="fixed inset-x-4 bottom-4 z-30 flex flex-col gap-3 rounded-[12px] border-2 border-accent-4 bg-status-pending px-5 py-3 font-body shadow-lg sm:flex-row sm:items-center sm:justify-between lg:left-[calc(255px+2rem)] lg:right-8"
           >
-            <p className="text-sm text-brand-ink">
+            <p className="text-small text-brand-ink">
               You have unsaved changes. Make sure you save them before
               navigating to other pages.
             </p>
@@ -318,14 +318,14 @@ export function ProfileForm({
                 variant="outline"
                 onClick={discard}
                 disabled={isSubmitting}
-                className="h-9 rounded-[8px] border-brand-border bg-brand-surface text-sm font-medium text-brand-ink hover:bg-brand-container"
+                className="h-9 rounded-[8px] border-brand-border bg-brand-surface text-small font-medium text-brand-ink hover:bg-brand-container"
               >
                 Discard
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-9 rounded-[8px] bg-brand-secondary text-sm font-medium text-white hover:bg-brand-secondary/90"
+                className="h-9 rounded-[8px] bg-brand-secondary text-small font-medium text-white hover:bg-brand-secondary/90"
               >
                 {isSubmitting ? "Saving…" : "Save Changes"}
               </Button>

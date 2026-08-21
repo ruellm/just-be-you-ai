@@ -42,7 +42,7 @@ export function ForgotPasswordForm() {
   if (sent) {
     return (
       <div className="space-y-4 text-center">
-        <p className="text-muted-foreground text-sm">
+        <p className="text-muted-foreground text-small">
           If an account exists for that email, we sent a reset link. Check your
           inbox.
         </p>
@@ -78,7 +78,7 @@ export function ForgotPasswordForm() {
         </Button>
         <Link
           href="/login"
-          className="text-muted-foreground hover:text-foreground block text-center text-sm"
+          className="text-muted-foreground hover:text-foreground block text-center text-small"
         >
           Back to login
         </Link>

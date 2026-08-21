@@ -128,10 +128,10 @@ const PAGE_1_FIELDS: (keyof JobValues)[] = [
 ];
 
 const INPUT_CLASS =
-  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
-const LABEL_CLASS = "font-body text-sm leading-6 font-semibold text-brand-ink";
+  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
+const LABEL_CLASS = "font-body text-small font-semibold text-brand-ink";
 const CARD_TITLE_CLASS =
-  "font-body text-2xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary";
+  "font-body text-heading font-semibold tracking-[-0.5px] text-brand-primary";
 
 function Req() {
   return (
@@ -365,7 +365,7 @@ export function JobForm({
                         INPUT_CLASS,
                         "w-full font-normal hover:bg-brand-surface data-[state=open]:bg-brand-surface"
                       )}
-                      chipClassName="h-[26px] rounded-[6px] border-transparent bg-tag-1 px-2.5 font-body text-xs font-normal text-brand-ink hover:bg-tag-1"
+                      chipClassName="h-[26px] rounded-[6px] border-transparent bg-tag-1 px-2.5 font-body text-meta font-normal text-brand-ink hover:bg-tag-1"
                     />
                     <FormMessage />
                   </FormItem>
@@ -384,7 +384,7 @@ export function JobForm({
                       <FormControl>
                         <Textarea
                           maxLength={JOB_TEXT_LIMITS[name]}
-                          className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none"
+                          className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
                           {...field}
                         />
                       </FormControl>
@@ -392,7 +392,7 @@ export function JobForm({
                         <FormMessage />
                         <p
                           className={cn(
-                            "ml-auto text-xs",
+                            "ml-auto text-meta",
                             field.value.length > JOB_TEXT_LIMITS[name]
                               ? "text-accent-2"
                               : "text-brand-ink-secondary"
@@ -408,11 +408,11 @@ export function JobForm({
             ))}
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-              <p className="text-xs text-brand-ink-secondary">Page 1 of 2</p>
+              <p className="text-meta text-brand-ink-secondary">Page 1 of 2</p>
               <Button
                 type="button"
                 onClick={nextPage}
-                className="h-9 rounded-[8px] bg-brand-secondary px-8 text-sm font-semibold text-brand-canvas hover:bg-brand-secondary/90"
+                className="h-9 rounded-[8px] bg-brand-secondary px-8 text-small font-semibold text-brand-canvas hover:bg-brand-secondary/90"
               >
                 Next Page
               </Button>
@@ -426,7 +426,7 @@ export function JobForm({
                 <h2 className={CARD_TITLE_CLASS}>
                   AI Interview Configuration (Optional)
                 </h2>
-                <p className="text-base leading-[21px] text-brand-ink-secondary">
+                <p className="text-body text-brand-ink-secondary">
                   These fields guide the AI interviewer to produce better, more
                   relevant questions. They&apos;re optional — the AI will still
                   generate questions without them, but providing detail here
@@ -465,7 +465,7 @@ export function JobForm({
                         <Textarea
                           maxLength={JOB_TEXT_LIMITS[name]}
                           placeholder={placeholder}
-                          className="min-h-[76px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
+                          className="min-h-[76px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
                           {...field}
                         />
                       </FormControl>
@@ -473,7 +473,7 @@ export function JobForm({
                         <FormMessage />
                         <p
                           className={cn(
-                            "ml-auto text-xs",
+                            "ml-auto text-meta",
                             field.value.length > JOB_TEXT_LIMITS[name]
                               ? "text-accent-2"
                               : "text-brand-ink-secondary"
@@ -524,7 +524,7 @@ export function JobForm({
                         {...field}
                       />
                     </FormControl>
-                    <p className="text-xs text-brand-ink-secondary">
+                    <p className="text-meta text-brand-ink-secondary">
                       Leave blank for default (30 minutes). Recommend: 15-20 for
                       most roles.
                     </p>
@@ -537,7 +537,7 @@ export function JobForm({
             <ProfileSectionCard>
               <div className="space-y-2">
                 <h2 className={CARD_TITLE_CLASS}>Must-have Criteria</h2>
-                <p className="text-base leading-[21px] text-brand-ink-secondary">
+                <p className="text-body text-brand-ink-secondary">
                   If a candidate scores very low on a must-have skill, they
                   cannot receive a Pass regardless of their overall score.
                 </p>
@@ -555,7 +555,7 @@ export function JobForm({
                             {category.subCriteria.map((sub) => (
                               <label
                                 key={sub.key}
-                                className="flex cursor-pointer items-center gap-3 text-sm leading-[19px] text-brand-ink"
+                                className="flex cursor-pointer items-center gap-3 text-small text-brand-ink"
                               >
                                 <Checkbox
                                   checked={field.value.includes(sub.key)}
@@ -582,26 +582,26 @@ export function JobForm({
             </ProfileSectionCard>
 
             <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-              <p className="text-xs text-brand-ink-secondary">Page 2 of 2</p>
+              <p className="text-meta text-brand-ink-secondary">Page 2 of 2</p>
               <div className="flex gap-2">
                 <Button
                   type="button"
                   onClick={() => setStep(1)}
                   disabled={form.formState.isSubmitting}
-                  className="h-9 rounded-[8px] bg-brand-ink px-6 text-sm font-semibold text-brand-canvas hover:bg-brand-ink/90"
+                  className="h-9 rounded-[8px] bg-brand-ink px-6 text-small font-semibold text-brand-canvas hover:bg-brand-ink/90"
                 >
                   Back
                 </Button>
                 <Button
                   type="submit"
                   disabled={form.formState.isSubmitting}
-                  className="h-9 rounded-[8px] bg-brand-secondary px-6 text-sm font-semibold text-brand-canvas hover:bg-brand-secondary/90"
+                  className="h-9 rounded-[8px] bg-brand-secondary px-6 text-small font-semibold text-brand-canvas hover:bg-brand-secondary/90"
                 >
                   {form.formState.isSubmitting
                     ? "Saving…"
                     : mode === "create"
                       ? "Post Job"
-                      : "Edit Job"}
+                      : "Save Changes"}
                 </Button>
               </div>
               <span />
@@ -643,10 +643,10 @@ function OptionCards<T extends string>({
                 : "bg-brand-surface text-brand-ink hover:bg-brand-container/60"
             )}
           >
-            <span className="text-xl font-semibold tracking-[-0.96px]">
+            <span className="text-subheading font-semibold tracking-[-0.96px]">
               {option.label}
             </span>
-            <span className="text-sm leading-[19px]">{option.help}</span>
+            <span className="text-small">{option.help}</span>
           </button>
         );
       })}

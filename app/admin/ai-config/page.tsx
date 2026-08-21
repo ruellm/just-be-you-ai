@@ -22,10 +22,10 @@ export default async function AiConfigPage() {
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-brand-border pb-5">
         <div>
-          <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
             AI Configuration
           </h1>
-          <p className="mt-3 text-base text-brand-ink-secondary">
+          <p className="mt-3 text-body text-brand-ink-secondary">
             These question sets will power the AI interview in Phase 2.
           </p>
         </div>
@@ -43,7 +43,7 @@ export default async function AiConfigPage() {
           description="No custom questions have been configured for this module."
           className="border-0 bg-transparent py-6"
           action={
-            <Button asChild className={`${BTN_PRIMARY} h-12 px-6 text-base`}>
+            <Button asChild className={`${BTN_PRIMARY} h-12 px-6 text-body`}>
               <Link href="/admin/ai-config/new">Create Question Set</Link>
             </Button>
           }
@@ -58,14 +58,14 @@ export default async function AiConfigPage() {
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-semibold text-brand-primary">
+                    <h2 className="text-subheading font-semibold text-brand-primary">
                       {set.name}
                     </h2>
-                    <span className="rounded-full bg-status-success px-3 py-0.5 text-xs font-medium text-accent-3">
+                    <span className="rounded-full bg-status-success px-3 py-0.5 text-meta font-medium text-accent-3">
                       {set.vertical}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-brand-ink-secondary">
+                  <p className="mt-1 text-small text-brand-ink-secondary">
                     Created on {formatLongDate(set.createdAt)}
                     <span className="mx-1.5">•</span>
                     {set._count.questions}{" "}
@@ -102,7 +102,7 @@ export default async function AiConfigPage() {
                 </div>
               </div>
               {set.description ? (
-                <p className="mt-4 text-base leading-6 text-brand-ink">
+                <p className="mt-4 text-body text-brand-ink">
                   {set.description}
                 </p>
               ) : null}

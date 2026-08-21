@@ -116,9 +116,9 @@ export function ProjectsSection({
                 )}
               >
                 <div className="min-w-0 space-y-1">
-                  <p className="text-lg font-semibold text-brand-ink">{p.name}</p>
+                  <p className="text-body font-semibold text-brand-ink">{p.name}</p>
                   {p.url ? (
-                    <p className="text-sm text-brand-ink-secondary">
+                    <p className="text-small text-brand-ink-secondary">
                       URL:{" "}
                       <a
                         href={p.url}
@@ -131,10 +131,10 @@ export function ProjectsSection({
                     </p>
                   ) : null}
                   {range ? (
-                    <p className="text-sm text-brand-ink-secondary">{range}</p>
+                    <p className="text-small text-brand-ink-secondary">{range}</p>
                   ) : null}
                   {p.description ? (
-                    <p className="pt-1 text-sm whitespace-pre-line text-brand-ink-secondary">
+                    <p className="pt-1 text-small whitespace-pre-line text-brand-ink-secondary">
                       {p.description}
                     </p>
                   ) : null}
@@ -143,7 +143,7 @@ export function ProjectsSection({
                       {p.skillNames.map((name) => (
                         <span
                           key={name}
-                          className="inline-flex h-[21px] items-center rounded-[6px] bg-tag-1 px-2 text-xs text-brand-ink"
+                          className="inline-flex h-[21px] items-center rounded-[6px] bg-tag-1 px-2 text-meta text-brand-ink"
                         >
                           {name}
                         </span>

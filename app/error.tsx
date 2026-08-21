@@ -5,13 +5,13 @@ import { Button } from "@/components/ui/button";
 
 export default function Error({ reset }: { reset: () => void }) {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-6 px-6 text-center">
+    <main className="flex flex-1 flex-col items-center justify-center gap-6 section-x text-center">
       <span className="text-lg font-semibold tracking-tight">Just Be You</span>
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">
+        <h1 className="text-page-title font-bold tracking-tight">
           Something went wrong
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-body text-muted-foreground">
           Sorry — an unexpected error occurred on our end. Please try again.
         </p>
       </div>
@@ -23,7 +23,7 @@ export default function Error({ reset }: { reset: () => void }) {
       </div>
       <a
         href="mailto:hello@justbeyou.ai"
-        className="text-muted-foreground hover:text-foreground text-sm underline"
+        className="text-muted-foreground hover:text-foreground text-small underline"
       >
         Contact support
       </a>

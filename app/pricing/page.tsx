@@ -53,13 +53,13 @@ export default function PricingPage() {
       <PublicNav />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl section-x section-y">
           {/* Header */}
           <div className="space-y-4 text-center">
-            <h1 className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+            <h1 className="font-display text-page-title font-bold text-brand-primary">
               Invest in Your Potential
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-brand-ink-secondary">
+            <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
               Choose the plan that fits your career stage. Practice, get
               feedback, and land your dream role with confidence.
             </p>
@@ -74,19 +74,19 @@ export default function PricingPage() {
             {/* Free */}
             <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
               <div aria-hidden className="h-[13px] bg-brand-secondary" />
-              <div className="flex flex-1 flex-col gap-5 p-7">
-                <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-xs font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
+              <div className="flex flex-1 flex-col stack-gap card-pad">
+                <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
                   Free
                 </span>
                 <p>
-                  <span className="text-[32px] font-semibold text-brand-primary">
+                  <span className="text-price font-semibold text-brand-primary">
                     $0
                   </span>
-                  <span className="text-base text-brand-ink-secondary">
+                  <span className="text-body text-brand-ink-secondary">
                     /forever
                   </span>
                 </p>
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Perfect for exploring the platform and trying out basic
                   features.
                 </p>
@@ -94,12 +94,12 @@ export default function PricingPage() {
                   {FREE_FEATURES.map((feature) => (
                     <li
                       key={feature.text}
-                      className="flex items-start gap-2.5 text-sm font-medium text-brand-ink-secondary"
+                      className="flex items-start gap-2.5 text-small font-medium text-brand-ink-secondary"
                     >
                       {feature.included ? (
-                        <CircleCheck className="size-[21px] shrink-0 text-accent-3" />
+                        <CircleCheck className="size-5 shrink-0 text-accent-3" />
                       ) : (
-                        <CircleX className="size-[21px] shrink-0 text-accent-2" />
+                        <CircleX className="size-5 shrink-0 text-accent-2" />
                       )}
                       {feature.text}
                     </li>
@@ -117,9 +117,9 @@ export default function PricingPage() {
             {/* Professional */}
             <div className="flex flex-col overflow-hidden rounded-[12px] bg-brand-primary">
               <div aria-hidden className="h-[13px] bg-brand-tertiary" />
-              <div className="flex flex-1 flex-col gap-5 p-7">
+              <div className="flex flex-1 flex-col stack-gap card-pad">
                 <div className="flex items-start justify-between gap-4">
-                  <span className="font-display rounded-full bg-tag-1 px-3 py-1 text-xs font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
+                  <span className="font-display rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
                     Professional
                   </span>
                   <span className="text-xs text-status-success">
@@ -127,12 +127,12 @@ export default function PricingPage() {
                   </span>
                 </div>
                 <p>
-                  <span className="text-[32px] font-semibold text-status-success">
+                  <span className="text-price font-semibold text-status-success">
                     $12
                   </span>
-                  <span className="text-base text-white/80">/month</span>
+                  <span className="text-body text-white/80">/month</span>
                 </p>
-                <p className="text-sm text-white">
+                <p className="text-small text-white">
                   Accelerate your growth with deep insights, more choices, and
                   unlimited interviews.
                 </p>
@@ -140,9 +140,9 @@ export default function PricingPage() {
                   {PRO_FEATURES.map((feature) => (
                     <li
                       key={feature}
-                      className="flex items-start gap-2.5 text-sm font-medium text-white"
+                      className="flex items-start gap-2.5 text-small font-medium text-white"
                     >
-                      <CircleCheck className="size-[21px] shrink-0 text-brand-tertiary" />
+                      <CircleCheck className="size-5 shrink-0 text-brand-tertiary" />
                       {feature}
                     </li>
                   ))}
@@ -159,13 +159,13 @@ export default function PricingPage() {
           </div>
 
           {/* FAQ */}
-          <div className="mx-auto mt-20 max-w-4xl">
-            <div className="mb-10 space-y-4 text-center">
-              <h2 className="font-display text-[32px] font-semibold text-brand-primary">
+          <div className="mx-auto mt-12 max-w-4xl sm:mt-20">
+            <div className="section-gap space-y-4 text-center">
+              <h2 className="font-display text-section font-semibold text-brand-primary">
                 Frequently Asked Questions
               </h2>
               <div className="mx-auto h-1 w-16 rounded-full bg-brand-secondary" />
-              <p className="text-xl text-brand-ink-secondary">
+              <p className="text-subheading text-brand-ink-secondary">
                 Everything you need to know about our candidate plans.
               </p>
             </div>

@@ -134,10 +134,10 @@ export default async function ProfilePage() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 pb-32 font-body lg:px-14 lg:py-14 lg:pb-32">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+        <h1 className="text-page-title font-semibold text-brand-primary">
           My Profile
         </h1>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           Keep your profile up to date so employers see the real you.
         </p>
       </div>

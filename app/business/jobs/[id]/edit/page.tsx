@@ -57,15 +57,15 @@ export default async function EditJobPage({
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <Link
         href="/business/jobs"
-        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.96px] text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold tracking-[-0.96px] text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
       <div className="space-y-2 border-b border-brand-border pb-5">
-        <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+        <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
           Edit Job Posting
         </h1>
-        <p className="text-base leading-5 tracking-[-0.5px] text-brand-ink-secondary">
+        <p className="text-body tracking-[-0.5px] text-brand-ink-secondary">
           Update role details, adjust requirements, or modify interview settings for this posting.
         </p>
       </div>

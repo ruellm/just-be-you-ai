@@ -81,7 +81,7 @@ export default async function AdminUsersPage({
       take: PAGE_SIZE,
       include: {
         candidateProfile: { select: { firstName: true, lastName: true } },
-        company: { select: { name: true } },
+        company: { select: { id: true, name: true } },
       },
     }),
   ]);
@@ -100,17 +100,17 @@ export default async function AdminUsersPage({
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-brand-border pb-5">
         <div>
-          <h1 className="text-4xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
             List of Accounts
           </h1>
-          <p className="mt-3 text-base text-brand-ink-secondary">
+          <p className="mt-3 text-body text-brand-ink-secondary">
             Manage registered account holders, adjust user roles, and monitor
             active account statuses.
           </p>
         </div>
         <Button
           asChild
-          className="h-[35px] rounded-[8px] bg-brand-secondary px-4 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+          className="h-[35px] rounded-[8px] bg-brand-secondary px-4 text-small font-semibold text-white hover:bg-brand-secondary/90"
         >
           <Link href="/admin/users/new">
             <Plus className="size-5" /> Create User
@@ -151,7 +151,7 @@ export default async function AdminUsersPage({
                 <TableRow className={TR_CLASS}>
                   <TableCell
                     colSpan={5}
-                    className="px-4 py-10 text-center text-sm text-brand-ink-secondary"
+                    className="px-4 py-10 text-center text-small text-brand-ink-secondary"
                   >
                     No accounts found.
                   </TableCell>
@@ -160,7 +160,7 @@ export default async function AdminUsersPage({
                 users.map((u) => (
                   <TableRow key={u.id} className={TR_CLASS}>
                     <TableCell
-                      className={`${TD_CLASS} text-sm font-medium text-brand-ink`}
+                      className={`${TD_CLASS} text-small font-medium text-brand-ink`}
                     >
                       {userDisplayName(u)}
                     </TableCell>
@@ -186,6 +186,7 @@ export default async function AdminUsersPage({
                         userId={u.id}
                         role={u.role}
                         name={userDisplayName(u)}
+                        companyId={u.company?.id ?? null}
                       />
                     </TableCell>
                   </TableRow>

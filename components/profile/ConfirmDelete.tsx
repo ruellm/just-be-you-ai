@@ -60,10 +60,10 @@ export function ConfirmDelete({
           <Trash2 className="size-7" />
         </div>
         <AlertDialogHeader className="items-center gap-2 pt-5 text-center sm:text-center">
-          <AlertDialogTitle className="font-body text-xl font-semibold text-brand-ink">
+          <AlertDialogTitle className="font-body text-subheading font-semibold text-brand-ink">
             {title}
           </AlertDialogTitle>
-          <AlertDialogDescription className="font-body text-sm text-brand-ink">
+          <AlertDialogDescription className="font-body text-small text-brand-ink">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -75,13 +75,13 @@ export function ConfirmDelete({
               e.preventDefault();
               handle();
             }}
-            className="h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-sm font-semibold text-white hover:bg-accent-2/90"
+            className="h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-small font-semibold text-white hover:bg-accent-2/90"
           >
             {pending ? "Deleting…" : confirmLabel}
           </AlertDialogAction>
           <AlertDialogCancel
             disabled={pending}
-            className="h-auto w-full rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface py-3 font-body text-sm font-medium text-brand-ink hover:bg-brand-container"
+            className="h-auto w-full rounded-[8px] border-[0.8px] border-brand-border bg-brand-surface py-3 font-body text-small font-medium text-brand-ink hover:bg-brand-container"
           >
             Cancel
           </AlertDialogCancel>

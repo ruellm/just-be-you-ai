@@ -23,7 +23,7 @@ export function JobCardApplyButton({
     <Button
       type="button"
       disabled={disabled || pending}
-      className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-sm font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
+      className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-small font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
       onClick={() =>
         startTransition(async () => {
           try {

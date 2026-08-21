@@ -117,7 +117,7 @@ export default async function JobsPage({
   }
 
   const pageBtn =
-    "inline-flex h-[39px] min-w-[35px] items-center justify-center rounded-[8px] border px-2 text-sm transition-colors";
+    "inline-flex h-[39px] min-w-[35px] items-center justify-center rounded-[8px] border px-2 text-small transition-colors";
   const pageBtnIdle =
     "border-brand-border bg-brand-surface text-brand-ink-secondary hover:bg-brand-container";
   const pageBtnActive = "border-brand-secondary bg-brand-secondary text-white";
@@ -125,10 +125,10 @@ export default async function JobsPage({
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <div className="space-y-2 border-b border-brand-border pb-6">
-        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+        <h1 className="text-page-title font-semibold text-brand-primary">
           Browse Jobs
         </h1>
-        <p className="max-w-2xl text-base text-brand-ink-secondary">
+        <p className="max-w-2xl text-body text-brand-ink-secondary">
           Our AI has curated these opportunities based on your unique profile
           and aspirations. Find where you belong.
         </p>
@@ -160,7 +160,7 @@ export default async function JobsPage({
         </div>
       )}
 
-      <p className="text-xs text-brand-ink-secondary">
+      <p className="text-meta text-brand-ink-secondary">
         Showing {jobs.length} of {total} {total === 1 ? "job" : "jobs"}
       </p>
 
@@ -181,7 +181,7 @@ export default async function JobsPage({
             item === "…" ? (
               <span
                 key={`gap-${i}`}
-                className="px-1 text-sm text-brand-ink-secondary"
+                className="px-1 text-small text-brand-ink-secondary"
               >
                 …
               </span>

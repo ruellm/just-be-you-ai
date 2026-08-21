@@ -27,7 +27,7 @@ function csv(value: string | null): string[] {
 
 // Shared look for every field in the bar (white, brand border, 40px, 12px radius).
 const FIELD_CLASS =
-  "h-10 w-full rounded-[12px] border border-brand-border bg-brand-surface px-3 font-body text-sm font-normal text-brand-ink shadow-none";
+  "h-10 w-full rounded-[12px] border border-brand-border bg-brand-surface px-3 font-body text-small font-normal text-brand-ink shadow-none";
 
 // Horizontal two-row filter bar. All filter state lives in the URL
 // (shareable, back-button friendly): `q`, `location`, `mode`, `level`,
@@ -127,7 +127,7 @@ export function JobFilters({ skills }: { skills: SkillOption[] }) {
                 variant="ghost"
                 size="sm"
                 onClick={clearAll}
-                className="h-10 shrink-0 font-body text-sm text-brand-ink-secondary hover:text-brand-primary"
+                className="h-10 shrink-0 font-body text-small text-brand-ink-secondary hover:text-brand-primary"
               >
                 Clear filters
               </Button>
@@ -152,7 +152,7 @@ function Field({
     <div className="space-y-2">
       <Label
         htmlFor={htmlFor}
-        className="text-base font-semibold text-brand-ink"
+        className="text-body font-semibold text-brand-ink"
       >
         {label}
       </Label>
@@ -209,7 +209,7 @@ function MultiSelect({
             />
             <Label
               htmlFor={`${placeholder}-${o.value}`}
-              className="text-sm font-normal text-brand-ink"
+              className="text-small font-normal text-brand-ink"
             >
               {o.label}
             </Label>

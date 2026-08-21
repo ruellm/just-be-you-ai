@@ -44,16 +44,16 @@ export default async function HomePage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="bg-brand-surface">
-          <div className="mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 sm:py-24 lg:grid-cols-2">
+          <div className="mx-auto grid max-w-6xl items-center gap-12 section-x section-y lg:grid-cols-2">
             <div className="space-y-6">
-              <span className="inline-flex items-center rounded-full bg-tag-1 px-4 py-1.5 text-xs font-semibold tracking-widest text-brand-ink uppercase">
+              <span className="inline-flex items-center rounded-full bg-tag-1 px-4 py-1.5 text-meta font-semibold tracking-widest text-brand-ink uppercase">
                 Next-Gen Hiring
               </span>
-              <h1 className="font-display text-4xl leading-tight font-semibold tracking-tight sm:text-5xl">
+              <h1 className="font-display text-display font-semibold tracking-tight">
                 Experience the Future of Hiring.{" "}
                 <span className="text-brand-primary">Just Be You.</span>
               </h1>
-              <p className="max-w-xl text-lg text-brand-ink-secondary">
+              <p className="max-w-xl text-subheading text-brand-ink-secondary">
                 AI-powered interviews that help great talent get noticed — and
                 help companies find the right people, faster.
               </p>
@@ -107,11 +107,11 @@ export default async function HomePage() {
             className="absolute inset-0 bg-[url('/business-banner.jpeg')] bg-cover bg-center"
           />
           <div aria-hidden className="absolute inset-0 bg-brand-card/70" />
-          <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 px-6 py-16 text-center sm:py-20">
-            <h2 className="text-2xl font-semibold text-white sm:text-3xl">
+          <div className="relative mx-auto flex max-w-3xl flex-col items-center gap-6 section-x section-y text-center">
+            <h2 className="text-section font-semibold text-white">
               Are you a business?
             </h2>
-            <p className="text-white/80">
+            <p className="text-body text-white/80">
               Scale your recruiting with human-centric AI assessments. Reduce
               time-to-hire by 60%.
             </p>
@@ -129,9 +129,9 @@ export default async function HomePage() {
 
         {/* How It Works */}
         <section className="bg-brand-canvas">
-          <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
-            <div className="mb-12 space-y-3 text-center">
-              <h2 className="font-display text-3xl font-semibold tracking-tight">
+          <div className="mx-auto max-w-6xl section-x section-y">
+            <div className="section-gap space-y-3 text-center">
+              <h2 className="font-display text-section font-semibold tracking-tight">
                 How It Works
               </h2>
               <div className="mx-auto h-1 w-16 rounded-full bg-brand-secondary" />
@@ -140,7 +140,7 @@ export default async function HomePage() {
               {HOW_IT_WORKS.map((step) => (
                 <div
                   key={step.title}
-                  className="space-y-4 rounded-2xl border border-brand-border bg-brand-surface p-6"
+                  className="space-y-3 rounded-2xl border border-brand-border bg-brand-surface card-pad"
                 >
                   <div
                     className={`flex size-12 items-center justify-center rounded-xl ${
@@ -151,8 +151,8 @@ export default async function HomePage() {
                   >
                     <step.icon className="size-6" />
                   </div>
-                  <p className="text-xl font-semibold">{step.title}</p>
-                  <p className="text-sm text-brand-ink-secondary">
+                  <p className="text-heading font-semibold">{step.title}</p>
+                  <p className="text-small text-brand-ink-secondary">
                     {step.body}
                   </p>
                 </div>
@@ -163,12 +163,12 @@ export default async function HomePage() {
 
         {/* Bottom CTA banner — contained rounded card on the light canvas */}
         <section className="bg-brand-canvas">
-          <div className="mx-auto max-w-6xl px-6 pb-16 sm:pb-20">
-            <div className="space-y-6 rounded-3xl bg-brand-card px-6 py-16 text-center sm:py-20">
-              <h2 className="text-3xl font-semibold text-white">
+          <div className="mx-auto max-w-6xl section-x pb-10 sm:pb-20">
+            <div className="space-y-6 rounded-3xl bg-brand-card section-x section-y text-center">
+              <h2 className="text-section font-semibold text-white">
                 Ready to find your match?
               </h2>
-              <p className="mx-auto max-w-2xl text-white/80">
+              <p className="mx-auto max-w-2xl text-body text-white/80">
                 Join the growing community of candidates discovering their
                 dream roles through empathetic AI matching.
               </p>

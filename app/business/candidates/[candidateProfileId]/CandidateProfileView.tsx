@@ -146,7 +146,7 @@ function longDate(iso: string): string {
 const CARD_CLASS =
   "rounded-[12px] border border-brand-border bg-brand-surface p-6 sm:p-7";
 const CARD_TITLE_CLASS =
-  "text-2xl leading-8 font-semibold tracking-[-0.5px] text-brand-primary";
+  "text-heading font-semibold tracking-[-0.5px] text-brand-primary";
 
 function Card({
   title,
@@ -182,13 +182,13 @@ function LockedPanel({
       )}
     >
       <Lock className="size-9 text-brand-tertiary" strokeWidth={1.75} />
-      <p className="text-base font-medium tracking-[-0.5px] text-white">
+      <p className="text-body font-medium tracking-[-0.5px] text-white">
         {caption}
       </p>
       <Button
         type="button"
         onClick={onUnlock}
-        className="h-[39px] w-full max-w-[386px] rounded-[12px] bg-brand-tertiary px-6 text-base font-medium tracking-[-0.5px] text-brand-ink hover:bg-brand-tertiary/90"
+        className="h-[39px] w-full max-w-[386px] rounded-[12px] bg-brand-tertiary px-6 text-body font-medium tracking-[-0.5px] text-brand-ink hover:bg-brand-tertiary/90"
       >
         Use 1 Seat Credit to Unlock Profile
       </Button>
@@ -200,8 +200,8 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   if (value == null || value === "") return null;
   return (
     <div className="min-w-0">
-      <dt className="text-xs font-semibold text-brand-ink">{label}</dt>
-      <dd className="truncate text-sm text-brand-ink-secondary">{value}</dd>
+      <dt className="text-meta font-semibold text-brand-ink">{label}</dt>
+      <dd className="truncate text-small text-brand-ink-secondary">{value}</dd>
     </div>
   );
 }
@@ -216,7 +216,7 @@ function ResultTag({
   return (
     <span
       className={cn(
-        "inline-flex h-[27px] items-center rounded-[6px] px-3 text-sm text-brand-canvas",
+        "inline-flex h-[27px] items-center rounded-[6px] px-3 text-small text-brand-canvas",
         tone === "success" ? "bg-accent-3" : "bg-brand-ink-sidebar"
       )}
     >
@@ -228,7 +228,7 @@ function ResultTag({
 function ResultRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <span className="text-base text-brand-ink-secondary">{label}</span>
+      <span className="text-body text-brand-ink-secondary">{label}</span>
       <span className="flex flex-wrap items-center justify-end gap-2">
         {children}
       </span>
@@ -249,11 +249,11 @@ function EvidenceCard({
   return (
     <Card title={title}>
       {items.length === 0 ? (
-        <p className="text-base text-brand-ink-secondary">None noted.</p>
+        <p className="text-body text-brand-ink-secondary">None noted.</p>
       ) : (
         <ul className="space-y-4">
           {items.map((item, i) => (
-            <li key={i} className="flex gap-3 text-base text-brand-ink">
+            <li key={i} className="flex gap-3 text-body text-brand-ink">
               <Icon
                 className={cn(
                   "mt-0.5 size-5 shrink-0",
@@ -306,11 +306,11 @@ function ResumeCard({
           <div className="flex items-center gap-3 rounded-[12px] border border-brand-border bg-brand-surface px-4 py-3">
             <FileText className="size-8 shrink-0 text-brand-ink-secondary" strokeWidth={1.5} />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-brand-ink">
+              <p className="truncate text-small font-semibold text-brand-ink">
                 {meta.filename}
               </p>
               {meta.uploadedAt ? (
-                <p className="text-xs text-brand-ink-secondary">
+                <p className="text-meta text-brand-ink-secondary">
                   Uploaded on {longDate(meta.uploadedAt)}
                 </p>
               ) : null}
@@ -321,7 +321,7 @@ function ResumeCard({
               type="button"
               onClick={() => open(false)}
               disabled={pending}
-              className="h-9 w-full rounded-[8px] bg-brand-ink text-sm font-semibold text-white hover:bg-brand-ink/90"
+              className="h-9 w-full rounded-[8px] bg-brand-ink text-small font-semibold text-white hover:bg-brand-ink/90"
             >
               View in New Tab
             </Button>
@@ -329,14 +329,14 @@ function ResumeCard({
               type="button"
               onClick={() => open(true)}
               disabled={pending}
-              className="h-9 w-full rounded-[8px] bg-brand-secondary text-sm font-semibold text-white hover:bg-brand-secondary/90"
+              className="h-9 w-full rounded-[8px] bg-brand-secondary text-small font-semibold text-white hover:bg-brand-secondary/90"
             >
               Download Resume
             </Button>
           </div>
         </div>
       ) : (
-        <p className="text-base text-brand-ink-secondary">No resume on file.</p>
+        <p className="text-body text-brand-ink-secondary">No resume on file.</p>
       )}
     </Card>
   );
@@ -351,7 +351,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
           <h3 className={CARD_TITLE_CLASS}>{app.jobTitle}</h3>
           <StatusBadge status={app.status} />
         </div>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           Interview not completed yet.
         </p>
       </Card>
@@ -396,7 +396,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
                 </ResultTag>
               </ResultRow>
             </div>
-            <p className="text-xs text-brand-ink-secondary">
+            <p className="text-meta text-brand-ink-secondary">
               Completed {longDate(r.completedAt)}
             </p>
           </Card>
@@ -404,7 +404,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
         </div>
         <div className="space-y-5">
           <Card title="Fit Summary">
-            <p className="text-base whitespace-pre-line text-brand-ink">
+            <p className="text-body whitespace-pre-line text-brand-ink">
               {summary || "No summary available."}
             </p>
           </Card>
@@ -426,10 +426,10 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
       {r.transcript != null ? (
         <Card>
           <details>
-            <summary className="cursor-pointer text-base font-semibold text-brand-primary">
+            <summary className="cursor-pointer text-body font-semibold text-brand-primary">
               View transcript
             </summary>
-            <p className="mt-3 text-sm whitespace-pre-line text-brand-ink-secondary">
+            <p className="mt-3 text-small whitespace-pre-line text-brand-ink-secondary">
               {r.transcript}
             </p>
           </details>
@@ -482,7 +482,7 @@ export function CandidateProfileView({
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <Link
         href={backHref}
-        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.96px] text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold tracking-[-0.96px] text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>
@@ -494,18 +494,18 @@ export function CandidateProfileView({
           </div>
         ) : (
           <Avatar className="size-[60px] rounded-[8px] after:rounded-[8px] after:border-brand-border">
-            <AvatarFallback className="rounded-[8px] bg-brand-container text-xl font-semibold text-brand-primary">
+            <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
               {profile.initials}
             </AvatarFallback>
           </Avatar>
         )}
         <div className="min-w-0">
-          <h1 className="truncate text-[32px] leading-8 font-semibold tracking-[-0.5px] text-brand-primary">
+          <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
             {!profile
               ? `Anonymous User ${anonymousNumber(candidateProfileId)}`
               : profile.fullName}
           </h1>
-          <p className="truncate text-base tracking-[-0.5px] text-brand-ink-secondary">
+          <p className="truncate text-body tracking-[-0.5px] text-brand-ink-secondary">
             {!profile ? "Anonymous Email" : profile.email}
           </p>
         </div>
@@ -579,7 +579,7 @@ export function CandidateProfileView({
 
             {profile.summary ? (
               <Card title="Profile Summary">
-                <p className="text-base whitespace-pre-line text-brand-ink">
+                <p className="text-body whitespace-pre-line text-brand-ink">
                   {profile.summary}
                 </p>
               </Card>
@@ -594,18 +594,18 @@ export function CandidateProfileView({
                       className="space-y-2 rounded-[12px] border border-brand-border p-4"
                     >
                       <div>
-                        <p className="text-base font-semibold text-brand-ink">
+                        <p className="text-body font-semibold text-brand-ink">
                           {w.position}
                         </p>
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-small text-brand-ink-secondary">
                           {w.companyName} • {w.employmentType}
                         </p>
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-small text-brand-ink-secondary">
                           {dateRange(w.startDate, w.endDate, w.currentlyWorking)}
                         </p>
                       </div>
                       {w.description ? (
-                        <p className="text-sm whitespace-pre-line text-brand-ink">
+                        <p className="text-small whitespace-pre-line text-brand-ink">
                           {w.description}
                         </p>
                       ) : null}
@@ -621,7 +621,7 @@ export function CandidateProfileView({
                   {profile.skills.map((s) => (
                     <span
                       key={s.id}
-                      className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-xs text-brand-ink"
+                      className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink"
                     >
                       {s.name} • {s.years}y
                     </span>
@@ -638,13 +638,13 @@ export function CandidateProfileView({
                       key={e.id}
                       className="rounded-[12px] border border-brand-border p-4"
                     >
-                      <p className="text-base font-semibold text-brand-ink">
+                      <p className="text-body font-semibold text-brand-ink">
                         {e.school}
                       </p>
-                      <p className="text-sm text-brand-ink-secondary">
+                      <p className="text-small text-brand-ink-secondary">
                         {[e.degree, e.fieldOfStudy].filter(Boolean).join(", ")}
                       </p>
-                      <p className="text-sm text-brand-ink-secondary">
+                      <p className="text-small text-brand-ink-secondary">
                         {[
                           e.country,
                           dateRange(e.startDate, e.endDate, e.currentlyStudying),
@@ -667,15 +667,15 @@ export function CandidateProfileView({
                       className="space-y-2 rounded-[12px] border border-brand-border p-4"
                     >
                       <div>
-                        <p className="text-base font-semibold text-brand-ink">
+                        <p className="text-body font-semibold text-brand-ink">
                           {p.name}
                         </p>
-                        <p className="text-sm text-brand-ink-secondary">
+                        <p className="text-small text-brand-ink-secondary">
                           {dateRange(p.startDate, p.endDate, p.ongoing)}
                         </p>
                       </div>
                       {p.description ? (
-                        <p className="text-sm whitespace-pre-line text-brand-ink">
+                        <p className="text-small whitespace-pre-line text-brand-ink">
                           {p.description}
                         </p>
                       ) : null}
@@ -684,7 +684,7 @@ export function CandidateProfileView({
                           {p.skills.map((name) => (
                             <span
                               key={name}
-                              className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-xs text-brand-ink"
+                              className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink"
                             >
                               {name}
                             </span>
@@ -710,7 +710,7 @@ export function CandidateProfileView({
               <div className="flex size-11 shrink-0 items-center justify-center rounded-[10px] bg-brand-secondary">
                 <Lock className="size-5 text-white" />
               </div>
-              <DialogTitle className="text-xl leading-6 font-semibold tracking-[-0.5px] text-brand-primary">
+              <DialogTitle className="text-subheading font-semibold tracking-[-0.5px] text-brand-primary">
                 Unlock Full Candidate Profile
               </DialogTitle>
             </div>
@@ -721,11 +721,11 @@ export function CandidateProfileView({
               ×
             </DialogClose>
           </div>
-          <DialogDescription className="pt-4 text-sm leading-[22.75px] text-brand-ink">
+          <DialogDescription className="pt-4 text-small text-brand-ink">
             Revealing this candidate&apos;s identity and interview details will
             consume 1 seat credit from your balance.
           </DialogDescription>
-          <div className="mt-4 flex items-center justify-between rounded-[12px] border-[0.8px] border-brand-border bg-brand-container px-4 py-3 text-sm">
+          <div className="mt-4 flex items-center justify-between rounded-[12px] border-[0.8px] border-brand-border bg-brand-container px-4 py-3 text-small">
             <span className="font-medium text-brand-ink-secondary">
               Current Balance
             </span>
@@ -734,7 +734,7 @@ export function CandidateProfileView({
             </span>
           </div>
           {noSeats ? (
-            <p className="mt-3 text-sm font-medium text-accent-2">
+            <p className="mt-3 text-small font-medium text-accent-2">
               Not enough seats. You have used all {seatsTotal} of your seat
               credits and cannot unlock more profiles right now.
             </p>
@@ -744,7 +744,7 @@ export function CandidateProfileView({
               <Button
                 type="button"
                 variant="ghost"
-                className="h-9 rounded-[8px] px-5 text-sm font-medium text-brand-ink hover:bg-brand-container"
+                className="h-9 rounded-[8px] px-5 text-small font-medium text-brand-ink hover:bg-brand-container"
               >
                 Cancel
               </Button>
@@ -753,7 +753,7 @@ export function CandidateProfileView({
               type="button"
               onClick={confirmUnlock}
               disabled={pending || noSeats}
-              className="h-10 rounded-[12px] bg-brand-secondary px-5 text-sm font-semibold text-white hover:bg-brand-secondary/90"
+              className="h-10 rounded-[12px] bg-brand-secondary px-5 text-small font-semibold text-white hover:bg-brand-secondary/90"
             >
               {pending ? "Unlocking…" : "Unlock Profile (-1)"}
             </Button>

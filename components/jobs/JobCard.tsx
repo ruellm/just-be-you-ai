@@ -51,30 +51,35 @@ export function JobCard({
   return (
     <article
       className={cn(
-        "flex flex-col gap-4 rounded-[12px] border border-brand-border bg-brand-surface p-5 font-body",
+        "flex flex-col gap-3 rounded-[12px] border border-brand-border bg-brand-surface p-5 font-body",
         className
       )}
     >
-      <div className="min-w-0 space-y-1">
-        <h3 className="truncate text-xl font-semibold text-brand-primary">
+      <div className="min-w-0">
+        <h3 className="truncate text-subheading font-semibold text-brand-primary">
           <Link href={`/candidate/jobs/${job.id}`} className="hover:underline">
             {job.title}
           </Link>
         </h3>
-        <p className="text-sm text-brand-ink-secondary">{job.company.name}</p>
-        {salary ? (
-          <p className="text-sm font-medium text-brand-ink-secondary">{salary}</p>
-        ) : null}
+        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-small text-brand-ink-secondary">
+          <span>{job.company.name}</span>
+          {salary ? (
+            <>
+              <span aria-hidden className="size-1 rounded-full bg-brand-ink-secondary" />
+              <span className="font-medium">{salary}</span>
+            </>
+          ) : null}
+        </p>
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="-mt-1 flex flex-wrap gap-1.5">
         <DarkTag>{WORK_MODE_LABELS[job.workMode]}</DarkTag>
         {job.location ? <DarkTag>{job.location}</DarkTag> : null}
         <DarkTag>{LEVEL_LABELS[job.level]}</DarkTag>
       </div>
 
       {shownSkills.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="-mt-1.5 flex flex-wrap gap-1.5">
           {shownSkills.map((name) => (
             <LightTag key={name}>{name}</LightTag>
           ))}
@@ -86,7 +91,7 @@ export function JobCard({
         <div className="mt-auto flex gap-2 pt-1">
           <Button
             asChild
-            className="h-9 flex-1 rounded-[8px] bg-brand-ink text-sm font-medium text-white hover:bg-brand-ink/90"
+            className="h-9 flex-1 rounded-[8px] bg-brand-ink text-small font-medium text-white hover:bg-brand-ink/90"
           >
             <Link href={`/candidate/jobs/${job.id}`}>View Role</Link>
           </Button>
@@ -99,7 +104,7 @@ export function JobCard({
         actions
       )}
 
-      <p className="flex items-center gap-1.5 text-[11px] text-brand-ink-secondary">
+      <p className="flex items-center gap-1.5 text-meta text-brand-ink-secondary">
         <span>{postedAgo(job.createdAt)}</span>
         {state ? (
           <>
@@ -114,7 +119,7 @@ export function JobCard({
 
 function DarkTag({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-5 items-center rounded-[6px] bg-tag-2 px-2 text-[11px] text-white">
+    <span className="inline-flex h-5 items-center rounded-[6px] bg-tag-2 px-2 text-meta text-white">
       {children}
     </span>
   );
@@ -122,7 +127,7 @@ function DarkTag({ children }: { children: ReactNode }) {
 
 function LightTag({ children }: { children: ReactNode }) {
   return (
-    <span className="inline-flex h-5 items-center rounded-[6px] bg-tag-1 px-2 text-[11px] text-brand-ink">
+    <span className="inline-flex h-5 items-center rounded-[6px] bg-tag-1 px-2 text-meta text-brand-ink">
       {children}
     </span>
   );

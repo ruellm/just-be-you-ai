@@ -18,7 +18,7 @@ export default async function AdminEditCompanyPage({
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
       <Link
         href={`/admin/companies/${company.id}`}
-        className="inline-flex items-center gap-2 text-xl font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold tracking-[-0.5px] text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>

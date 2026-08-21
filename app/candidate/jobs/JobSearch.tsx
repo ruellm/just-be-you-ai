@@ -52,7 +52,7 @@ export function JobSearch({
       onChange={(e) => setValue(e.target.value)}
       placeholder={placeholder}
       className={cn(
-        "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none placeholder:text-brand-ink-secondary",
+        "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary",
         className
       )}
     />

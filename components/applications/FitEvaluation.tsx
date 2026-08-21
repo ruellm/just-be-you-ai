@@ -26,10 +26,10 @@ export function FitEvaluation({
     <div className="space-y-4">
       {summary ? (
         <div>
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+          <p className="text-muted-foreground text-meta font-medium tracking-wide uppercase">
             Fit summary
           </p>
-          <p className="mt-1 text-sm whitespace-pre-line">{summary}</p>
+          <p className="mt-1 text-small whitespace-pre-line">{summary}</p>
         </div>
       ) : null}
 
@@ -67,12 +67,12 @@ function EvidenceList({
 }) {
   return (
     <div>
-      <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+      <p className="text-muted-foreground text-meta font-medium tracking-wide uppercase">
         {title}
       </p>
       <ul className="mt-2 space-y-2">
         {items.map((item, i) => (
-          <li key={i} className="flex gap-2 text-sm">
+          <li key={i} className="flex gap-2 text-small">
             {icon}
             <span>
               <span className="font-medium">

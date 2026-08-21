@@ -141,16 +141,16 @@ export default async function BusinessDashboardPage({
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-10 font-body lg:px-14 lg:py-14">
       <div className="space-y-2">
-        <h1 className="text-3xl font-semibold text-brand-primary sm:text-4xl">
+        <h1 className="text-page-title font-semibold text-brand-primary">
           Company Dashboard
         </h1>
-        <p className="text-base text-brand-ink-secondary">
+        <p className="text-body text-brand-ink-secondary">
           Overview of jobs posted, total applicants, and recent system activity.
         </p>
       </div>
 
       {needsCompanyProfile ? (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-accent-4 bg-status-pending px-5 py-4 text-sm text-brand-ink">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-accent-4 bg-status-pending px-5 py-4 text-small text-brand-ink">
           <span>Complete your company profile to start posting jobs.</span>
           <Button
             asChild
@@ -169,17 +169,17 @@ export default async function BusinessDashboardPage({
             key={stat.label}
             className="flex min-h-[129px] flex-col items-center justify-center gap-2 rounded-[20px] border border-brand-border bg-brand-surface px-4 py-6 text-center"
           >
-            <p className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+            <p className="font-display text-display font-bold text-brand-primary">
               {stat.value}
             </p>
-            <p className="text-sm text-brand-ink-secondary">{stat.label}</p>
+            <p className="text-small text-brand-ink-secondary">{stat.label}</p>
           </div>
         ))}
       </div>
 
       {/* Applications */}
       <section className="space-y-5">
-        <h2 className="text-2xl font-semibold text-brand-primary">
+        <h2 className="text-heading font-semibold text-brand-primary">
           List of Applications
         </h2>
 

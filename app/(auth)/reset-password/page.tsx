@@ -17,7 +17,7 @@ export default async function ResetPasswordPage() {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Reset password</CardTitle>
+        <CardTitle className="text-heading">Reset password</CardTitle>
         <CardDescription>
           {user
             ? "Choose a new password for your account."
@@ -30,7 +30,7 @@ export default async function ResetPasswordPage() {
         ) : (
           <Link
             href="/forgot-password"
-            className="text-muted-foreground hover:text-foreground block text-center text-sm underline"
+            className="text-muted-foreground hover:text-foreground block text-center text-small underline"
           >
             Request a new reset link
           </Link>

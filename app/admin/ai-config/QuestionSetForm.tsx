@@ -40,7 +40,7 @@ import {
 } from "./schemas";
 import { createQuestionSet, updateQuestionSet } from "./actions";
 
-const LABEL = "text-sm font-semibold text-brand-ink";
+const LABEL = "text-small font-semibold text-brand-ink";
 const INPUT = cn(MODAL_INPUT, "h-9");
 const ICON_BTN =
   "flex size-6 items-center justify-center rounded-full border transition-colors disabled:opacity-40";
@@ -88,7 +88,7 @@ export function QuestionSetForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <ProfileSectionCard>
-          <h2 className="text-2xl font-semibold text-brand-primary">
+          <h2 className="text-heading font-semibold text-brand-primary">
             Basic Information
           </h2>
           <div className="grid gap-5 md:grid-cols-2">
@@ -155,7 +155,7 @@ export function QuestionSetForm({
                   <FormMessage />
                   <p
                     className={cn(
-                      "ml-auto text-xs",
+                      "ml-auto text-meta",
                       descriptionLength > DESCRIPTION_MAX
                         ? "text-accent-2"
                         : "text-brand-ink-secondary"
@@ -185,14 +185,14 @@ export function QuestionSetForm({
           />
 
           {fields.length === 0 ? (
-            <p className="text-sm text-brand-ink-secondary">
+            <p className="text-small text-brand-ink-secondary">
               No questions yet — add one above.
             </p>
           ) : (
             <div className="space-y-4">
               {fields.map((fieldItem, index) => (
                 <div key={fieldItem.id} className="flex items-start gap-3">
-                  <span className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-primary text-[11px] font-semibold text-white">
+                  <span className="mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-brand-primary text-meta font-semibold text-white">
                     {index + 1}
                   </span>
                   <FormField

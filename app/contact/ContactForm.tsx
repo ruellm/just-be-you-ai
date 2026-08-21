@@ -32,7 +32,7 @@ export function ContactForm() {
     );
   }
 
-  const labelClass = "text-sm font-semibold text-brand-ink";
+  const labelClass = "text-small font-semibold text-brand-ink";
   const inputClass =
     "rounded-[8px] border-brand-border bg-brand-surface placeholder:text-brand-ink-secondary";
 
@@ -76,7 +76,7 @@ export function ContactForm() {
             id="contact-source"
             value={source}
             onChange={(e) => setSource(e.target.value)}
-            className="h-9 w-full appearance-none rounded-[8px] border border-brand-border bg-brand-surface px-3 pr-10 text-sm text-brand-ink"
+            className="h-9 w-full appearance-none rounded-[8px] border border-brand-border bg-brand-surface px-3 pr-10 text-small text-brand-ink"
           >
             {SOURCE_OPTIONS.map((option) => (
               <option key={option} value={option}>

@@ -57,7 +57,7 @@ const SCALE_FEATURES = [
 
 function SeatTag({ label }: { label: string }) {
   return (
-    <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-xs font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
+    <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
       {label}
     </span>
   );
@@ -73,12 +73,12 @@ function LightFeatureList({
       {features.map((feature) => (
         <li
           key={feature.text}
-          className="flex items-start gap-2.5 text-sm font-medium text-brand-ink-secondary"
+          className="flex items-start gap-2.5 text-small font-medium text-brand-ink-secondary"
         >
           {feature.icon === "check" ? (
-            <CircleCheck className="size-[21px] shrink-0 text-accent-3" />
+            <CircleCheck className="size-5 shrink-0 text-accent-3" />
           ) : (
-            <Info className="size-[21px] shrink-0 text-brand-ink-secondary" />
+            <Info className="size-5 shrink-0 text-brand-ink-secondary" />
           )}
           {feature.text}
         </li>
@@ -93,9 +93,9 @@ function DarkFeatureList({ features }: { features: readonly string[] }) {
       {features.map((feature) => (
         <li
           key={feature}
-          className="flex items-start gap-2.5 text-sm font-medium text-white"
+          className="flex items-start gap-2.5 text-small font-medium text-white"
         >
-          <CircleCheck className="size-[21px] shrink-0 text-brand-tertiary" />
+          <CircleCheck className="size-5 shrink-0 text-brand-tertiary" />
           {feature}
         </li>
       ))}
@@ -109,13 +109,13 @@ export default function BusinessPricingPage() {
       <PublicNav />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-6xl px-6 py-16 sm:py-20">
+        <div className="mx-auto max-w-6xl section-x section-y">
           {/* Header */}
           <div className="space-y-4 text-center">
-            <h1 className="font-display text-4xl font-bold text-brand-primary sm:text-5xl">
+            <h1 className="font-display text-page-title font-bold text-brand-primary">
               Scale Your AI Workforce
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-brand-ink-secondary">
+            <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
               Allow our AI to match you highly suitable candidates with ease.
               Choose the tier that fits your hiring volume.
             </p>
@@ -130,18 +130,18 @@ export default function BusinessPricingPage() {
             {/* Starter */}
             <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
               <div aria-hidden className="h-[13px] bg-brand-secondary" />
-              <div className="flex flex-1 flex-col gap-4 p-6">
+              <div className="flex flex-1 flex-col gap-4 card-pad">
                 <SeatTag label="5 Seats" />
-                <p className="text-2xl font-semibold text-brand-primary">
+                <p className="text-heading font-semibold text-brand-primary">
                   Starter
                 </p>
                 <p>
-                  <span className="text-[32px] font-semibold text-brand-primary">
+                  <span className="text-price font-semibold text-brand-primary">
                     $29
                   </span>
-                  <span className="text-base text-brand-primary">/month</span>
+                  <span className="text-body text-brand-primary">/month</span>
                 </p>
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Perfect for small agencies and startups.
                 </p>
                 <LightFeatureList features={STARTER_FEATURES} />
@@ -159,18 +159,18 @@ export default function BusinessPricingPage() {
               <span className="font-display absolute -top-9 left-1/2 -translate-x-1/2 rounded-full bg-brand-tertiary px-4 py-1 text-xs font-semibold tracking-[1.2px] whitespace-nowrap text-brand-ink-secondary uppercase">
                 Most Popular
               </span>
-              <div className="flex flex-1 flex-col gap-4 p-6">
+              <div className="flex flex-1 flex-col gap-4 card-pad">
                 <SeatTag label="25 Seats" />
-                <p className="text-2xl font-semibold text-white">
+                <p className="text-heading font-semibold text-white">
                   Professional
                 </p>
                 <p>
-                  <span className="text-[32px] font-semibold text-white">
+                  <span className="text-price font-semibold text-white">
                     $99
                   </span>
-                  <span className="text-base text-white">/month</span>
+                  <span className="text-body text-white">/month</span>
                 </p>
-                <p className="text-sm text-white">
+                <p className="text-small text-white">
                   Ideal for growing teams with consistent hiring needs.
                 </p>
                 <DarkFeatureList features={PRO_FEATURES} />
@@ -185,16 +185,16 @@ export default function BusinessPricingPage() {
 
             {/* Scale */}
             <div className="flex flex-col rounded-[12px] bg-brand-card">
-              <div className="flex flex-1 flex-col gap-4 p-6">
+              <div className="flex flex-1 flex-col gap-4 card-pad">
                 <SeatTag label="50 Seats" />
-                <p className="text-2xl font-semibold text-white">Scale</p>
+                <p className="text-heading font-semibold text-white">Scale</p>
                 <p>
-                  <span className="text-[32px] font-semibold text-white">
+                  <span className="text-price font-semibold text-white">
                     $149
                   </span>
-                  <span className="text-base text-white">/month</span>
+                  <span className="text-body text-white">/month</span>
                 </p>
-                <p className="text-sm text-white">
+                <p className="text-small text-white">
                   Best for big companies with high-volume recruitments ongoing.
                 </p>
                 <DarkFeatureList features={SCALE_FEATURES} />
@@ -212,15 +212,15 @@ export default function BusinessPricingPage() {
             {/* Enterprise */}
             <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
               <div aria-hidden className="h-[13px] bg-brand-secondary" />
-              <div className="flex flex-1 flex-col gap-4 p-6">
+              <div className="flex flex-1 flex-col gap-4 card-pad">
                 <SeatTag label="50+ Seats" />
-                <p className="text-2xl font-semibold text-brand-primary">
+                <p className="text-heading font-semibold text-brand-primary">
                   Enterprise
                 </p>
-                <p className="text-[32px] leading-tight font-semibold text-brand-primary">
+                <p className="text-price font-semibold text-brand-primary">
                   Custom Pricing
                 </p>
-                <p className="text-sm text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   We provide tailored solutions for global organizations.
                 </p>
                 <LightFeatureList features={ENTERPRISE_FEATURES} />
@@ -236,13 +236,13 @@ export default function BusinessPricingPage() {
           </div>
 
           {/* FAQ */}
-          <div className="mx-auto mt-20 max-w-4xl">
-            <div className="mb-10 space-y-4 text-center">
-              <h2 className="font-display text-[32px] font-semibold text-brand-primary">
+          <div className="mx-auto mt-12 max-w-4xl sm:mt-20">
+            <div className="section-gap space-y-4 text-center">
+              <h2 className="font-display text-section font-semibold text-brand-primary">
                 Frequently Asked Questions
               </h2>
               <div className="mx-auto h-1 w-16 rounded-full bg-brand-secondary" />
-              <p className="text-xl text-brand-ink-secondary">
+              <p className="text-subheading text-brand-ink-secondary">
                 Everything you need to know about our business plans.
               </p>
             </div>

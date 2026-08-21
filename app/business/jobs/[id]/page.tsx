@@ -153,13 +153,13 @@ export default async function JobApplicantsPage({
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const HEADER_BTN =
-    "h-9 rounded-[8px] px-5 font-body text-sm font-medium text-white";
+    "h-9 rounded-[8px] px-5 font-body text-small font-medium text-white";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
       <Link
         href="/business/jobs"
-        className="inline-flex items-center gap-2 text-xl font-semibold text-brand-primary hover:underline"
+        className="inline-flex items-center gap-2 text-subheading font-semibold text-brand-primary hover:underline"
       >
         <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
@@ -168,15 +168,15 @@ export default async function JobApplicantsPage({
       <div className="flex flex-col gap-6 border-b border-brand-border pb-8 md:flex-row md:items-start md:justify-between">
         <div className="min-w-0 space-y-3">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold text-brand-primary">
+            <h1 className="text-page-title font-semibold text-brand-primary">
               {job.title}
             </h1>
-            <p className="text-base text-brand-ink-secondary">
+            <p className="text-body text-brand-ink-secondary">
               {job.company.name}
             </p>
           </div>
           {salary ? (
-            <p className="text-base font-semibold text-brand-ink-secondary">
+            <p className="text-body font-semibold text-brand-ink-secondary">
               {salary}
             </p>
           ) : null}
@@ -197,7 +197,7 @@ export default async function JobApplicantsPage({
             </Button>
             <JobStatusToggle jobId={job.id} status={job.status} variant="header" />
           </div>
-          <p className="text-xs text-brand-ink-secondary">
+          <p className="text-meta text-brand-ink-secondary">
             {postedAgo(job.createdAt)}
           </p>
         </div>
@@ -205,7 +205,7 @@ export default async function JobApplicantsPage({
 
       {/* Applicants */}
       <section className="space-y-5">
-        <h2 className="text-2xl font-semibold text-brand-primary">
+        <h2 className="text-heading font-semibold text-brand-primary">
           List of Applicants
         </h2>
 
@@ -346,7 +346,7 @@ export default async function JobApplicantsPage({
         ) : null}
 
         <SectionCard title="Evaluation Process" tone="container">
-          <p className="text-base text-brand-ink">
+          <p className="text-body text-brand-ink">
             Applicants complete a short AI interview after applying. Their
             results are shared with {job.company.name} along with their full
             profile.

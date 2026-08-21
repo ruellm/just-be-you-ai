@@ -116,12 +116,12 @@ export function EducationSection({
                 )}
               >
                 <div className="min-w-0 space-y-1">
-                  <p className="text-lg font-semibold text-brand-ink">{e.school}</p>
+                  <p className="text-body font-semibold text-brand-ink">{e.school}</p>
                   {detail ? (
-                    <p className="text-sm text-brand-ink-secondary">{detail}</p>
+                    <p className="text-small text-brand-ink-secondary">{detail}</p>
                   ) : null}
                   {e.country || range ? (
-                    <p className="flex flex-wrap items-center gap-2 text-sm text-brand-ink-secondary">
+                    <p className="flex flex-wrap items-center gap-2 text-small text-brand-ink-secondary">
                       {e.country ? <span>{e.country}</span> : null}
                       {e.country && range ? (
                         <span

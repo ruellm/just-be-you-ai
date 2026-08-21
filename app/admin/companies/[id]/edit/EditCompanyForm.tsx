@@ -15,7 +15,7 @@ import {
 } from "@/app/candidate/profile/ProfileSectionCard";
 import { FIELD_LIMITS } from "@/app/business/company/schemas";
 
-const LABEL = "text-sm font-semibold text-brand-ink";
+const LABEL = "text-small font-semibold text-brand-ink";
 const INPUT = cn(MODAL_INPUT, "h-9 placeholder:text-brand-ink-secondary/60");
 
 export type EditableCompany = {
@@ -78,15 +78,15 @@ export function EditCompanyForm({
         <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
           <Avatar className="size-[60px] after:border-brand-border">
             {logoUrl ? <AvatarImage src={logoUrl} alt="" /> : null}
-            <AvatarFallback className="bg-brand-surface text-lg font-semibold text-brand-primary">
+            <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
               {companyInitial(company.name || "?")}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className="text-base font-semibold text-brand-ink">
+            <p className="text-body font-semibold text-brand-ink">
               Company Profile Image
             </p>
-            <p className="text-sm text-brand-ink-secondary">
+            <p className="text-small text-brand-ink-secondary">
               Pulled from logo URL when available.
             </p>
           </div>
@@ -143,16 +143,16 @@ export function EditCompanyForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           maxLength={FIELD_LIMITS.description}
-          className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-sm text-brand-ink shadow-none"
+          className="min-h-[110px] resize-y rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
         />
-        <p className="-mt-4 text-right text-sm text-brand-ink-secondary">
+        <p className="-mt-4 text-right text-small text-brand-ink-secondary">
           {description.length}/{FIELD_LIMITS.description} characters
         </p>
       </ProfileSectionCard>
 
       {dirty ? (
         <div className="fixed right-4 bottom-4 left-4 z-20 flex flex-wrap items-center justify-between gap-3 rounded-[12px] border border-accent-4 bg-status-pending px-4 py-3 shadow-lg lg:right-14 lg:left-[calc(255px+3.5rem)]">
-          <p className="text-sm text-brand-ink">
+          <p className="text-small text-brand-ink">
             You have unsaved changes. Make sure you save them before navigating
             to other pages.
           </p>
@@ -161,7 +161,7 @@ export function EditCompanyForm({
               type="button"
               variant="outline"
               onClick={() => router.push(`/admin/companies/${companyId}`)}
-              className="h-9 rounded-[8px] border-brand-border bg-brand-surface px-4 text-sm font-medium text-brand-ink hover:bg-brand-container"
+              className="h-9 rounded-[8px] border-brand-border bg-brand-surface px-4 text-small font-medium text-brand-ink hover:bg-brand-container"
             >
               Discard
             </Button>
