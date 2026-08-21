@@ -52,6 +52,7 @@ export default async function AdminEditUserPage({
         profile={
           p
             ? {
+                avatarUrl: p.avatarUrl,
                 firstName: p.firstName ?? "",
                 middleName: p.middleName ?? "",
                 lastName: p.lastName ?? "",

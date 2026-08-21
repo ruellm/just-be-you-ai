@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { candidateAppliedToCompany, getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getCompanySeatBalance } from "@/lib/interview-seats";
 import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
 import { parseEvidence } from "@/lib/applications";
 import {
@@ -53,14 +54,14 @@ export default async function CandidateDetailPage({
   const allowed = await candidateAppliedToCompany(company.id, candidateProfileId);
   if (!allowed) notFound();
 
-  const [unlock, seatsUsed] = await Promise.all([
+  const [unlock, seatBalance] = await Promise.all([
     prisma.profileUnlock.findUnique({
       where: {
         companyId_candidateProfileId: { companyId: company.id, candidateProfileId },
       },
       select: { id: true },
     }),
-    prisma.profileUnlock.count({ where: { companyId: company.id } }),
+    getCompanySeatBalance(prisma, company.id),
   ]);
   const locked = unlock == null;
 
@@ -103,6 +104,7 @@ export default async function CandidateDetailPage({
     id: profile.id,
     fullName,
     initials: initialsOf(profile.firstName, profile.lastName, profile.user.email),
+    avatarUrl: profile.avatarUrl,
     email: profile.user.email,
     resumeUrl: profile.resumeUrl,
     country: profile.country,
@@ -184,8 +186,8 @@ export default async function CandidateDetailPage({
       profile={profileDto}
       applications={applicationDtos}
       backHref={backHref}
-      seatsUsed={seatsUsed}
-      seatsTotal={company.seatsTotal}
+      seatsRemaining={seatBalance.remaining}
+      seatsTotal={seatBalance.total}
     />
   );
 }

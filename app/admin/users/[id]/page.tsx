@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ArrowLeft, FileText } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { countInterviewSeatsUsed } from "@/lib/interview-seats";
+import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import {
@@ -12,7 +12,7 @@ import {
   parseResumeMeta,
 } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/admin/RoleBadge";
@@ -107,10 +107,10 @@ export default async function AdminUserDetailPage({
       : [];
 
   const profile = user.candidateProfile;
-  const interviewSeatsUsed =
+  const seatBalance =
     user.role === "candidate" && profile
-      ? await countInterviewSeatsUsed(prisma, profile.id)
-      : 0;
+      ? await getInterviewSeatBalance(prisma, profile.id)
+      : null;
   const name = userDisplayName(user);
   const resume = parseResumeMeta(profile?.resumeUrl ?? null);
 
@@ -126,6 +126,9 @@ export default async function AdminUserDetailPage({
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex min-w-0 items-center gap-4">
           <Avatar className="size-[60px] rounded-[8px] after:rounded-[8px] after:border-brand-border">
+            {profile?.avatarUrl ? (
+              <AvatarImage src={profile.avatarUrl} alt="" className="rounded-[8px]" />
+            ) : null}
             <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
               {initialsOf(name)}
             </AvatarFallback>
@@ -154,8 +157,8 @@ export default async function AdminUserDetailPage({
           role={user.role}
           candidateProfileId={profile?.id ?? null}
           companyId={user.company?.id ?? null}
-          seatsUsed={interviewSeatsUsed}
-          seatsTotal={profile?.interviewSeatsTotal ?? 0}
+          seatsUsed={seatBalance?.used ?? 0}
+          seatsTotal={seatBalance?.total ?? 0}
         />
       </div>
 

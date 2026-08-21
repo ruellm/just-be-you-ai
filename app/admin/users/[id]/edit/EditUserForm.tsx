@@ -7,7 +7,7 @@ import { ExternalLink, FileText, Pencil, Plus, RefreshCw, Trash2, X } from "luci
 import { cn } from "@/lib/utils";
 import { formatLongDate } from "@/lib/dates";
 import { displayDateRange } from "@/lib/profile-format";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -33,6 +33,7 @@ const SMALL_BTN = "h-8 rounded-[8px] px-3 text-meta font-semibold text-white";
 type Resume = { filename: string; uploadedAt: string | null } | null;
 
 export type EditableProfile = {
+  avatarUrl: string | null;
   firstName: string;
   middleName: string;
   lastName: string;
@@ -157,16 +158,19 @@ export function EditUserForm({
           <>
             <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
               <Avatar className="size-[60px] after:border-brand-border">
+                {profile?.avatarUrl ? (
+                  <AvatarImage src={profile.avatarUrl} alt="" />
+                ) : null}
                 <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                   {initialsOf(displayName)}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <p className="text-body font-semibold text-brand-ink">
-                  LinkedIn Profile Image
+                  Profile Image
                 </p>
                 <p className="text-small text-brand-ink-secondary">
-                  Pulled from LinkedIn when available.
+                  Pulled from the candidate&apos;s Google account when available.
                 </p>
               </div>
             </div>

@@ -1,38 +1,50 @@
-import Link from "next/link";
+"use client";
 
-// Candidates/Businesses switcher shared by the two pricing pages. The
-// active audience renders as a filled pill; the other links to its page.
-const OPTIONS = [
-  { key: "candidates", label: "Candidates", href: "/pricing" },
-  { key: "businesses", label: "Businesses", href: "/pricing/businesses" },
-] as const;
+import { cn } from "@/lib/utils";
+import { type Audience, pricingHref } from "./content";
+
+const OPTIONS: { key: Audience; label: string }[] = [
+  { key: "candidates", label: "Candidates" },
+  { key: "businesses", label: "Businesses" },
+];
 
 export function AudienceToggle({
   active,
+  onChange,
 }: {
-  active: (typeof OPTIONS)[number]["key"];
+  active: Audience;
+  onChange: (audience: Audience) => void;
 }) {
   return (
     <div className="flex justify-center">
-      <div className="inline-flex items-center gap-1 rounded-[12px] border border-brand-border bg-brand-surface p-1">
-        {OPTIONS.map((option) =>
-          option.key === active ? (
-            <span
+      <div
+        role="tablist"
+        aria-label="Pricing audience"
+        className="inline-flex items-center gap-1 rounded-[12px] border border-brand-border bg-brand-surface p-1"
+      >
+        {OPTIONS.map((option) => {
+          const selected = option.key === active;
+          return (
+            <a
               key={option.key}
-              className="rounded-[8px] bg-brand-secondary px-6 py-1.5 text-small font-semibold text-white"
+              role="tab"
+              aria-selected={selected}
+              href={pricingHref(option.key)}
+              onClick={(event) => {
+                event.preventDefault();
+                onChange(option.key);
+              }}
+              className={cn(
+                "rounded-[8px] px-6 py-1.5 text-small font-semibold transition-colors",
+                selected
+                  ? "bg-brand-secondary text-white"
+                  : "text-brand-ink hover:bg-brand-container"
+              )}
             >
               {option.label}
-            </span>
-          ) : (
-            <Link
-              key={option.key}
-              href={option.href}
-              className="rounded-[8px] px-6 py-1.5 text-small font-semibold text-brand-ink transition-colors hover:bg-brand-container"
-            >
-              {option.label}
-            </Link>
-          ),
-        )}
+            </a>
+          );
+        })}
       </div>
     </div>
   );

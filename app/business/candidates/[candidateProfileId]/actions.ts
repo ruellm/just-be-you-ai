@@ -6,6 +6,7 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { candidateAppliedToCompany, getCurrentCompany } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCompanySeatBalance } from "@/lib/interview-seats";
 
 export type UnlockResult =
   | { ok: true; seatsUsed: number; seatsTotal: number }
@@ -25,9 +26,7 @@ export async function unlockCandidateProfile(
   if (!allowed) return { ok: false, reason: "error", error: "Not authorized." };
 
   const result = await prisma.$transaction(async (tx) => {
-    const seatsUsed = await tx.profileUnlock.count({
-      where: { companyId: company.id },
-    });
+    const balance = await getCompanySeatBalance(tx, company.id);
     const existing = await tx.profileUnlock.findUnique({
       where: {
         companyId_candidateProfileId: {
@@ -37,13 +36,15 @@ export async function unlockCandidateProfile(
       },
       select: { id: true },
     });
-    if (existing) return { ok: true as const, seatsUsed, seatsTotal: company.seatsTotal };
-    if (seatsUsed >= company.seatsTotal) {
+    if (existing) {
+      return { ok: true as const, seatsUsed: balance.used, seatsTotal: balance.total };
+    }
+    if (balance.remaining === 0) {
       return {
         ok: false as const,
         reason: "insufficient_seats" as const,
-        seatsUsed,
-        seatsTotal: company.seatsTotal,
+        seatsUsed: balance.used,
+        seatsTotal: balance.total,
       };
     }
     try {
@@ -55,14 +56,14 @@ export async function unlockCandidateProfile(
         e instanceof Prisma.PrismaClientKnownRequestError &&
         e.code === "P2002"
       ) {
-        return { ok: true as const, seatsUsed, seatsTotal: company.seatsTotal };
+        return { ok: true as const, seatsUsed: balance.used, seatsTotal: balance.total };
       }
       throw e;
     }
     return {
       ok: true as const,
-      seatsUsed: seatsUsed + 1,
-      seatsTotal: company.seatsTotal,
+      seatsUsed: balance.used + 1,
+      seatsTotal: balance.total,
     };
   });
 

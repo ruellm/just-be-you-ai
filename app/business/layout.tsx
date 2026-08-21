@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { BusinessSidebar } from "@/components/business/BusinessSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { getCompanySeatBalance } from "@/lib/interview-seats";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,10 +28,11 @@ export default async function BusinessLayout({
       id: true,
       name: true,
       logoUrl: true,
-      seatsTotal: true,
-      _count: { select: { profileUnlocks: true } },
     },
   });
+  const seatBalance = company
+    ? await getCompanySeatBalance(prisma, company.id)
+    : null;
   const companyName = company?.name.trim() || "Your company";
 
   return (
@@ -39,8 +41,8 @@ export default async function BusinessLayout({
         companyName={companyName}
         initials={initialsOf(companyName)}
         logoUrl={company?.logoUrl ?? null}
-        seatsUsed={company?._count.profileUnlocks ?? 0}
-        seatsTotal={company?.seatsTotal ?? 0}
+        seatsRemaining={seatBalance?.remaining ?? 0}
+        seatsTotal={seatBalance?.total ?? 0}
       />
       {/* Content sits to the right of the fixed 255px sidebar on lg+. */}
       <main className="min-w-0 lg:pl-[255px]">{children}</main>

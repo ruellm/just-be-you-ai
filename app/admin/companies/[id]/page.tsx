@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
+import { getCompanySeatBalance } from "@/lib/interview-seats";
 import { formatLongDate } from "@/lib/dates";
 import {
   companyInitial,
@@ -70,7 +71,6 @@ export default async function AdminCompanyDetailPage({
     where: { id },
     include: {
       user: { select: { email: true, createdAt: true } },
-      _count: { select: { profileUnlocks: true } },
       jobs: {
         orderBy: { createdAt: "desc" },
         include: {
@@ -81,6 +81,7 @@ export default async function AdminCompanyDetailPage({
     },
   });
   if (!company) notFound();
+  const seatBalance = await getCompanySeatBalance(prisma, company.id);
 
   const name = company.name || "(unnamed company)";
 
@@ -113,8 +114,8 @@ export default async function AdminCompanyDetailPage({
         <CompanyHeaderActions
           companyId={company.id}
           name={name}
-          seatsUsed={company._count.profileUnlocks}
-          seatsTotal={company.seatsTotal}
+          seatsUsed={seatBalance.used}
+          seatsTotal={seatBalance.total}
         />
       </div>
 

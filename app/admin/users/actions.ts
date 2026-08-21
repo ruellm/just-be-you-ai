@@ -5,8 +5,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentUserRole } from "@/lib/auth";
 import { MAX_SEATS_TOTAL } from "@/lib/admin";
-import { countInterviewSeatsUsed } from "@/lib/interview-seats";
-import type { SetSeatsResult } from "@/app/admin/companies/actions";
+import { countInterviewSeatsUsed, seatsRemaining } from "@/lib/interview-seats";
+import type { SeatsInput, SetSeatsResult } from "@/app/admin/companies/actions";
 
 const roleSchema = z.enum(["candidate", "business", "admin"]);
 
@@ -51,21 +51,25 @@ export async function changeUserRole(
   return { success: true };
 }
 
-const seatsSchema = z.number().int().min(0).max(MAX_SEATS_TOTAL);
+const seatsInputSchema = z.object({
+  total: z.number().int().min(0).max(MAX_SEATS_TOTAL),
+  used: z.number().int().min(0).max(MAX_SEATS_TOTAL),
+});
 
 export async function setCandidateSeats(
   candidateProfileId: string,
-  seats: number
+  input: SeatsInput
 ): Promise<SetSeatsResult> {
   if ((await getCurrentUserRole()) !== "admin") {
     return { ok: false, reason: "error", error: "Not authorized." };
   }
 
   const idParsed = z.string().min(1).safeParse(candidateProfileId);
-  const seatsParsed = seatsSchema.safeParse(seats);
+  const seatsParsed = seatsInputSchema.safeParse(input);
   if (!idParsed.success || !seatsParsed.success) {
     return { ok: false, reason: "error", error: "Invalid request." };
   }
+  const { total, used } = seatsParsed.data;
 
   const result = await prisma.$transaction(async (tx) => {
     const profile = await tx.candidateProfile.findUnique({
@@ -75,23 +79,24 @@ export async function setCandidateSeats(
     if (!profile) {
       return { ok: false as const, reason: "error" as const, error: "Candidate not found." };
     }
-    const seatsUsed = await countInterviewSeatsUsed(tx, profile.id);
-    if (seatsParsed.data < seatsUsed) {
+    if (total < used) {
       return {
         ok: false as const,
         reason: "below_used" as const,
-        seatsUsed,
-        requested: seatsParsed.data,
+        seatsUsed: used,
+        requested: total,
       };
     }
+    const trueUsed = await countInterviewSeatsUsed(tx, profile.id);
     await tx.candidateProfile.update({
       where: { id: profile.id },
-      data: { interviewSeatsTotal: seatsParsed.data },
+      data: { interviewSeatsTotal: total, interviewSeatsAdjustment: used - trueUsed },
     });
     return {
       ok: true as const,
-      seatsUsed,
-      seatsTotal: seatsParsed.data,
+      seatsUsed: used,
+      seatsTotal: total,
+      seatsRemaining: seatsRemaining(used, total),
       userId: profile.userId,
     };
   });
@@ -99,7 +104,12 @@ export async function setCandidateSeats(
   if (result.ok) {
     revalidatePath("/admin/users");
     revalidatePath(`/admin/users/${result.userId}`);
-    return { ok: true, seatsUsed: result.seatsUsed, seatsTotal: result.seatsTotal };
+    return {
+      ok: true,
+      seatsUsed: result.seatsUsed,
+      seatsTotal: result.seatsTotal,
+      seatsRemaining: result.seatsRemaining,
+    };
   }
   return result;
 }

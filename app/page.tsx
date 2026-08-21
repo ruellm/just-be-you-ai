@@ -23,7 +23,7 @@ const HOW_IT_WORKS = [
   {
     icon: Sparkles,
     title: "Get Matched",
-    body: "Your resume and interview results are shared with companies, focusing on your potential and cultural fit.",
+    body: "Our smart AI algorithm matches your skills and experience with the ideal company culture and role.",
     highlighted: false,
   },
 ] as const;
@@ -54,8 +54,8 @@ export default async function HomePage() {
                 <span className="text-brand-primary">Just Be You.</span>
               </h1>
               <p className="max-w-xl text-subheading text-brand-ink-secondary">
-                AI-powered interviews that help great talent get noticed — and
-                help companies find the right people, faster.
+                AI-powered interviews that help great talent get noticed and help
+                companies find the right people, faster.
               </p>
               <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
@@ -112,7 +112,7 @@ export default async function HomePage() {
               Are you a business?
             </h2>
             <p className="text-body text-white/80">
-              Scale your recruiting with human-centric AI assessments. Reduce
+              Scale your recruitment with human-centric AI assessments. Reduce
               time-to-hire by 60%.
             </p>
             <Button
@@ -120,9 +120,7 @@ export default async function HomePage() {
               size="lg"
               className="rounded-full bg-white text-brand-primary hover:bg-white/90"
             >
-              <a href="mailto:hello@justbeyou.ai">
-                Contact us at hello@justbeyou.ai
-              </a>
+              <Link href="/contact">Talk to our Sales Specialist</Link>
             </Button>
           </div>
         </section>

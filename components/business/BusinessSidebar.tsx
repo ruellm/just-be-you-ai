@@ -4,8 +4,9 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu, X } from "lucide-react";
+import { Info, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { COMPANY_SEAT_INFO, formatSeatsLeft } from "@/lib/interview-seats";
 import { signOut } from "@/lib/actions/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -36,13 +37,13 @@ export function BusinessSidebar({
   companyName,
   initials,
   logoUrl,
-  seatsUsed,
+  seatsRemaining,
   seatsTotal,
 }: {
   companyName: string;
   initials: string;
   logoUrl: string | null;
-  seatsUsed: number;
+  seatsRemaining: number;
   seatsTotal: number;
 }) {
   const pathname = usePathname();
@@ -91,9 +92,11 @@ export function BusinessSidebar({
             unoptimized
             className="shrink-0"
           />
-          <span className="font-semibold">Seat Credits:</span>
           <span className="font-medium">
-            {seatsUsed}/{seatsTotal}
+            {formatSeatsLeft(seatsRemaining, seatsTotal)}
+          </span>
+          <span title={COMPANY_SEAT_INFO} className="ml-auto flex">
+            <Info aria-label={COMPANY_SEAT_INFO} className="size-4 text-brand-ink-secondary" />
           </span>
         </div>
       </nav>

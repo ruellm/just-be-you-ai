@@ -8,7 +8,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { applicationPath } from "@/lib/applications";
 import {
   OUT_OF_SEATS_MESSAGE,
-  countInterviewSeatsUsed,
+  getInterviewSeatBalance,
 } from "@/lib/interview-seats";
 import { generateQuestionsForApplication } from "@/lib/ai/generate-questions";
 
@@ -57,18 +57,12 @@ export async function applyToJob(rawJobId: string): Promise<ApplyResult> {
   try {
     outcome = await prisma.$transaction(
       async (tx) => {
-        const [used, seatProfile] = await Promise.all([
-          countInterviewSeatsUsed(tx, profile.id),
-          tx.candidateProfile.findUniqueOrThrow({
-            where: { id: profile.id },
-            select: { interviewSeatsTotal: true },
-          }),
-        ]);
-        if (used >= seatProfile.interviewSeatsTotal) {
+        const balance = await getInterviewSeatBalance(tx, profile.id);
+        if (balance.remaining === 0) {
           return {
             kind: "no_seats" as const,
-            used,
-            total: seatProfile.interviewSeatsTotal,
+            used: balance.used,
+            total: balance.total,
           };
         }
         const created = await tx.application.create({

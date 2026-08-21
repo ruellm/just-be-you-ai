@@ -8,11 +8,12 @@ import {
   Building2,
   CheckCircle2,
   FileText,
+  Info,
   Lock,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,6 +39,7 @@ import {
 import { parseResumeMeta } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
 import { getCandidateResumeSignedUrl, unlockCandidateProfile } from "./actions";
+import { COMPANY_SEAT_INFO, formatSeatsLeft } from "@/lib/interview-seats";
 
 export type InterviewResultDTO = {
   score: number;
@@ -65,6 +67,7 @@ export type ProfileDTO = {
   id: string;
   fullName: string;
   initials: string;
+  avatarUrl: string | null;
   email: string;
   resumeUrl: string | null;
   country: string | null;
@@ -444,21 +447,20 @@ export function CandidateProfileView({
   profile,
   applications,
   backHref,
-  seatsUsed,
+  seatsRemaining,
   seatsTotal,
 }: {
   candidateProfileId: string;
   profile: ProfileDTO | null;
   applications: ApplicationDTO[];
   backHref: string;
-  seatsUsed: number;
+  seatsRemaining: number;
   seatsTotal: number;
 }) {
   const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
   const [insufficient, setInsufficient] = useState(false);
   const [pending, startTransition] = useTransition();
-  const seatsRemaining = Math.max(0, seatsTotal - seatsUsed);
   const noSeats = seatsRemaining === 0 || insufficient;
   const openModal = () => setModalOpen(true);
 
@@ -494,6 +496,9 @@ export function CandidateProfileView({
           </div>
         ) : (
           <Avatar className="size-[60px] rounded-[8px] after:rounded-[8px] after:border-brand-border">
+            {profile.avatarUrl ? (
+              <AvatarImage src={profile.avatarUrl} alt="" className="rounded-[8px]" />
+            ) : null}
             <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
               {profile.initials}
             </AvatarFallback>
@@ -730,13 +735,17 @@ export function CandidateProfileView({
               Current Balance
             </span>
             <span className="font-semibold text-brand-ink">
-              {seatsUsed} of {seatsTotal} seats used ({seatsRemaining} remaining)
+              {formatSeatsLeft(seatsRemaining, seatsTotal)}
             </span>
           </div>
+          <p className="mt-3 flex items-start gap-2 text-meta text-brand-ink-secondary">
+            <Info className="mt-0.5 size-3.5 shrink-0" />
+            {COMPANY_SEAT_INFO}
+          </p>
           {noSeats ? (
             <p className="mt-3 text-small font-medium text-accent-2">
-              Not enough seats. You have used all {seatsTotal} of your seat
-              credits and cannot unlock more profiles right now.
+              Not enough seats. You have 0 of {seatsTotal} seats left and
+              cannot unlock more profiles right now.
             </p>
           ) : null}
           <div className="mt-5 flex items-center justify-end gap-3">

@@ -150,6 +150,7 @@ export default async function ProfilePage() {
           defaults.lastName,
           user?.email ?? ""
         )}
+        avatarUrl={profile?.avatarUrl ?? null}
       />
 
       {/* 3–7: Resume / Education / Skills / Work Experience / Projects */}

@@ -4,10 +4,11 @@ import { useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LogOut, Menu, X } from "lucide-react";
+import { Info, LogOut, Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CANDIDATE_SEAT_INFO, formatSeatsLeft } from "@/lib/interview-seats";
 import { signOut } from "@/lib/actions/auth";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,14 +36,16 @@ export const SIDEBAR_WIDTH_PX = 255;
 export function CandidateSidebar({
   name,
   initials,
+  avatarUrl,
   jobTitle,
-  seatsUsed,
+  seatsRemaining,
   seatsTotal,
 }: {
   name: string;
   initials: string;
+  avatarUrl: string | null;
   jobTitle: string | null;
-  seatsUsed: number;
+  seatsRemaining: number;
   seatsTotal: number;
 }) {
   const pathname = usePathname();
@@ -91,9 +94,11 @@ export function CandidateSidebar({
             unoptimized
             className="shrink-0"
           />
-          <span className="font-semibold">Seat Credits:</span>
           <span className="font-medium">
-            {seatsUsed}/{seatsTotal}
+            {formatSeatsLeft(seatsRemaining, seatsTotal)}
+          </span>
+          <span title={CANDIDATE_SEAT_INFO} className="ml-auto flex">
+            <Info aria-label={CANDIDATE_SEAT_INFO} className="size-4 text-brand-ink-secondary" />
           </span>
         </div>
       </nav>
@@ -105,6 +110,9 @@ export function CandidateSidebar({
             unmounted when the menu closes. */}
         <form ref={signOutFormRef} action={signOut} className="hidden" />
         <Avatar className="size-10 rounded-[12px] after:rounded-[12px] after:border-brand-border">
+          {avatarUrl ? (
+            <AvatarImage src={avatarUrl} alt="" className="rounded-[12px]" />
+          ) : null}
           <AvatarFallback className="rounded-[12px] bg-brand-container text-small font-semibold text-brand-primary">
             {initials}
           </AvatarFallback>

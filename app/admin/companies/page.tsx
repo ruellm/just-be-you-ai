@@ -1,9 +1,6 @@
-import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { formatLongDate } from "@/lib/dates";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -13,8 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateField, SearchField } from "@/components/data-table/FilterFields";
+import { CompanyRowActions } from "./CompanyRowActions";
 import {
-  ACTION_BTN,
   dayRangeFrom,
   firstParam as first,
   PAGE_SIZE,
@@ -141,16 +138,10 @@ export default async function AdminCompaniesPage({
                     <TableCell className={TD_CLASS}>{c._count.jobs}</TableCell>
                     <TableCell className={TD_CLASS}>{c.user.email}</TableCell>
                     <TableCell className={TD_CLASS}>
-                      <Button
-                        asChild
-                        size="sm"
-                        className={cn(
-                          ACTION_BTN,
-                          "font-medium bg-brand-secondary hover:bg-brand-secondary/90"
-                        )}
-                      >
-                        <Link href={`/admin/companies/${c.id}`}>View Profile</Link>
-                      </Button>
+                      <CompanyRowActions
+                        companyId={c.id}
+                        name={c.name || "(unnamed)"}
+                      />
                     </TableCell>
                   </TableRow>
                 ))

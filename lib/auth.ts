@@ -97,12 +97,38 @@ export async function candidateAppliedToCompany(
 // empty Company (business) so later steps have something to fill in.
 // Idempotent: if the row already exists we just return it (handles the
 // "tried to sign up but already has an account" case → treated as a login).
+export function googleAvatarUrl(
+  metadata: Record<string, unknown> | null | undefined
+): string | null {
+  const candidate = metadata?.avatar_url ?? metadata?.picture;
+  if (typeof candidate !== "string") return null;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function ensureUserRow(
-  authUser: { id: string; email?: string | null },
+  authUser: {
+    id: string;
+    email?: string | null;
+    user_metadata?: Record<string, unknown> | null;
+  },
   intendedRole: Role
 ) {
+  const avatarUrl = googleAvatarUrl(authUser.user_metadata);
   const existing = await prisma.user.findUnique({ where: { id: authUser.id } });
-  if (existing) return existing;
+  if (existing) {
+    if (existing.role === "candidate") {
+      await prisma.candidateProfile.updateMany({
+        where: { userId: existing.id },
+        data: { avatarUrl },
+      });
+    }
+    return existing;
+  }
 
   return prisma.user.create({
     data: {
@@ -110,7 +136,7 @@ export async function ensureUserRow(
       email: authUser.email ?? "",
       role: intendedRole,
       ...(intendedRole === "candidate"
-        ? { candidateProfile: { create: {} } }
+        ? { candidateProfile: { create: { avatarUrl } } }
         : {}),
       ...(intendedRole === "business"
         ? { company: { create: { name: "" } } }

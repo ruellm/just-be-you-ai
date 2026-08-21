@@ -144,11 +144,32 @@ function Req() {
 const TEXT_SECTIONS: {
   name: keyof typeof JOB_TEXT_LIMITS;
   title: string;
+  placeholder: string;
 }[] = [
-  { name: "description", title: "Job Description" },
-  { name: "roleOverview", title: "Role Overview" },
-  { name: "dayToDay", title: "What does day-to-day look like" },
-  { name: "requirements", title: "Requirements" },
+  {
+    name: "description",
+    title: "Job Description",
+    placeholder:
+      "Summarize the role in two or three sentences: what the person will own and why it matters. e.g. “We’re looking for a senior frontend developer to lead the UI of our flagship SaaS product. You’ll own the component library and mentor a small team of engineers.”",
+  },
+  {
+    name: "roleOverview",
+    title: "Role Overview",
+    placeholder:
+      "Describe the scope, responsibilities and who they’ll work with. e.g. “As a Senior Frontend Developer you will define frontend architecture, drive performance and accessibility standards, and partner closely with Product, Design and Backend Engineers.”",
+  },
+  {
+    name: "dayToDay",
+    title: "What does day-to-day look like",
+    placeholder:
+      "Give a picture of a typical week: the work, the rituals, the people. e.g. “Build and review feature work in React/Next.js, pair with designers on new flows, and keep the component library healthy.”",
+  },
+  {
+    name: "requirements",
+    title: "Requirements",
+    placeholder:
+      "List must-haves as short bullets: experience, core skills, tools. e.g. “5+ years shipping production React applications. Deep proficiency in TypeScript. Hands-on experience with Next.js and modern CSS.”",
+  },
 ];
 
 export function JobForm({
@@ -373,7 +394,7 @@ export function JobForm({
               />
             </ProfileSectionCard>
 
-            {TEXT_SECTIONS.map(({ name, title }) => (
+            {TEXT_SECTIONS.map(({ name, title, placeholder }) => (
               <ProfileSectionCard key={name}>
                 <h2 className={CARD_TITLE_CLASS}>{title}</h2>
                 <FormField
@@ -384,7 +405,8 @@ export function JobForm({
                       <FormControl>
                         <Textarea
                           maxLength={JOB_TEXT_LIMITS[name]}
-                          className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
+                          placeholder={placeholder}
+                          className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
                           {...field}
                         />
                       </FormControl>

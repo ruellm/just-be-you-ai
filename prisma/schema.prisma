@@ -117,7 +117,8 @@ model Company {
   type         String?
   industry     String?
 
-  seatsTotal Int @default(25)
+  seatsTotal      Int @default(25)
+  seatsAdjustment Int @default(0)
 
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs           Job[]
@@ -180,7 +181,10 @@ model CandidateProfile {
   totalYearsExperience Int?
   preferredRole        String?
 
-  interviewSeatsTotal Int @default(2)
+  avatarUrl String?
+
+  interviewSeatsTotal      Int @default(2)
+  interviewSeatsAdjustment Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

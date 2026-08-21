@@ -2,10 +2,7 @@ import { redirect } from "next/navigation";
 import { CandidateSidebar } from "@/components/candidate/CandidateSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import {
-  clampSeatsUsedForDisplay,
-  getInterviewSeatBalance,
-} from "@/lib/interview-seats";
+import { getInterviewSeatBalance } from "@/lib/interview-seats";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -27,13 +24,19 @@ export default async function CandidateLayout({
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: dbUser.id },
-    select: { id: true, firstName: true, lastName: true, preferredRole: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      preferredRole: true,
+      avatarUrl: true,
+    },
   });
   const seatBalance = profile
     ? await getInterviewSeatBalance(prisma, profile.id)
     : null;
   const seatsTotal = seatBalance?.total ?? 0;
-  const seatsUsed = clampSeatsUsedForDisplay(seatBalance?.used ?? 0, seatsTotal);
+  const seatsRemaining = seatBalance?.remaining ?? 0;
   const fullName = [profile?.firstName, profile?.lastName]
     .filter(Boolean)
     .join(" ");
@@ -44,8 +47,9 @@ export default async function CandidateLayout({
       <CandidateSidebar
         name={displayName}
         initials={initialsOf(displayName)}
+        avatarUrl={profile?.avatarUrl ?? null}
         jobTitle={profile?.preferredRole ?? null}
-        seatsUsed={seatsUsed}
+        seatsRemaining={seatsRemaining}
         seatsTotal={seatsTotal}
       />
       {/* Content sits to the right of the fixed 255px sidebar on lg+. */}

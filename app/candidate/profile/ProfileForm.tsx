@@ -4,7 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -62,9 +62,11 @@ const BASIC_KEYS: (keyof BasicInfoValues)[] = [
 export function ProfileForm({
   defaultValues,
   initials,
+  avatarUrl,
 }: {
   defaultValues: ProfileFormValues;
   initials: string;
+  avatarUrl: string | null;
 }) {
   const router = useRouter();
   const form = useForm<ProfileFormValues>({
@@ -120,21 +122,19 @@ export function ProfileForm({
           title="Basic Information"
           subtitle="These details will help employers know who they will be reviewing."
         >
-          {/* LinkedIn avatar row — STATIC. There is no LinkedIn integration
-              (auth is Google OAuth) and no avatar upload; this is a display
-              block with an initials fallback only. */}
           <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
             <Avatar className="size-[60px] after:border-brand-border">
+              {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
               <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
             <div>
               <p className="font-body text-body font-semibold text-brand-ink">
-                LinkedIn Profile Image
+                Profile Image
               </p>
               <p className="font-body text-small text-brand-ink-secondary">
-                Pulled from LinkedIn when available.
+                Pulled from your Google account when available.
               </p>
             </div>
           </div>
