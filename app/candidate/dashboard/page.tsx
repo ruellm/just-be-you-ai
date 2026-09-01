@@ -77,7 +77,9 @@ export default async function CandidateDashboardPage() {
   const firstName =
     profile?.firstName || user?.email?.split("@")[0] || "there";
 
-  const recommended = profile ? await getRecommendedJobs(profile.id) : [];
+  const recommended = profile
+    ? await getRecommendedJobs(profile.id, profile.tier)
+    : [];
   const seatBalance = profile
     ? await getInterviewSeatBalance(prisma, profile.id)
     : null;
@@ -153,11 +155,12 @@ export default async function CandidateDashboardPage() {
             className="bg-brand-surface"
           />
         ) : (
-          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-            {recommended.map(({ job, applied }) => (
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {recommended.map(({ job, companyName, applied }) => (
               <JobCard
                 key={job.id}
                 job={job}
+                companyName={companyName}
                 applied={applied}
                 noSeats={noSeats}
               />

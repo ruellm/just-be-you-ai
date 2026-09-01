@@ -1,16 +1,31 @@
+import type { CandidateTier } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import type { JobCardData } from "@/components/jobs/JobCard";
+import {
+  canSeeHiringCompany,
+  hasPassedApplication,
+  hiringCompanyName,
+} from "@/lib/company-visibility";
 
 export type RecommendedJob = {
   job: JobCardData;
+  /** Resolved through the U5 reveal gate — real name or "Anonymous Company". */
+  companyName: string;
   overlap: number; // number of the job's required skills the candidate has
   applied: boolean;
 };
 
 const RECOMMENDATION_LIMIT = 4;
 
+// What the queries below return: a JobCardData plus the company name we still
+// need in order to evaluate the gate. Never leaves this module unstripped.
+type JobRow = JobCardData & { company: { name: string } };
+
+// company.name ONLY. The dashboard renders the same JobCard as Find Jobs, so
+// the employer is anonymized here too and the company object is stripped before
+// the rows leave this module.
 const jobInclude = {
-  company: true,
+  company: { select: { name: true } },
   skills: { include: { skill: true } },
 } as const;
 
@@ -25,7 +40,8 @@ const jobInclude = {
 // the most recent open jobs instead so a brand-new user never sees an empty
 // section. Only a genuinely empty job board yields [].
 export async function getRecommendedJobs(
-  candidateProfileId: string
+  candidateProfileId: string,
+  tier: CandidateTier | null
 ): Promise<RecommendedJob[]> {
   const [candidateSkills, applications] = await Promise.all([
     prisma.candidateSkill.findMany({
@@ -34,13 +50,21 @@ export async function getRecommendedJobs(
     }),
     prisma.application.findMany({
       where: { candidateProfileId },
-      select: { jobId: true },
+      // interviewResult rides along on this ONE query — no per-card lookup.
+      select: {
+        jobId: true,
+        status: true,
+        interviewResult: { select: { passed: true } },
+      },
     }),
   ]);
   const skillIds = candidateSkills.map((s) => s.skillId);
   const appliedJobIds = new Set(applications.map((a) => a.jobId));
+  const passedJobIds = new Set(
+    applications.filter(hasPassedApplication).map((a) => a.jobId)
+  );
 
-  let jobs: JobCardData[] = [];
+  let jobs: JobRow[] = [];
   let overlapByJob = new Map<string, number>();
 
   if (skillIds.length > 0) {
@@ -78,8 +102,14 @@ export async function getRecommendedJobs(
     });
   }
 
-  return jobs.map((job) => ({
+  // Destructuring drops `company` from the returned rows, so the withheld name
+  // is never serialized into the dashboard's RSC payload.
+  return jobs.map(({ company, ...job }) => ({
     job,
+    companyName: hiringCompanyName(
+      company.name,
+      canSeeHiringCompany({ tier, passedThisJob: passedJobIds.has(job.id) })
+    ),
     overlap: overlapByJob.get(job.id) ?? 0,
     applied: appliedJobIds.has(job.id),
   }));

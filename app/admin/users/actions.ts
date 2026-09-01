@@ -51,6 +51,41 @@ export async function changeUserRole(
   return { success: true };
 }
 
+// U5b — the writer for CandidateProfile.tier. Professional + a passed
+// interview is what opens the hiring-company reveal
+// (see lib/company-visibility.ts); without this the gate could never open.
+const tierSchema = z.enum(["free", "professional"]);
+
+export async function setCandidateTier(
+  candidateProfileId: string,
+  tier: string
+): Promise<Result> {
+  if ((await getCurrentUserRole()) !== "admin") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  const idParsed = z.string().min(1).safeParse(candidateProfileId);
+  const tierParsed = tierSchema.safeParse(tier);
+  if (!idParsed.success || !tierParsed.success) {
+    return { success: false, error: "Invalid request." };
+  }
+
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { id: idParsed.data },
+    select: { id: true, userId: true },
+  });
+  if (!profile) return { success: false, error: "Candidate not found." };
+
+  await prisma.candidateProfile.update({
+    where: { id: profile.id },
+    data: { tier: tierParsed.data },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${profile.userId}`);
+  return { success: true };
+}
+
 const seatsInputSchema = z.object({
   total: z.number().int().min(0).max(MAX_SEATS_TOTAL),
   used: z.number().int().min(0).max(MAX_SEATS_TOTAL),

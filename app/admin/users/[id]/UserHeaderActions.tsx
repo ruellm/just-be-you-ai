@@ -12,7 +12,9 @@ import {
   BTN_INK,
   BTN_PRIMARY,
 } from "@/app/candidate/profile/ProfileSectionCard";
+import type { CandidateTier } from "@prisma/client";
 import { ChangeSeatsModal } from "@/components/admin/ChangeSeatsModal";
+import { TierToggle } from "./TierToggle";
 import { HideUserDialog } from "@/components/admin/HideUserDialog";
 
 const BTN_UNDO = cn(
@@ -25,6 +27,7 @@ export function UserHeaderActions({
   name,
   role,
   candidateProfileId,
+  candidateTier,
   companyId,
   seatsUsed,
   seatsTotal,
@@ -33,6 +36,7 @@ export function UserHeaderActions({
   name: string;
   role: Role;
   candidateProfileId: string | null;
+  candidateTier: CandidateTier | null;
   companyId: string | null;
   seatsUsed: number;
   seatsTotal: number;
@@ -78,6 +82,13 @@ export function UserHeaderActions({
             Manage Seats on Company
           </Link>
         </Button>
+      ) : null}
+      {/* Candidates only — business/admin have no candidate tier. */}
+      {role === "candidate" && candidateProfileId && candidateTier ? (
+        <TierToggle
+          candidateProfileId={candidateProfileId}
+          tier={candidateTier}
+        />
       ) : null}
       <Button
         type="button"

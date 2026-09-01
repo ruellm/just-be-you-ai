@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
+import { ReturnHomeButton } from "@/components/interview/ReturnHomeButton";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 
 // Interview-only chrome. The live interview route lives in this route group
@@ -29,12 +29,7 @@ export default async function InterviewLayout({
           >
             Just Be You.
           </Link>
-          <Button
-            asChild
-            className="h-[41px] rounded-[12px] bg-brand-secondary px-5 text-small font-medium text-white hover:bg-brand-secondary/90"
-          >
-            <Link href="/candidate/dashboard">Return to Home</Link>
-          </Button>
+          <ReturnHomeButton />
         </div>
       </header>
       <main className="flex-1">{children}</main>

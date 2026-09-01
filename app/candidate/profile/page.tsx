@@ -84,6 +84,7 @@ export default async function ProfilePage() {
         ? String(profile.totalYearsExperience)
         : "",
     preferredRole: profile?.preferredRole ?? "",
+    profileImageUrl: profile?.profileImageUrl ?? "",
     summary: profile?.summary ?? "",
   };
 
@@ -152,6 +153,7 @@ export default async function ProfilePage() {
         )}
         avatarUrl={profile?.avatarUrl ?? null}
       />
+
 
       {/* 3–7: Resume / Education / Skills / Work Experience / Projects */}
       <ProfileSectionCard

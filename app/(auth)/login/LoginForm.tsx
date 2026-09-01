@@ -16,8 +16,17 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  AUTH_INPUT,
+  AUTH_LABEL,
+  AUTH_LINK,
+  AUTH_PRIMARY_BUTTON,
+} from "@/components/auth/AuthCard";
 import { signInWithPassword } from "./actions";
 
+// THE real sign-in form — businesses AND admins both authenticate through it.
+// v2 restyled the presentation only; the schema, the signInWithPassword call,
+// the redirect and the error handling below are unchanged.
 const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email"),
   password: z.string().min(1, "Enter your password"),
@@ -43,25 +52,26 @@ export function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-meta font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
-                Email
-              </FormLabel>
+              <FormLabel className={AUTH_LABEL}>Email Address</FormLabel>
               <div className="relative">
                 <FormControl>
                   <Input
                     type="email"
                     autoComplete="email"
-                    className="h-12 rounded-[8px] border-brand-border bg-brand-surface pr-11 sm:h-14"
+                    className={AUTH_INPUT}
                     {...field}
                   />
                 </FormControl>
-                <AtSign className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70" />
+                <AtSign
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70"
+                />
               </div>
               <FormMessage />
             </FormItem>
@@ -72,19 +82,25 @@ export function LoginForm() {
           name="password"
           render={({ field }) => (
             <FormItem>
-              <FormLabel className="text-meta font-medium tracking-[0.6px] text-brand-ink-secondary uppercase">
-                Password
-              </FormLabel>
+              <div className="flex items-center justify-between gap-3">
+                <FormLabel className={AUTH_LABEL}>Password</FormLabel>
+                <Link href="/forgot-password" className={`text-small ${AUTH_LINK}`}>
+                  Forgot Password?
+                </Link>
+              </div>
               <div className="relative">
                 <FormControl>
                   <Input
                     type="password"
                     autoComplete="current-password"
-                    className="h-12 rounded-[8px] border-brand-border bg-brand-surface pr-11 sm:h-14"
+                    className={AUTH_INPUT}
                     {...field}
                   />
                 </FormControl>
-                <Lock className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70" />
+                <Lock
+                  aria-hidden
+                  className="pointer-events-none absolute top-1/2 right-3.5 size-5 -translate-y-1/2 text-brand-ink-secondary/70"
+                />
               </div>
               <FormMessage />
             </FormItem>
@@ -97,17 +113,11 @@ export function LoginForm() {
         ) : null}
         <Button
           type="submit"
-          className="w-full rounded-[8px] bg-brand-secondary text-white shadow-sm hover:bg-brand-secondary/90"
+          className={AUTH_PRIMARY_BUTTON}
           disabled={form.formState.isSubmitting}
         >
-          {form.formState.isSubmitting ? "Signing in…" : "Sign in"}
+          {form.formState.isSubmitting ? "Signing in…" : "Sign In"}
         </Button>
-        <Link
-          href="/forgot-password"
-          className="block text-center text-small text-brand-ink-secondary hover:text-brand-primary"
-        >
-          Forgot password?
-        </Link>
       </form>
     </Form>
   );

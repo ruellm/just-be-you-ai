@@ -27,7 +27,8 @@ export const TIER_BADGE_CLASS: Record<Level, string> = {
 
 export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   draft: "Draft",
-  submitted: "Submitted",
+  // Display label only — the `submitted` enum value / filter param are unchanged.
+  submitted: "Ongoing",
   interview_completed: "Interview completed",
   passed: "Passed",
   failed: "Failed",
@@ -60,6 +61,16 @@ export function scoreToPercent(score: number): number {
   return Math.round(score * 100);
 }
 
+// InterviewResult.durationSeconds -> "7m 22s" / "48s". Null (pre-U4 rows, or a
+// tier that didn't report one) renders as an em dash.
+export function formatDuration(seconds: number | null | undefined): string {
+  if (seconds == null || !Number.isFinite(seconds) || seconds < 0) return "—";
+  const whole = Math.round(seconds);
+  const minutes = Math.floor(whole / 60);
+  const rest = whole % 60;
+  return minutes > 0 ? `${minutes}m ${rest}s` : `${rest}s`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 2.3 — fit evaluation (real Claude grading)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +87,16 @@ export const RECOMMENDATION_BADGE_CLASS: Record<Recommendation, string> = {
   hire: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
   consider: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
   pass: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200",
+};
+
+// Candidate-facing text colour for the RECOMMENDATION stat, keyed by VALUE
+// (not by pass/fail outcome). NOTE: "pass" means the employer passes ON the
+// candidate — a rejection — which is why it is red. The colour is what
+// disambiguates the word, so it must stay keyed to the value.
+export const RECOMMENDATION_TEXT_CLASS: Record<Recommendation, string> = {
+  hire: "text-accent-3",
+  consider: "text-amber-600",
+  pass: "text-accent-2",
 };
 
 // Strongest recommendation sorts first (higher rank = stronger).
@@ -306,10 +327,15 @@ export const IMPRESSION_LABELS: Record<CategoryImpression, string> = {
   limited: "Limited",
 };
 
+// Chip colours for the candidate result card. Four DISTINCT colours, per the
+// designer: green / blue / amber / red. Thresholds live in categoryImpression
+// and are NOT affected by this map.
+// The amber pair (design #FFF4EC / #D49102) has no brand token; Tailwind's
+// built-in amber is the closest match and is shared with RECOMMENDATION_TEXT_CLASS
+// so "Developing" and "Consider" read as the same warning colour.
 export const IMPRESSION_BADGE_CLASS: Record<CategoryImpression, string> = {
-  strong: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",
-  solid: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  developing:
-    "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  limited: "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200",
+  strong: "bg-status-success text-accent-3",
+  solid: "bg-tag-3 text-accent-1",
+  developing: "bg-amber-50 text-amber-600",
+  limited: "bg-status-fail text-accent-2",
 };

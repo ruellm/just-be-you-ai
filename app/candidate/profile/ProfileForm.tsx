@@ -16,7 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Pencil } from "lucide-react";
 import { LanguagesInput } from "@/components/profile/LanguagesInput";
+import { ProfileImageModal } from "@/components/profile/ProfileImageModal";
+import { displayAvatarUrl } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
 import {
   FIELD_LIMITS,
@@ -26,7 +29,7 @@ import {
   type SummaryValues,
 } from "./schemas";
 import { saveBasicInfo, saveSummary } from "./actions";
-import { ProfileSectionCard } from "./ProfileSectionCard";
+import { BTN_PRIMARY, ProfileSectionCard } from "./ProfileSectionCard";
 
 const INPUT_CLASS =
   "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
@@ -54,6 +57,7 @@ const BASIC_KEYS: (keyof BasicInfoValues)[] = [
   "languages",
   "totalYearsExperience",
   "preferredRole",
+  "profileImageUrl",
 ];
 
 // Basic Information + Profile Summary as ONE react-hook-form with dirty
@@ -75,6 +79,10 @@ export function ProfileForm({
   });
   const { isDirty, isSubmitting } = form.formState;
   const summaryLength = form.watch("summary")?.length ?? 0;
+  const profileImageUrl = form.watch("profileImageUrl") ?? "";
+  // Same precedence as every other avatar in the app (user-set → Google →
+  // initials), read live from the form so the preview updates on save.
+  const shownImageUrl = displayAvatarUrl(profileImageUrl, avatarUrl);
 
   async function onSubmit(values: ProfileFormValues) {
     const basic = Object.fromEntries(
@@ -122,21 +130,39 @@ export function ProfileForm({
           title="Basic Information"
           subtitle="These details will help employers know who they will be reviewing."
         >
-          <div className="flex items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
+          {/* The user-set URL wins; otherwise fall back to the Google picture,
+              then to initials. AvatarImage (not next/image) — arbitrary
+              external host with no remotePatterns allow-list. */}
+          <div className="flex flex-wrap items-center gap-4 rounded-[12px] bg-brand-container px-5 py-4">
             <Avatar className="size-[60px] after:border-brand-border">
-              {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
+              {shownImageUrl ? <AvatarImage src={shownImageUrl} alt="" /> : null}
               <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="min-w-0">
               <p className="font-body text-body font-semibold text-brand-ink">
                 Profile Image
               </p>
               <p className="font-body text-small text-brand-ink-secondary">
-                Pulled from your Google account when available.
+                Add a link to your profile photo. We&apos;ll use your Google
+                picture until you do.
               </p>
             </div>
+            <ProfileImageModal
+              value={profileImageUrl}
+              onSubmit={(url) =>
+                form.setValue("profileImageUrl", url, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              trigger={
+                <Button type="button" className={cn(BTN_PRIMARY, "ml-auto")}>
+                  <Pencil /> Edit Image
+                </Button>
+              }
+            />
           </div>
 
           {/* Row 1 */}

@@ -64,6 +64,7 @@ export async function saveBasicInfo(
         languages: d.languages,
         totalYearsExperience: toIntOrNull(d.totalYearsExperience),
         preferredRole: nullify(d.preferredRole),
+        profileImageUrl: nullify(d.profileImageUrl),
       },
       create: {
         userId: user.id,
@@ -80,6 +81,7 @@ export async function saveBasicInfo(
         languages: d.languages,
         totalYearsExperience: toIntOrNull(d.totalYearsExperience),
         preferredRole: nullify(d.preferredRole),
+        profileImageUrl: nullify(d.profileImageUrl),
       },
     });
   } catch {

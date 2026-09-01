@@ -1,66 +1,77 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { CircleCheck, CircleX, Info } from "lucide-react";
+import { CircleCheck, CircleX } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { AudienceToggle } from "./AudienceToggle";
+import { cn } from "@/lib/utils";
+import { BillingToggle } from "./BillingToggle";
 import { PricingFaq } from "./PricingFaq";
 import {
-  type Audience,
-  BUSINESS_PRO_FEATURES,
+  type BillingCycle,
+  type BusinessPlan,
+  BUSINESS_PLANS,
+  CANDIDATE_FREE_FEATURES,
   CANDIDATE_PRO_FEATURES,
-  ENTERPRISE_FEATURES,
+  CANDIDATE_PRO_PRICE,
   FAQ_ITEMS,
-  FREE_FEATURES,
   PAGE_COPY,
-  SCALE_FEATURES,
-  STARTER_FEATURES,
-  parseAudience,
-  pricingHref,
 } from "./content";
 
-function SeatTag({ label }: { label: string }) {
+// "Price Cut" (#A0AEC0) from the Figma style sheet — see --color-price-cut.
+const PRICE_CUT_CLASS = "text-price-cut";
+
+const CTA_CLASS = "mt-auto h-11 w-full rounded-[12px]";
+const CTA_TONE = {
+  secondary: "bg-brand-secondary text-white hover:bg-brand-secondary/90",
+  tertiary: "bg-brand-tertiary text-brand-ink hover:bg-brand-tertiary/90",
+} as const;
+
+function Tag({ label }: { label: string }) {
   return (
-    <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
+    <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-meta font-medium tracking-[1.2px] text-brand-ink-secondary uppercase">
       {label}
     </span>
   );
 }
 
-function LightFeatureList({
+// Struck monthly price + "-10%" chip, shown above the yearly price.
+function PriceCut({ monthly }: { monthly: string }) {
+  return (
+    <span className="flex items-center gap-2">
+      <span className={cn("text-heading font-semibold line-through", PRICE_CUT_CLASS)}>
+        {monthly}
+      </span>
+      <span className="rounded-full bg-tag-1 px-2 py-0.5 text-meta font-medium text-brand-ink">
+        -10%
+      </span>
+    </span>
+  );
+}
+
+function FeatureList({
   features,
+  tone,
 }: {
-  features: readonly { icon: "check" | "info"; text: string }[];
+  features: readonly string[];
+  tone: "light" | "dark";
 }) {
   return (
     <ul className="space-y-3">
       {features.map((feature) => (
         <li
-          key={feature.text}
-          className="flex items-start gap-2.5 text-small font-medium text-brand-ink-secondary"
-        >
-          {feature.icon === "check" ? (
-            <CircleCheck className="size-5 shrink-0 text-accent-3" />
-          ) : (
-            <Info className="size-5 shrink-0 text-brand-ink-secondary" />
-          )}
-          {feature.text}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-function DarkFeatureList({ features }: { features: readonly string[] }) {
-  return (
-    <ul className="space-y-3">
-      {features.map((feature) => (
-        <li
           key={feature}
-          className="flex items-start gap-2.5 text-small font-medium text-white"
+          className={cn(
+            "flex items-start gap-2.5 text-small font-medium",
+            tone === "light" ? "text-brand-ink-secondary" : "text-white"
+          )}
         >
-          <CircleCheck className="size-5 shrink-0 text-brand-tertiary" />
+          <CircleCheck
+            className={cn(
+              "size-[21px] shrink-0",
+              tone === "light" ? "text-accent-3" : "text-brand-tertiary"
+            )}
+          />
           {feature}
         </li>
       ))}
@@ -68,15 +79,17 @@ function DarkFeatureList({ features }: { features: readonly string[] }) {
   );
 }
 
-function CandidatePlans() {
+// ── For Candidates ──────────────────────────────────────────────────────────
+
+function CandidatePlans({ cycle }: { cycle: BillingCycle }) {
+  const yearly = cycle === "yearly";
   return (
-    <div className="mx-auto mt-12 grid max-w-4xl gap-8 lg:grid-cols-2">
-      <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
+    <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-8 lg:grid-cols-2">
+      {/* Free — no yearly variant, always $0 */}
+      <div className="flex min-w-0 flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
         <div aria-hidden className="h-[13px] bg-brand-secondary" />
         <div className="flex flex-1 flex-col stack-gap card-pad">
-          <span className="font-display self-start rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
-            Free
-          </span>
+          <Tag label="Free" />
           <p>
             <span className="text-price font-semibold text-brand-primary">$0</span>
             <span className="text-body text-brand-ink-secondary">/forever</span>
@@ -85,61 +98,49 @@ function CandidatePlans() {
             Perfect for exploring the platform and trying out basic features.
           </p>
           <ul className="space-y-3">
-            {FREE_FEATURES.map((feature) => (
+            {CANDIDATE_FREE_FEATURES.map((feature) => (
               <li
                 key={feature.text}
                 className="flex items-start gap-2.5 text-small font-medium text-brand-ink-secondary"
               >
                 {feature.included ? (
-                  <CircleCheck className="size-5 shrink-0 text-accent-3" />
+                  <CircleCheck className="size-[21px] shrink-0 text-accent-3" />
                 ) : (
-                  <CircleX className="size-5 shrink-0 text-accent-2" />
+                  <CircleX className="size-[21px] shrink-0 text-accent-2" />
                 )}
                 {feature.text}
               </li>
             ))}
           </ul>
-          <Button
-            asChild
-            className="mt-auto h-11 w-full rounded-[12px] bg-brand-secondary text-white hover:bg-brand-secondary/90"
-          >
+          <Button asChild className={cn(CTA_CLASS, CTA_TONE.secondary)}>
             <Link href="/signup">Get Started Free</Link>
           </Button>
         </div>
       </div>
 
-      <div className="flex flex-col overflow-hidden rounded-[12px] bg-brand-primary">
+      {/* Professional */}
+      <div className="flex min-w-0 flex-col overflow-hidden rounded-[12px] bg-brand-primary">
         <div aria-hidden className="h-[13px] bg-brand-tertiary" />
         <div className="flex flex-1 flex-col stack-gap card-pad">
           <div className="flex items-start justify-between gap-4">
-            <span className="font-display rounded-full bg-tag-1 px-3 py-1 text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
-              Professional
-            </span>
-            <span className="text-xs text-status-success">Most Popular!</span>
+            <Tag label="Professional" />
+            <span className="text-meta text-status-success">Most Popular!</span>
           </div>
-          <p>
-            <span className="text-price font-semibold text-status-success">$12</span>
-            <span className="text-body text-white/80">/month</span>
+          <p className="flex flex-col gap-1">
+            {yearly ? <PriceCut monthly={CANDIDATE_PRO_PRICE.monthly} /> : null}
+            <span>
+              <span className="text-price font-semibold text-white">
+                {yearly ? CANDIDATE_PRO_PRICE.yearly : CANDIDATE_PRO_PRICE.monthly}
+              </span>
+              <span className="text-body text-status-success">/month</span>
+            </span>
           </p>
           <p className="text-small text-white">
             Accelerate your growth with deep insights, more choices, and
             unlimited interviews.
           </p>
-          <ul className="space-y-3">
-            {CANDIDATE_PRO_FEATURES.map((feature) => (
-              <li
-                key={feature}
-                className="flex items-start gap-2.5 text-small font-medium text-white"
-              >
-                <CircleCheck className="size-5 shrink-0 text-brand-tertiary" />
-                {feature}
-              </li>
-            ))}
-          </ul>
-          <Button
-            asChild
-            className="mt-auto h-11 w-full rounded-[12px] bg-brand-tertiary text-brand-ink hover:bg-brand-tertiary/90"
-          >
+          <FeatureList features={CANDIDATE_PRO_FEATURES} tone="dark" />
+          <Button asChild className={cn(CTA_CLASS, CTA_TONE.tertiary)}>
             <Link href="/signup">Upgrade to Professional</Link>
           </Button>
         </div>
@@ -148,150 +149,180 @@ function CandidatePlans() {
   );
 }
 
-function BusinessPlans() {
+// ── For Businesses ──────────────────────────────────────────────────────────
+
+function BusinessCard({
+  plan,
+  cycle,
+}: {
+  plan: BusinessPlan;
+  cycle: BillingCycle;
+}) {
+  const light = plan.variant === "light";
+  const yearly = cycle === "yearly";
+  const card = (
+    <div
+      className={cn(
+        "flex min-w-0 flex-col rounded-[12px]",
+        plan.variant === "light" &&
+          "overflow-hidden border border-brand-border bg-brand-surface",
+        plan.variant === "primary" && "overflow-hidden bg-brand-primary",
+        plan.variant === "card" && "bg-brand-card"
+      )}
+    >
+      {plan.variant !== "card" ? (
+        <div
+          aria-hidden
+          className={cn(
+            "h-[13px]",
+            light ? "bg-brand-secondary" : "bg-brand-tertiary"
+          )}
+        />
+      ) : null}
+      <div className="flex flex-1 flex-col gap-4 card-pad">
+        <Tag label={plan.seats} />
+        <p
+          className={cn(
+            "text-heading font-semibold",
+            light ? "text-brand-primary" : "text-white"
+          )}
+        >
+          {plan.name}
+        </p>
+        {plan.price ? (
+          <p className="flex flex-col gap-1">
+            {yearly ? <PriceCut monthly={plan.price.monthly} /> : null}
+            <span>
+              <span
+                className={cn(
+                  "text-price font-semibold",
+                  light ? "text-brand-primary" : "text-white"
+                )}
+              >
+                {yearly ? plan.price.yearly : plan.price.monthly}
+              </span>
+              <span
+                className={cn(
+                  "text-body",
+                  light ? "text-brand-primary" : "text-white"
+                )}
+              >
+                /month
+              </span>
+            </span>
+          </p>
+        ) : (
+          <p
+            className={cn(
+              "text-price font-semibold",
+              light ? "text-brand-primary" : "text-white"
+            )}
+          >
+            {plan.priceLabel}
+          </p>
+        )}
+        <p
+          className={cn(
+            "text-small",
+            light ? "text-brand-ink-secondary" : "text-white"
+          )}
+        >
+          {plan.blurb}
+        </p>
+        <FeatureList features={plan.features} tone={light ? "light" : "dark"} />
+        <Button
+          asChild
+          className={cn(CTA_CLASS, "mt-4", CTA_TONE[plan.cta.tone])}
+        >
+          <Link href={plan.cta.href}>{plan.cta.label}</Link>
+        </Button>
+      </div>
+    </div>
+  );
+
+  if (!plan.mostPopular) return card;
+  // Badge floats ABOVE the card; the wrapper is the grid item so items-end
+  // still bottom-aligns the cards themselves.
   return (
-    <div className="mt-12 grid items-end gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
-        <div aria-hidden className="h-[13px] bg-brand-secondary" />
-        <div className="flex flex-1 flex-col gap-4 card-pad">
-          <SeatTag label="5 Seats" />
-          <p className="text-heading font-semibold text-brand-primary">Starter</p>
-          <p>
-            <span className="text-price font-semibold text-brand-primary">$29</span>
-            <span className="text-body text-brand-primary">/month</span>
-          </p>
-          <p className="text-small text-brand-ink-secondary">
-            Perfect for small agencies and startups.
-          </p>
-          <LightFeatureList features={STARTER_FEATURES} />
-          <Button
-            asChild
-            className="mt-4 h-11 w-full rounded-[12px] bg-brand-secondary text-white hover:bg-brand-secondary/90"
-          >
-            <Link href="/signup">Get Started</Link>
-          </Button>
-        </div>
+    <div className="flex min-w-0 flex-col">
+      <div className="flex justify-center pb-3">
+        <span className="font-display rounded-full bg-brand-tertiary px-4 py-1 text-meta font-semibold tracking-[1.2px] whitespace-nowrap text-brand-ink-secondary uppercase">
+          Most Popular
+        </span>
       </div>
-
-      <div className="flex flex-col overflow-hidden rounded-[12px] bg-brand-primary">
-        <div className="flex justify-center pt-3">
-          <span className="font-display rounded-full bg-brand-tertiary px-4 py-1 text-xs font-semibold tracking-[1.2px] whitespace-nowrap text-brand-ink-secondary uppercase">
-            Most Popular
-          </span>
-        </div>
-        <div className="flex flex-1 flex-col gap-4 card-pad">
-          <SeatTag label="25 Seats" />
-          <p className="text-heading font-semibold text-white">Professional</p>
-          <p>
-            <span className="text-price font-semibold text-white">$99</span>
-            <span className="text-body text-white">/month</span>
-          </p>
-          <p className="text-small text-white">
-            Ideal for growing teams with consistent hiring needs.
-          </p>
-          <DarkFeatureList features={BUSINESS_PRO_FEATURES} />
-          <Button
-            asChild
-            className="mt-4 h-11 w-full rounded-[12px] bg-brand-tertiary text-brand-ink hover:bg-brand-tertiary/90"
-          >
-            <Link href="/signup">Choose Professional</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col rounded-[12px] bg-brand-card">
-        <div className="flex flex-1 flex-col gap-4 card-pad">
-          <SeatTag label="50 Seats" />
-          <p className="text-heading font-semibold text-white">Scale</p>
-          <p>
-            <span className="text-price font-semibold text-white">$149</span>
-            <span className="text-body text-white">/month</span>
-          </p>
-          <p className="text-small text-white">
-            Best for big companies with high-volume recruitments ongoing.
-          </p>
-          <DarkFeatureList features={SCALE_FEATURES} />
-          <Button
-            asChild
-            className="mt-4 h-11 w-full rounded-[12px] bg-brand-tertiary text-brand-ink hover:bg-brand-tertiary/90"
-          >
-            <Link href="/signup">Choose Scale</Link>
-          </Button>
-        </div>
-      </div>
-
-      <div className="flex flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
-        <div aria-hidden className="h-[13px] bg-brand-secondary" />
-        <div className="flex flex-1 flex-col gap-4 card-pad">
-          <SeatTag label="50+ Seats" />
-          <p className="text-heading font-semibold text-brand-primary">Enterprise</p>
-          <p className="text-price font-semibold text-brand-primary">
-            Custom Pricing
-          </p>
-          <p className="text-small text-brand-ink-secondary">
-            We provide tailored solutions for global organizations.
-          </p>
-          <LightFeatureList features={ENTERPRISE_FEATURES} />
-          <Button
-            asChild
-            className="mt-4 h-11 w-full rounded-[12px] bg-brand-secondary text-white hover:bg-brand-secondary/90"
-          >
-            <Link href="/contact">Contact Sales</Link>
-          </Button>
-        </div>
-      </div>
+      {card}
     </div>
   );
 }
 
-export function PricingView({ initialAudience }: { initialAudience: Audience }) {
-  const [audience, setAudience] = useState<Audience>(initialAudience);
-  const copy = PAGE_COPY[audience];
+function BusinessPlans({ cycle }: { cycle: BillingCycle }) {
+  return (
+    <div className="mt-12 grid grid-cols-1 items-end gap-6 sm:grid-cols-2 xl:grid-cols-4">
+      {BUSINESS_PLANS.map((plan) => (
+        <BusinessCard key={plan.key} plan={plan} cycle={cycle} />
+      ))}
+    </div>
+  );
+}
 
-  useEffect(() => {
-    function onPopState() {
-      setAudience(
-        parseAudience(
-          new URLSearchParams(window.location.search).get("audience") ?? undefined
-        )
-      );
-    }
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
-  }, []);
+// ── Page ────────────────────────────────────────────────────────────────────
 
-  function select(next: Audience) {
-    if (next === audience) return;
-    setAudience(next);
-    window.history.pushState(null, "", pricingHref(next));
-  }
+export function PricingView() {
+  const [cycle, setCycle] = useState<BillingCycle>("monthly");
 
   return (
     <div className="mx-auto max-w-6xl section-x section-y">
       <div className="space-y-4 text-center">
-        <h1 className="font-display text-page-title font-bold text-brand-primary">
-          {copy.title}
+        <h1 className="font-display text-display font-bold text-brand-primary">
+          {PAGE_COPY.title}
         </h1>
         <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
-          {copy.subtitle}
+          {PAGE_COPY.subtitle}
         </p>
       </div>
 
-      <div className="mt-10">
-        <AudienceToggle active={audience} onChange={select} />
+      <div className="mt-10 space-y-3">
+        <BillingToggle active={cycle} onChange={setCycle} />
+        <p className="text-center text-small text-brand-ink-secondary">
+          {PAGE_COPY.taxNote}
+        </p>
       </div>
 
-      {audience === "candidates" ? <CandidatePlans /> : <BusinessPlans />}
+      <section className="mt-12 sm:mt-16">
+        <div className="space-y-4 text-center">
+          <h2 className="font-display text-section font-semibold text-brand-primary">
+            {PAGE_COPY.candidatesHeading}
+          </h2>
+          <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
+            {PAGE_COPY.candidatesSubtitle}
+          </p>
+        </div>
+        <CandidatePlans cycle={cycle} />
+      </section>
+
+      <section className="mt-16 sm:mt-20">
+        <div className="space-y-4 text-center">
+          <h2 className="font-display text-section font-semibold text-brand-primary">
+            {PAGE_COPY.businessesHeading}
+          </h2>
+          <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
+            {PAGE_COPY.businessesSubtitle}
+          </p>
+        </div>
+        <BusinessPlans cycle={cycle} />
+      </section>
 
       <div className="mx-auto mt-12 max-w-4xl sm:mt-20">
         <div className="section-gap space-y-4 text-center">
           <h2 className="font-display text-section font-semibold text-brand-primary">
-            Frequently Asked Questions
+            {PAGE_COPY.faqHeading}
           </h2>
           <div className="mx-auto h-1 w-16 rounded-full bg-brand-secondary" />
-          <p className="text-subheading text-brand-ink-secondary">{copy.faqBlurb}</p>
+          <p className="text-subheading text-brand-ink-secondary">
+            {PAGE_COPY.faqBlurb}
+          </p>
         </div>
-        <PricingFaq key={audience} items={FAQ_ITEMS[audience]} />
+        <PricingFaq items={FAQ_ITEMS} />
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Clock, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmExitInterview } from "./ConfirmExitInterview";
 import { cn } from "@/lib/utils";
 
 // Shared, presentation-only pieces for the interview flow. Both tiers
@@ -110,7 +111,6 @@ export function formatElapsed(total: number): string {
 // ── Live-stage layout ───────────────────────────────────────────────────────
 export function LiveStage({
   jobTitle,
-  companyName,
   speaking,
   latestMessage,
   onEnd,
@@ -118,7 +118,6 @@ export function LiveStage({
   elapsedSeconds,
 }: {
   jobTitle: string;
-  companyName: string;
   speaking: boolean;
   latestMessage: string | null;
   onEnd: () => void;
@@ -131,9 +130,10 @@ export function LiveStage({
         <h1 className="text-heading font-semibold text-brand-primary">
           AI Interview In Progress
         </h1>
+        {/* Company deliberately omitted (U4 #20) — the candidate does not see
+            who they are interviewing for while the interview is live. */}
         <p className="text-body text-brand-ink-secondary">
-          Application for <span className="font-bold">{jobTitle}</span> from{" "}
-          <span className="font-bold">{companyName}</span>.
+          You are applying for <span className="font-bold">{jobTitle}.</span>
         </p>
       </div>
 
@@ -148,14 +148,20 @@ export function LiveStage({
             <span aria-hidden className="size-2.5 rounded-full bg-accent-2" />
             Recording in Progress
           </div>
-          <Button
-            type="button"
-            onClick={onEnd}
-            disabled={endDisabled}
-            className="h-10 w-full rounded-[8px] bg-accent-2 text-body font-normal text-white hover:bg-accent-2/90"
-          >
-            Done answering? End Interview
-          </Button>
+          {/* Gated behind the exit confirmation (U4 #21). `onEnd` is unchanged
+              — it still runs room.disconnect() / endSession() verbatim. */}
+          <ConfirmExitInterview
+            onConfirm={onEnd}
+            trigger={
+              <Button
+                type="button"
+                disabled={endDisabled}
+                className="h-10 w-full rounded-[8px] bg-accent-2 text-body font-normal text-white hover:bg-accent-2/90"
+              >
+                Done answering? End Interview
+              </Button>
+            }
+          />
         </div>
       </div>
 

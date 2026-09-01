@@ -38,6 +38,7 @@ import {
   questionSetSchema,
   type QuestionSetValues,
 } from "./schemas";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { createQuestionSet, updateQuestionSet } from "./actions";
 
 const LABEL = "text-small font-semibold text-brand-ink";
@@ -237,17 +238,30 @@ export function QuestionSetForm({
                     >
                       <ArrowDown className="size-3.5" />
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => remove(index)}
-                      aria-label="Remove"
-                      className={cn(
-                        ICON_BTN,
-                        "border-accent-2 bg-accent-2 text-white hover:bg-accent-2/90"
-                      )}
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
+                    {/* Local form op, not a server action: this drops a
+                        useFieldArray entry and nothing persists until the set
+                        is saved. ConfirmDialog (not ConfirmDelete) because
+                        there is no async action to await and no toast to fire. */}
+                    <ConfirmDialog
+                      icon={Trash2}
+                      title="Delete Question"
+                      description="This removes the question from this set. Nothing is saved until you save the question set."
+                      confirmLabel="Delete Question"
+                      contentClassName="sm:max-w-[693px]"
+                      onConfirm={() => remove(index)}
+                      trigger={
+                        <button
+                          type="button"
+                          aria-label="Remove"
+                          className={cn(
+                            ICON_BTN,
+                            "border-accent-2 bg-accent-2 text-white hover:bg-accent-2/90"
+                          )}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </button>
+                      }
+                    />
                   </div>
                 </div>
               ))}

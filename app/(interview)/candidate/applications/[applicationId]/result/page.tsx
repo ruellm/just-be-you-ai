@@ -3,14 +3,25 @@ import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
-import { parseEvidence, parseRubricBreakdown } from "@/lib/applications";
+import {
+  formatDuration,
+  isRecommendation,
+  parseEvidence,
+  parseRubricBreakdown,
+  RECOMMENDATION_LABELS,
+  RECOMMENDATION_TEXT_CLASS,
+  scoreToPercent,
+  TIER_LABELS,
+} from "@/lib/applications";
 import { cn } from "@/lib/utils";
 import { ensureAdvancedGraded } from "@/lib/elevenlabs/ensure-advanced-graded";
 import { ResultPending } from "./ResultPending";
 import {
-  ImpressionList,
+  ImpressionGrid,
   LockedFeedbackPanel,
   ResultCard,
+  ScoreRing,
+  StatRow,
   StrengthsList,
 } from "./ResultCards";
 
@@ -42,7 +53,8 @@ export default async function ResultPage({
       id: true,
       candidateProfileId: true,
       status: true,
-      job: { select: { title: true, company: { select: { name: true } } } },
+      // Company name is no longer rendered anywhere on this page (U4 #20).
+      job: { select: { title: true } },
       interviewResult: true,
     },
   });
@@ -80,16 +92,31 @@ export default async function ResultPage({
   // prefer the graded flag, fall back to status for backward compatibility.
   const passed = result.passed || application.status === "passed";
 
-  // Rubric-scored result? (detected by data presence, not by date.) The
-  // candidate view of a rubric result is deliberately GENERALIZED: qualitative
-  // per-category impressions only — no numeric scores, no 1-5 values, no
-  // composite, no evidence quotes, no gate/must-have mechanics.
+  // Rubric-scored result? (detected by data presence, not by date.) U4 REVERSES
+  // the old no-numbers rule: the candidate now sees their score, tier and
+  // recommendation. Per-criterion 1-5 values, evidence quotes and gate
+  // mechanics stay business-only.
   const breakdown = parseRubricBreakdown(result.rubricScoresJson);
   const fitSummary = (result.fitSummary ?? "").trim();
   const strengths = parseEvidence(result.strengthsJson);
   // Concerns are intentionally NOT shown to the candidate (any row type);
   // business views still render them in full.
-  const company = application.job.company.name;
+
+  // Rubric rows carry a 0-100 composite; pre-rubric rows only have the 0-1
+  // score. Both render the same ring.
+  const scorePercent =
+    result.compositeScore != null
+      ? Math.round(result.compositeScore)
+      : scoreToPercent(result.score);
+  // Label and colour both key off the VALUE, not the pass/fail outcome:
+  // "Pass" means the employer passes ON the candidate, so it must read red even
+  // though a borderline result can still carry it.
+  const recommendationLabel = isRecommendation(result.recommendation)
+    ? RECOMMENDATION_LABELS[result.recommendation]
+    : "—";
+  const recommendationClass = isRecommendation(result.recommendation)
+    ? RECOMMENDATION_TEXT_CLASS[result.recommendation]
+    : "text-brand-ink";
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 py-12 font-body lg:px-10">
@@ -102,7 +129,7 @@ export default async function ResultPage({
           <p className="text-body text-brand-ink-secondary">
             Your interview results are ready below. Review your performance
             summary and key feedback points to see how you did. Your result has
-            been shared with <span className="font-bold">{company}</span>.
+            been shared with the company.
           </p>
         </div>
         <div className="flex flex-wrap justify-center gap-3">
@@ -121,8 +148,10 @@ export default async function ResultPage({
         </div>
       </div>
 
-      {/* Outcome banner — the candidate's only pass / needs-review cue (no
-          tier / score / recommendation is shown). */}
+      {/* Outcome banner. KEPT deliberately: the role card below now shows the
+          score / tier / recommendation, so this is no longer the only outcome
+          cue — but it carries the encouraging copy the stats don't. Flagged for
+          a product call rather than removed unilaterally. */}
       <div
         className={cn(
           "mx-auto max-w-3xl rounded-[12px] border px-6 py-5 text-center",
@@ -149,41 +178,62 @@ export default async function ResultPage({
         </p>
       </div>
 
-      {/* Three cards */}
-      <div className="grid gap-5 lg:grid-cols-3">
+      {/* Row 1 — role/score card + "How you came across". Pre-rubric rows have
+          no category data, so the second card is omitted and the role card
+          takes the full width rather than rendering an empty shell. */}
+      <div
+        className={cn(
+          "grid gap-5",
+          breakdown ? "lg:grid-cols-[483fr_702fr]" : "lg:grid-cols-1"
+        )}
+      >
         <ResultCard>
-          <div className="space-y-1">
-            <h2 className="text-heading font-semibold text-brand-primary">
-              {application.job.title}
-            </h2>
-            <p className="text-small text-brand-ink-secondary">{company}</p>
+          <h2 className="text-heading font-semibold text-brand-primary">
+            {application.job.title}
+          </h2>
+          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
+            <ScoreRing percent={scorePercent} passed={passed} />
+            <div className="grid w-full min-w-0 gap-4 text-center sm:text-left">
+              <StatRow label="Role Tier" value={TIER_LABELS[result.tier]} />
+              <StatRow
+                label="Recommendation"
+                value={recommendationLabel}
+                valueClassName={recommendationClass}
+              />
+              <StatRow
+                label="Time Elapsed"
+                value={formatDuration(result.durationSeconds)}
+              />
+            </div>
           </div>
-          {/* Pre-rubric (old) rows have no category data → block omitted;
-              they never show the old tier/score/recommendation row. */}
-          {breakdown ? <ImpressionList breakdown={breakdown} /> : null}
         </ResultCard>
 
-        {RESULT_LOCKED ? (
-          <div className="lg:col-span-2">
-            <LockedFeedbackPanel />
-          </div>
-        ) : (
-          <>
-            {fitSummary ? (
-              <ResultCard title="Fit Summary">
-                <p className="text-body whitespace-pre-line text-brand-ink-secondary">
-                  {fitSummary}
-                </p>
-              </ResultCard>
-            ) : null}
-            {strengths.length > 0 ? (
-              <ResultCard title="Strengths">
-                <StrengthsList items={strengths} />
-              </ResultCard>
-            ) : null}
-          </>
-        )}
+        {breakdown ? (
+          <ResultCard title="How you came across:">
+            <ImpressionGrid breakdown={breakdown} />
+          </ResultCard>
+        ) : null}
       </div>
+
+      {/* Rows 2 + 3 — Fit Summary, then Strengths (concerns stay hidden). */}
+      {RESULT_LOCKED ? (
+        <LockedFeedbackPanel />
+      ) : (
+        <>
+          {fitSummary ? (
+            <ResultCard title="Fit Summary">
+              <p className="text-body whitespace-pre-line text-brand-ink-secondary">
+                {fitSummary}
+              </p>
+            </ResultCard>
+          ) : null}
+          {strengths.length > 0 ? (
+            <ResultCard title="Strengths">
+              <StrengthsList items={strengths} />
+            </ResultCard>
+          ) : null}
+        </>
+      )}
 
       {/* Transcript (kept from the previous page — collapsible, out of the way). */}
       <details className="mx-auto max-w-3xl rounded-[12px] border border-brand-border bg-brand-surface">

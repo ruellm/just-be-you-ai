@@ -16,7 +16,12 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { ProfileSectionCard } from "@/app/candidate/profile/ProfileSectionCard";
+import { Pencil } from "lucide-react";
+import {
+  BTN_PRIMARY,
+  ProfileSectionCard,
+} from "@/app/candidate/profile/ProfileSectionCard";
+import { ProfileImageModal } from "@/components/profile/ProfileImageModal";
 import { cn } from "@/lib/utils";
 import { companySchema, FIELD_LIMITS, type CompanyValues } from "./schemas";
 import { saveCompany } from "./actions";
@@ -83,21 +88,39 @@ export function CompanyForm({
           {/* Logo row — STATIC display (no upload). logoUrl is an arbitrary
               external URL, so it goes through Radix AvatarImage (initials
               fallback on failure) — same approach as BusinessSidebar. */}
-          <div className="flex items-center gap-4 rounded-[12px] border border-brand-border bg-brand-container px-5 py-4">
+          <div className="flex flex-wrap items-center gap-4 rounded-[12px] border border-brand-border bg-brand-container px-5 py-4">
             <Avatar className="size-[60px] after:border-brand-border">
               {logoUrl ? <AvatarImage src={logoUrl} alt="" /> : null}
               <AvatarFallback className="bg-brand-surface text-subheading font-semibold text-brand-primary">
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="min-w-0">
               <p className="font-body text-body font-semibold text-brand-ink">
                 Company Profile Image
               </p>
               <p className="font-body text-small text-brand-ink-secondary">
-                Pulled from logo URL when available.
+                Add a link to your company logo.
               </p>
             </div>
+            {/* Sole path for logoUrl now — the plain "Logo URL" text field was
+                removed so there's one way to set it. The value still lives in
+                this form, so the sticky save bar persists it as before. */}
+            <ProfileImageModal
+              value={logoUrl}
+              label="Company Logo URL"
+              onSubmit={(url) =>
+                form.setValue("logoUrl", url, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              trigger={
+                <Button type="button" className={cn(BTN_PRIMARY, "ml-auto")}>
+                  <Pencil /> Edit Image
+                </Button>
+              }
+            />
           </div>
 
           {/* Row 1 */}
@@ -165,7 +188,8 @@ export function CompanyForm({
             />
           </div>
 
-          {/* Row 4 */}
+          {/* Row 4 — logoUrl is set through the profile-image modal above, so
+              it no longer has a text field here. */}
           <div className="grid gap-5 sm:grid-cols-2">
             <TextField
               form={form}
@@ -173,13 +197,6 @@ export function CompanyForm({
               label="Company Website"
               required
               placeholder="https://example.com"
-              maxLength={FIELD_LIMITS.url}
-            />
-            <TextField
-              form={form}
-              name="logoUrl"
-              label="Logo URL"
-              placeholder="https://example.com/logo.png"
               maxLength={FIELD_LIMITS.url}
             />
           </div>

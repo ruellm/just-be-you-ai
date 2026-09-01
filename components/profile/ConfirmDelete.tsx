@@ -55,7 +55,9 @@ export function ConfirmDelete({
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
       <AlertDialogTrigger asChild>{trigger}</AlertDialogTrigger>
-      <AlertDialogContent className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-[16px] bg-brand-surface p-8 font-body ring-0 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] sm:max-w-[384px]">
+      {/* 693px wide with a 567px body, matching the design system's delete
+          modal (Figma 201:401). Same dimensions ConfirmDialog uses. */}
+      <AlertDialogContent className="w-full max-w-[calc(100%-2rem)] gap-0 rounded-[16px] bg-brand-surface p-8 font-body ring-0 shadow-[0_20px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] sm:max-w-[693px]">
         <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-status-fail text-accent-2">
           <Trash2 className="size-7" />
         </div>
@@ -63,7 +65,7 @@ export function ConfirmDelete({
           <AlertDialogTitle className="font-body text-subheading font-semibold text-brand-ink">
             {title}
           </AlertDialogTitle>
-          <AlertDialogDescription className="font-body text-small text-brand-ink">
+          <AlertDialogDescription className="mx-auto max-w-[567px] font-body text-small text-brand-ink">
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>

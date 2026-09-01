@@ -7,6 +7,11 @@ import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { JobCard } from "@/components/jobs/JobCard";
 import { EmptyState } from "@/components/EmptyState";
 import { LEVELS, WORK_MODES } from "@/lib/jobs";
+import {
+  canSeeHiringCompany,
+  hasPassedApplication,
+  hiringCompanyName,
+} from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
 import { JobFilters } from "./JobFilters";
 
@@ -72,11 +77,16 @@ export default async function JobsPage({
 
   const user = await getCurrentUser();
 
-  const [total, jobs, allSkills, applications, seatBalance] = await Promise.all([
+  const [total, jobs, allSkills, applications, candidate] = await Promise.all([
     prisma.job.count({ where }),
     prisma.job.findMany({
       where,
-      include: { company: true, skills: { include: { skill: true } } },
+      // company.name ONLY — never the full row. It is stripped below unless
+      // the reveal gate is open, so no other company field can reach the client.
+      include: {
+        company: { select: { name: true } },
+        skills: { include: { skill: true } },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
@@ -90,17 +100,46 @@ export default async function JobsPage({
     user
       ? prisma.application.findMany({
           where: { candidateProfile: { userId: user.id } },
-          select: { jobId: true },
+          // interviewResult rides along on this ONE query — the reveal gate
+          // needs it per job, and a per-card lookup would be 9 round trips.
+          select: {
+            jobId: true,
+            status: true,
+            interviewResult: { select: { passed: true } },
+          },
         })
       : Promise.resolve([]),
     user
       ? prisma.candidateProfile
-          .findUnique({ where: { userId: user.id }, select: { id: true } })
-          .then((p) => (p ? getInterviewSeatBalance(prisma, p.id) : null))
+          .findUnique({
+            where: { userId: user.id },
+            select: { id: true, tier: true },
+          })
+          .then(async (p) =>
+            p
+              ? { tier: p.tier, seats: await getInterviewSeatBalance(prisma, p.id) }
+              : null
+          )
       : Promise.resolve(null),
   ]);
   const appliedJobIds = new Set(applications.map((a) => a.jobId));
+  const passedJobIds = new Set(
+    applications.filter(hasPassedApplication).map((a) => a.jobId)
+  );
+  const tier = candidate?.tier ?? null;
+  const seatBalance = candidate?.seats ?? null;
   const noSeats = seatBalance != null && seatBalance.remaining === 0;
+
+  // Resolve the employer per job, then DROP the company object entirely so the
+  // withheld name never reaches the RSC payload (same shape as the business
+  // locked-profile DTO).
+  const cards = jobs.map(({ company, ...job }) => ({
+    job,
+    companyName: hiringCompanyName(
+      company.name,
+      canSeeHiringCompany({ tier, passedThisJob: passedJobIds.has(job.id) })
+    ),
+  }));
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -148,11 +187,15 @@ export default async function JobsPage({
           className="border-brand-border bg-brand-surface"
         />
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {jobs.map((job) => (
+        /* grid-cols-1 is explicit: without it the mobile track is an implicit
+           `auto` column (min = items' min-content) rather than minmax(0,1fr)
+           like the sm/lg tracks, which is what let a wide card overflow. */
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {cards.map(({ job, companyName }) => (
             <JobCard
               key={job.id}
               job={job}
+              companyName={companyName}
               applied={appliedJobIds.has(job.id)}
               noSeats={noSeats}
             />

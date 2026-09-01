@@ -181,7 +181,19 @@ model CandidateProfile {
   totalYearsExperience Int?
   preferredRole        String?
 
+  // Google's picture, refreshed from user_metadata on EVERY sign-in
+  // (ensureUserRow overwrites it), so it can never hold a user-set value.
   avatarUrl String?
+
+  // User-set profile image URL (U3, "Edit Profile Image" modal). Kept separate
+  // from avatarUrl precisely because that one is clobbered at each login; this
+  // takes precedence when set, and covers email-signup users who have no
+  // Google picture at all.
+  profileImageUrl String?
+
+  // Drives the hiring-company reveal (see lib/company-visibility.ts). Free is
+  // the default; nothing writes `professional` yet — there is no billing flow.
+  tier CandidateTier @default(free)
 
   interviewSeatsTotal      Int @default(2)
   interviewSeatsAdjustment Int @default(0)
@@ -411,6 +423,12 @@ model InterviewResult {
   transcript    String
   completedAt   DateTime @default(now())
 
+  // Wall-clock length of the interview session, in seconds (U4). Nullable:
+  // rows written before this existed have no duration and render a placeholder.
+  // Basic tier = the agent's own monotonic clock; advanced tier =
+  // ElevenLabs metadata.call_duration_secs. Same unit on both.
+  durationSeconds Int?
+
   // Phase 2.3 — real fit evaluation (see lib/evaluate.py / save_result.py).
   passed         Boolean @default(false)
   fitSummary     String  @default("") @db.Text
@@ -466,6 +484,16 @@ model Question {
 // ─────────────────────────────────────────────────────────────────────────────
 // AI-generated interview questions per application (Phase 2.1)
 // ─────────────────────────────────────────────────────────────────────────────
+
+// Candidate subscription tier (U5). Deliberately on CandidateProfile, NOT on
+// User: the business tiers on the pricing page are a different set entirely
+// (Starter / Professional / Scale / Enterprise) and belong on Company when they
+// land. One shared column on User would carry two unrelated meanings — do not
+// consolidate these later.
+enum CandidateTier {
+  free
+  professional
+}
 
 enum QuestionCategory {
   core

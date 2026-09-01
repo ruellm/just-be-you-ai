@@ -3,7 +3,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { userDisplayName } from "@/lib/admin";
-import { dateToInput, parseResumeMeta } from "@/lib/profile-format";
+import {
+  dateToInput,
+  displayAvatarUrl,
+  parseResumeMeta,
+} from "@/lib/profile-format";
 import { EditUserForm } from "./EditUserForm";
 
 export default async function AdminEditUserPage({
@@ -52,7 +56,7 @@ export default async function AdminEditUserPage({
         profile={
           p
             ? {
-                avatarUrl: p.avatarUrl,
+                avatarUrl: displayAvatarUrl(p.profileImageUrl, p.avatarUrl),
                 firstName: p.firstName ?? "",
                 middleName: p.middleName ?? "",
                 lastName: p.lastName ?? "",

@@ -68,6 +68,8 @@
   --color-accent-2: #ea4335;
   --color-accent-3: #137333;
   --color-accent-4: #fcd34d;
+  /* "Price Cut" in the Figma style sheet — the struck-through old price. */
+  --color-price-cut: #a0aec0;
   --color-status-success: #e6f4ea;
   --color-status-fail: #fee2e2;
   --color-status-pending: #fffbec;

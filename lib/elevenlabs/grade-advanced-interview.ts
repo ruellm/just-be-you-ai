@@ -76,7 +76,8 @@ async function grade(applicationId: string): Promise<void> {
     return;
   }
 
-  const transcript = await fetchConversationTranscript(
+  // One request returns both — no second API call for the duration.
+  const { transcript, durationSeconds } = await fetchConversationTranscript(
     application.voiceConversationId
   );
 
@@ -97,6 +98,7 @@ async function grade(applicationId: string): Promise<void> {
         tier: evaluation.tier,
         transcript,
         completedAt: new Date(),
+        durationSeconds,
         passed: evaluation.passed,
         fitSummary: evaluation.fit_summary,
         strengthsJson: evaluation.strengths,

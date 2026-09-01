@@ -290,6 +290,10 @@ class InterviewFlow:
         self._user_speaking = False
         self._silence_nudged = False
         self._last_activity = time.monotonic()
+        # Session length (U4): same monotonic clock the silence/time-cap
+        # tracking already uses. The flow is constructed immediately before
+        # run(), so this is the session start.
+        self._started_at = time.monotonic()
 
         session.on("conversation_item_added", self._on_conversation_item)
         session.on("agent_state_changed", self._on_agent_state)
@@ -298,6 +302,15 @@ class InterviewFlow:
     @property
     def fit_signals(self) -> List[Dict[str, Any]]:
         return self.agent.fit_signals
+
+    @property
+    def duration_seconds(self) -> int:
+        """Whole seconds elapsed since the flow started (U4).
+
+        Read after run() returns, i.e. including the graceful close. Monotonic,
+        so a system clock change can't produce a negative or absurd value.
+        """
+        return max(0, int(round(time.monotonic() - self._started_at)))
 
     # ── lifecycle control ────────────────────────────────────────────────────
 

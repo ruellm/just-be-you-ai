@@ -31,11 +31,9 @@ type TranscriptLine = {
 export function AdvancedInterviewExperience({
   applicationId,
   jobTitle,
-  companyName,
 }: {
   applicationId: string;
   jobTitle: string;
-  companyName: string;
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("connecting");
@@ -189,7 +187,6 @@ export function AdvancedInterviewExperience({
   return (
     <LiveStage
       jobTitle={jobTitle}
-      companyName={companyName}
       speaking={agentSpeaking}
       latestMessage={latestAgent?.text ?? null}
       onEnd={() => void conversationRef.current?.endSession()}

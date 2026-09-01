@@ -1,18 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import type { ReactNode } from "react";
-import { ArrowLeft, FileText } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
-import {
-  dateToInput,
-  displayDateRange,
-  parseResumeMeta,
-} from "@/lib/profile-format";
+import { displayAvatarUrl } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RoleBadge } from "@/components/admin/RoleBadge";
@@ -22,14 +16,13 @@ import {
   INSET_PANEL,
   ProfileSectionCard,
 } from "@/app/candidate/profile/ProfileSectionCard";
-import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
+import {
+  ADMIN_CANDIDATE_INCLUDE,
+  AdminProfileHeader,
+  CandidateProfileSections,
+  SectionTitle,
+} from "@/components/admin/CandidateProfileSections";
 import { UserHeaderActions } from "./UserHeaderActions";
-
-function SectionTitle({ children }: { children: ReactNode }) {
-  return (
-    <h2 className="text-heading font-semibold text-brand-primary">{children}</h2>
-  );
-}
 
 function Field({
   label,
@@ -78,12 +71,7 @@ export default async function AdminUserDetailPage({
     where: { id },
     include: {
       candidateProfile: {
-        include: {
-          skills: { include: { skill: true }, orderBy: { yearsOfExperience: "desc" } },
-          educations: { orderBy: { startDate: "desc" } },
-          workExperiences: { orderBy: { startDate: "desc" } },
-          _count: { select: { applications: true } },
-        },
+        include: { ...ADMIN_CANDIDATE_INCLUDE, _count: { select: { applications: true } } },
       },
       company: { include: { _count: { select: { jobs: true } } } },
     },
@@ -102,17 +90,20 @@ export default async function AdminUserDetailPage({
       ? await prisma.application.findMany({
           where: { candidateProfileId: user.candidateProfile.id },
           orderBy: { createdAt: "desc" },
-          select: { id: true, job: { select: { title: true } } },
+          select: { id: true, createdAt: true, job: { select: { title: true } } },
         })
       : [];
 
   const profile = user.candidateProfile;
+  const avatarUrl = displayAvatarUrl(
+    profile?.profileImageUrl,
+    profile?.avatarUrl
+  );
   const seatBalance =
     user.role === "candidate" && profile
       ? await getInterviewSeatBalance(prisma, profile.id)
       : null;
   const name = userDisplayName(user);
-  const resume = parseResumeMeta(profile?.resumeUrl ?? null);
 
   return (
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
@@ -123,226 +114,72 @@ export default async function AdminUserDetailPage({
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex min-w-0 items-center gap-4">
-          <Avatar className="size-[60px] rounded-[8px] after:rounded-[8px] after:border-brand-border">
-            {profile?.avatarUrl ? (
-              <AvatarImage src={profile.avatarUrl} alt="" className="rounded-[8px]" />
+      <AdminProfileHeader
+        name={name}
+        email={user.email}
+        avatarUrl={avatarUrl}
+        badges={
+          <>
+            <RoleBadge role={user.role} />
+            {user.requiresPasswordChange ? (
+              <Badge
+                variant="outline"
+                className="border-brand-border text-[10px] font-medium text-amber-700"
+              >
+                Pending password change
+              </Badge>
             ) : null}
-            <AvatarFallback className="rounded-[8px] bg-brand-container text-subheading font-semibold text-brand-primary">
-              {initialsOf(name)}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
-                {name}
-              </h1>
-              <RoleBadge role={user.role} />
-              {user.requiresPasswordChange ? (
-                <Badge
-                  variant="outline"
-                  className="border-brand-border text-[10px] font-medium text-amber-700"
-                >
-                  Pending password change
-                </Badge>
-              ) : null}
-            </div>
-            <p className="mt-1 text-body text-brand-ink-secondary">{user.email}</p>
-          </div>
-        </div>
-        <UserHeaderActions
-          userId={user.id}
-          name={name}
-          role={user.role}
-          candidateProfileId={profile?.id ?? null}
-          companyId={user.company?.id ?? null}
-          seatsUsed={seatBalance?.used ?? 0}
-          seatsTotal={seatBalance?.total ?? 0}
-        />
-      </div>
+          </>
+        }
+        actions={
+          <UserHeaderActions
+            userId={user.id}
+            name={name}
+            role={user.role}
+            candidateProfileId={profile?.id ?? null}
+            candidateTier={profile?.tier ?? null}
+            companyId={user.company?.id ?? null}
+            seatsUsed={seatBalance?.used ?? 0}
+            seatsTotal={seatBalance?.total ?? 0}
+          />
+        }
+      />
 
-      <ProfileSectionCard>
-        <SectionTitle>Basic Information</SectionTitle>
-        <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
-          {user.role === "candidate" && profile ? (
-            <>
-              <Field label="Country of Residence" value={profile.country} />
-              <Field label="City" value={profile.city} />
-              <Field label="Nationality" value={profile.nationality} />
-              <Field label="Phone" value={profile.phone} />
-              <Field
-                label="LinkedIn URL"
-                value={profile.linkedinUrl}
-                href={profile.linkedinUrl ?? undefined}
-              />
-              <Field
-                label="Expected Salary (PHP / month)"
-                value={profile.expectedSalary}
-              />
-              <Field
-                label="Total Years of Experience"
-                value={profile.totalYearsExperience}
-              />
-              <Field label="Joined Date" value={formatLongDate(user.createdAt)} />
-              <Field label="Preferred Role" value={profile.preferredRole} />
-              <Field
-                label="Languages Spoken"
-                value={profile.languages.length ? profile.languages.join(", ") : null}
-              />
-              <Field label="Applications" value={profile._count.applications} />
-            </>
-          ) : (
-            <>
-              <Field label="Email" value={user.email} />
-              <Field label="Role" value={user.role === "business" ? "Business" : "Admin"} />
-              <Field label="Joined Date" value={formatLongDate(user.createdAt)} />
-              {user.role === "business" && user.company ? (
-                <>
-                  <Field label="Company Name" value={user.company.name} />
-                  <Field label="Jobs Posted" value={user.company._count.jobs} />
-                  <Field label="Total Applicants" value={applicantCount} />
-                </>
-              ) : null}
-            </>
-          )}
-        </dl>
-        {user.role === "business" && user.company ? (
-          <Button asChild className={BTN_INK}>
-            <Link href={`/admin/companies/${user.company.id}`}>
-              View Company Detail
-            </Link>
-          </Button>
-        ) : null}
-      </ProfileSectionCard>
+      {/* Basic Information for business/admin only — candidates get theirs
+          from the shared CandidateProfileSections below. */}
+      {user.role === "candidate" && profile ? null : (
+        <ProfileSectionCard>
+          <SectionTitle>Basic Information</SectionTitle>
+          <dl className="grid gap-x-6 gap-y-5 sm:grid-cols-2 lg:grid-cols-4">
+            <Field label="Email" value={user.email} />
+            <Field
+              label="Role"
+              value={user.role === "business" ? "Business" : "Admin"}
+            />
+            <Field label="Joined Date" value={formatLongDate(user.createdAt)} />
+            {user.role === "business" && user.company ? (
+              <>
+                <Field label="Company Name" value={user.company.name} />
+                <Field label="Jobs Posted" value={user.company._count.jobs} />
+                <Field label="Total Applicants" value={applicantCount} />
+              </>
+            ) : null}
+          </dl>
+          {user.role === "business" && user.company ? (
+            <Button asChild className={BTN_INK}>
+              <Link href={`/admin/companies/${user.company.id}`}>
+                View Company Detail
+              </Link>
+            </Button>
+          ) : null}
+        </ProfileSectionCard>
+      )}
 
       {user.role === "candidate" && profile ? (
         <>
-          <ProfileSectionCard>
-            <SectionTitle>Profile Summary</SectionTitle>
-            <p className="text-body text-brand-ink">
-              {profile.summary?.trim() || "No summary provided."}
-            </p>
-          </ProfileSectionCard>
-
-          <ProfileSectionCard>
-            <SectionTitle>Work Experience</SectionTitle>
-            {profile.workExperiences.length === 0 ? (
-              <p className="text-small text-brand-ink-secondary">No work experience added.</p>
-            ) : (
-              <div className="space-y-4">
-                {profile.workExperiences.map((w) => (
-                  <div key={w.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
-                    <p className="text-body font-semibold text-brand-ink">{w.position}</p>
-                    <p className="text-small text-brand-ink-secondary">
-                      {w.companyName}
-                      <span className="mx-2">•</span>
-                      {EMPLOYMENT_TYPE_LABELS[w.employmentType]}
-                    </p>
-                    <p className="text-small text-brand-ink-secondary">
-                      {displayDateRange(
-                        dateToInput(w.startDate),
-                        dateToInput(w.endDate),
-                        w.currentlyWorking
-                      )}
-                    </p>
-                    {w.description ? (
-                      <p className="mt-4 text-small whitespace-pre-line text-brand-ink">
-                        {w.description}
-                      </p>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-            )}
-          </ProfileSectionCard>
-
-          <ProfileSectionCard>
-            <SectionTitle>Education</SectionTitle>
-            {profile.educations.length === 0 ? (
-              <p className="text-small text-brand-ink-secondary">No education added.</p>
-            ) : (
-              <div className="space-y-4">
-                {profile.educations.map((e) => (
-                  <div key={e.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
-                    <p className="text-body font-semibold text-brand-ink">{e.school}</p>
-                    <p className="text-small text-brand-ink-secondary">
-                      {[e.degree, e.fieldOfStudy].filter(Boolean).join(" in ") || "—"}
-                    </p>
-                    <p className="text-small text-brand-ink-secondary">
-                      {e.country ? (
-                        <>
-                          {e.country}
-                          <span className="mx-2">•</span>
-                        </>
-                      ) : null}
-                      {displayDateRange(
-                        dateToInput(e.startDate),
-                        dateToInput(e.endDate),
-                        e.currentlyStudying
-                      )}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </ProfileSectionCard>
-
-          <ProfileSectionCard>
-            <SectionTitle>Skills</SectionTitle>
-            {profile.skills.length === 0 ? (
-              <p className="text-small text-brand-ink-secondary">No skills added.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((s) => (
-                  <span
-                    key={s.id}
-                    className="inline-flex h-[26px] items-center gap-2 rounded-[6px] bg-brand-tertiary px-3 text-small text-brand-ink"
-                  >
-                    {s.skill.name}
-                    <span className="size-1 rounded-full bg-brand-ink" aria-hidden />
-                    {s.yearsOfExperience}y
-                  </span>
-                ))}
-              </div>
-            )}
-          </ProfileSectionCard>
-
-          <ProfileSectionCard>
-            <SectionTitle>Resume</SectionTitle>
-            {resume ? (
-              <div
-                className={cn(
-                  INSET_PANEL,
-                  "flex flex-wrap items-center justify-between gap-4 bg-brand-surface p-5"
-                )}
-              >
-                <div className="flex min-w-0 items-center gap-4">
-                  <FileText className="size-10 shrink-0 text-brand-ink-secondary" strokeWidth={1.25} />
-                  <div className="min-w-0">
-                    <p className="truncate text-body font-semibold text-brand-ink">
-                      {resume.filename}
-                    </p>
-                    <p className="text-small text-brand-ink-secondary">
-                      {resume.uploadedAt
-                        ? `Uploaded on ${formatLongDate(new Date(resume.uploadedAt))}`
-                        : "Uploaded"}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Button type="button" disabled className={BTN_INK}>
-                    View in New Tab
-                  </Button>
-                  <Button type="button" disabled className={BTN_PRIMARY}>
-                    Download Resume
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <p className="text-small text-brand-ink-secondary">Not uploaded.</p>
-            )}
-          </ProfileSectionCard>
+          {/* Sections 2-8 come from the shared component so this page and
+              /admin/applications/[id] cannot drift apart. */}
+          <CandidateProfileSections profile={profile} joinedAt={user.createdAt} />
 
           {profile.parsedResumeText ? (
             <details className="rounded-[12px] border border-brand-border bg-brand-surface">
@@ -355,29 +192,47 @@ export default async function AdminUserDetailPage({
             </details>
           ) : null}
 
-          {candidateApplications.length > 0 ? (
-            <ProfileSectionCard>
-              <SectionTitle>Applications</SectionTitle>
-              <div className="divide-y divide-brand-border">
+          <ProfileSectionCard>
+            <SectionTitle>Application History</SectionTitle>
+            {candidateApplications.length === 0 ? (
+              <p className="text-small text-brand-ink-secondary">
+                No applications yet.
+              </p>
+            ) : (
+              <div className="space-y-4">
                 {candidateApplications.map((app) => (
                   <div
                     key={app.id}
-                    className="flex items-center justify-between gap-3 py-3"
+                    className={cn(
+                      INSET_PANEL,
+                      "flex flex-wrap items-center justify-between gap-4 bg-brand-surface p-5"
+                    )}
                   >
-                    <span className="truncate text-small font-medium text-brand-ink">
-                      {app.job.title}
-                    </span>
-                    <Link
-                      href={`/admin/applications/${app.id}/questions`}
-                      className="shrink-0 text-small font-semibold text-brand-primary hover:underline"
-                    >
-                      View generated questions
-                    </Link>
+                    <div className="min-w-0">
+                      <p className="truncate text-body font-semibold text-brand-ink">
+                        {app.job.title}
+                      </p>
+                      <p className="text-small text-brand-ink-secondary">
+                        Applied on {formatLongDate(app.createdAt)}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button asChild className={BTN_PRIMARY}>
+                        <Link href={`/admin/applications/${app.id}`}>
+                          View Results
+                        </Link>
+                      </Button>
+                      <Button asChild className={BTN_INK}>
+                        <Link href={`/admin/applications/${app.id}/questions`}>
+                          View Generated Questions
+                        </Link>
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
-            </ProfileSectionCard>
-          ) : null}
+            )}
+          </ProfileSectionCard>
         </>
       ) : null}
     </div>

@@ -38,40 +38,116 @@ export function ResultCard({
   );
 }
 
-// "How you came across" — qualitative per-category word labels ONLY. The
-// candidate view deliberately shows no numeric score, tier, or recommendation.
-export function ImpressionList({
+// ── Score ring ──────────────────────────────────────────────────────────────
+// Inline SVG (no asset, no dependency): a light track plus an arc drawn with
+// stroke-dasharray to `percent`. Arc + number take the outcome colour via
+// currentColor so pass/fail isn't hardcoded to green.
+export function ScoreRing({
+  percent,
+  passed,
+}: {
+  percent: number;
+  passed: boolean;
+}) {
+  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
+  const radius = 84;
+  const circumference = 2 * Math.PI * radius;
+  const filled = (clamped / 100) * circumference;
+  const tone = passed ? "text-accent-3" : "text-accent-2";
+
+  return (
+    <div className="relative size-[200px] shrink-0">
+      <svg viewBox="0 0 200 200" className="size-full -rotate-90">
+        <circle
+          cx="100"
+          cy="100"
+          r={radius}
+          fill="none"
+          strokeWidth="16"
+          stroke="currentColor"
+          className="text-brand-border/60"
+        />
+        <circle
+          cx="100"
+          cy="100"
+          r={radius}
+          fill="none"
+          strokeWidth="16"
+          strokeLinecap="round"
+          stroke="currentColor"
+          strokeDasharray={`${filled} ${circumference - filled}`}
+          className={tone}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
+        <span className={cn("font-display text-display font-bold", tone)}>
+          {clamped}
+        </span>
+        <span className="text-small text-brand-ink-secondary">Total Score</span>
+      </div>
+    </div>
+  );
+}
+
+// One "PILL LABEL" + value stat row from the role card.
+export function StatRow({
+  label,
+  value,
+  valueClassName,
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="min-w-0 space-y-1.5">
+      <span className="font-display inline-flex h-7 w-full max-w-[176px] items-center justify-center rounded-[8px] bg-tag-1 px-3 text-meta font-medium tracking-[1.2px] text-brand-ink-secondary uppercase">
+        {label}
+      </span>
+      <p
+        className={cn(
+          "text-subheading font-semibold text-brand-ink",
+          valueClassName
+        )}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
+// "How you came across:" — the five rubric categories as a two-column grid of
+// inset rows, each with a qualitative chip. Still no numbers, quotes, or gate
+// mechanics here; the numeric score lives in the role card beside it.
+export function ImpressionGrid({
   breakdown,
 }: {
   breakdown: RubricBreakdownView;
 }) {
   return (
-    <div className="space-y-2">
-      <p className="text-meta font-semibold tracking-[1.2px] text-brand-ink-secondary uppercase">
-        How you came across
-      </p>
-      <ul className="grid gap-2">
-        {breakdown.categories.map((category) => {
-          const impression = categoryImpression(category.categoryScore);
-          return (
-            <li
-              key={category.key}
-              className="flex items-center justify-between gap-2 rounded-[8px] border border-brand-border bg-brand-container px-3 py-2 text-small text-brand-ink"
+    <ul className="grid gap-3 sm:grid-cols-2">
+      {breakdown.categories.map((category) => {
+        const impression = categoryImpression(category.categoryScore);
+        return (
+          <li
+            key={category.key}
+            className="flex min-h-[69px] min-w-0 items-center justify-between gap-3 rounded-[8px] border border-brand-border bg-brand-secondary/10 px-4 py-3"
+          >
+            <span className="min-w-0 text-small text-brand-ink">
+              {category.displayName}
+            </span>
+            <Badge
+              className={cn(
+                "h-[26px] w-[88px] shrink-0 justify-center rounded-[6px] border-[0.5px] border-transparent font-body text-meta font-medium",
+                IMPRESSION_BADGE_CLASS[impression]
+              )}
             >
-              <span>{category.displayName}</span>
-              <Badge
-                className={cn(
-                  "rounded-[6px] border-transparent font-body",
-                  IMPRESSION_BADGE_CLASS[impression]
-                )}
-              >
-                {IMPRESSION_LABELS[impression]}
-              </Badge>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+              {IMPRESSION_LABELS[impression]}
+            </Badge>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

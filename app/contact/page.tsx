@@ -45,7 +45,7 @@ export default function ContactPage() {
             <h1 className="font-display text-page-title font-bold text-brand-primary">
               Get In Touch
             </h1>
-            <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
+            <p className="mx-auto max-w-3xl text-body text-brand-ink-secondary">
               Have questions or need support? Our team is always here to help
               you.
             </p>

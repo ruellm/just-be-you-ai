@@ -139,8 +139,12 @@ export default async function AdminDashboardPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4">
+      {/* grid-cols-1 bounds the mobile track (without it the single implicit
+          column is `auto`-sized, unlike the lg:minmax(0,1fr) one); min-w-0 lets
+          the section shrink, since a ListRow's truncating title sits under a
+          flex row whose inner min-w-0 does NOT stop min-content propagating. */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="min-w-0 space-y-4">
           <h2 className="text-heading font-semibold text-brand-primary">
             Recent Signups
           </h2>
@@ -173,7 +177,7 @@ export default async function AdminDashboardPage() {
           </ListCard>
         </section>
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <h2 className="text-heading font-semibold text-brand-primary">
             Recent Job Postings
           </h2>

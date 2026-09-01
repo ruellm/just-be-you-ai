@@ -83,6 +83,7 @@ def save_interview_result(
     context: InterviewContext,
     transcript_text: str,
     fit_signals: List[Dict[str, Any]],
+    duration_seconds: int | None = None,
 ) -> Dict[str, object]:
     """Grade the interview, insert the InterviewResult, update the Application.
 
@@ -115,6 +116,9 @@ def save_interview_result(
             "tier": evaluation.tier,
             "transcript": transcript_text,
             "completedAt": completed_at,
+            # Wall-clock session length in seconds (U4); None -> SQL NULL, which
+            # the result page renders as a placeholder.
+            "durationSeconds": duration_seconds,
             "passed": evaluation.passed,
             "fitSummary": evaluation.fit_summary,
             "strengthsJson": _evidence_to_json(evaluation.strengths),

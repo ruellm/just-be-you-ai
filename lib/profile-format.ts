@@ -2,6 +2,20 @@
 // Safe to import from client components. Server-only helpers live in
 // lib/profile.ts.
 
+// Which image to show for a candidate, everywhere one is rendered:
+//   1. profileImageUrl — the user's own choice ("Edit Profile Image" modal)
+//   2. avatarUrl       — the Google picture, overwritten on every sign-in by
+//                        ensureUserRow, so it can never hold a user-set value
+//   3. null            — caller falls back to initials (AvatarFallback)
+// Blank/whitespace strings count as "not set" so an empty column never beats
+// a real Google picture.
+export function displayAvatarUrl(
+  profileImageUrl: string | null | undefined,
+  avatarUrl: string | null | undefined
+): string | null {
+  return profileImageUrl?.trim() || avatarUrl?.trim() || null;
+}
+
 // Date <-> <input type="date"> string ("YYYY-MM-DD").
 export function dateToInput(date: Date | null | undefined): string {
   if (!date) return "";

@@ -34,7 +34,23 @@ type ConversationResponse = {
     role?: "agent" | "user" | string;
     message?: string | null;
   }>;
+  // ElevenLabs reports the call length on the same payload as the transcript,
+  // so the duration costs no extra request.
+  metadata?: { call_duration_secs?: number | null };
 };
+
+/** What one finished conversation gives us: the transcript + its length. */
+export type ConversationResult = {
+  transcript: string;
+  /** Whole seconds, or null when ElevenLabs didn't report a usable value. */
+  durationSeconds: number | null;
+};
+
+function readDuration(data: ConversationResponse): number | null {
+  const secs = data.metadata?.call_duration_secs;
+  if (typeof secs !== "number" || !Number.isFinite(secs) || secs < 0) return null;
+  return Math.round(secs);
+}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,14 +74,15 @@ function reshapeTranscript(entries: ConversationResponse["transcript"]): string 
  * conversation has finished processing (`status === "done"`).
  *
  * @returns the transcript in `AI:`/`Candidate:` line format (may be "" if the
- *   candidate said nothing — the evaluator handles that).
+ *   candidate said nothing — the evaluator handles that), plus the call length
+ *   in seconds from the same payload (null when not reported).
  * @throws TranscriptNotReadyError if it doesn't become ready within ~90s.
  * @throws Error on missing config, auth/not-found responses, or a
  *   conversation ElevenLabs marked as failed.
  */
 export async function fetchConversationTranscript(
   conversationId: string
-): Promise<string> {
+): Promise<ConversationResult> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) throw new Error("ELEVENLABS_API_KEY is not set.");
 
@@ -81,7 +98,12 @@ export async function fetchConversationTranscript(
 
     if (response.ok) {
       const data = (await response.json()) as ConversationResponse;
-      if (data.status === "done") return reshapeTranscript(data.transcript);
+      if (data.status === "done") {
+        return {
+          transcript: reshapeTranscript(data.transcript),
+          durationSeconds: readDuration(data),
+        };
+      }
       if (data.status === "failed") {
         throw new Error(
           `ElevenLabs conversation ${conversationId} failed processing.`

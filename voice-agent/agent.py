@@ -152,6 +152,7 @@ async def _run_interview(
             context=interview_ctx,
             transcript_text=transcript_text,
             fit_signals=flow.fit_signals,
+            duration_seconds=flow.duration_seconds,
         )
     except Exception:  # noqa: BLE001
         logger.exception(

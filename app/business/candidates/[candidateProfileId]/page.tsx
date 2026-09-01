@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getCompanySeatBalance } from "@/lib/interview-seats";
 import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
 import { parseEvidence } from "@/lib/applications";
+import { displayAvatarUrl } from "@/lib/profile-format";
 import {
   CandidateProfileView,
   type ApplicationDTO,
@@ -104,7 +105,7 @@ export default async function CandidateDetailPage({
     id: profile.id,
     fullName,
     initials: initialsOf(profile.firstName, profile.lastName, profile.user.email),
-    avatarUrl: profile.avatarUrl,
+    avatarUrl: displayAvatarUrl(profile.profileImageUrl, profile.avatarUrl),
     email: profile.user.email,
     resumeUrl: profile.resumeUrl,
     country: profile.country,

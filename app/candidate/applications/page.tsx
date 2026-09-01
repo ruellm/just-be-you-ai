@@ -7,12 +7,17 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/applications/Badges";
 import { EmptyState } from "@/components/EmptyState";
 import { applicationPath } from "@/lib/applications";
+import {
+  canSeeHiringCompany,
+  hasPassedApplication,
+  hiringCompanyName,
+} from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
 
 const FILTERS: { key: string; label: string; status: ApplicationStatus | null }[] =
   [
     { key: "all", label: "All", status: null },
-    { key: "submitted", label: "Submitted", status: "submitted" },
+    { key: "submitted", label: "Ongoing", status: "submitted" },
     { key: "completed", label: "Completed", status: "interview_completed" },
     { key: "passed", label: "Passed", status: "passed" },
     { key: "failed", label: "Failed", status: "failed" },
@@ -47,7 +52,7 @@ export default async function ApplicationsPage({
   const profile = user
     ? await prisma.candidateProfile.findUnique({
         where: { userId: user.id },
-        select: { id: true },
+        select: { id: true, tier: true },
       })
     : null;
 
@@ -59,11 +64,28 @@ export default async function ApplicationsPage({
         },
         orderBy: { createdAt: "desc" },
         include: {
+          // company.name ONLY, and stripped below unless the reveal gate is
+          // open — never the full Company row.
           job: { select: { title: true, company: { select: { name: true } } } },
-          interviewResult: { select: { tier: true } },
+          // `passed` rides on the relation this page already selects.
+          interviewResult: { select: { tier: true, passed: true } },
         },
       })
     : [];
+
+  // One pass over the rows already fetched — no per-row query. `company` is
+  // destructured off so the withheld name never reaches the RSC payload.
+  const rows = applications.map(({ job: { company, ...job }, ...app }) => ({
+    app,
+    job,
+    companyName: hiringCompanyName(
+      company.name,
+      canSeeHiringCompany({
+        tier: profile?.tier ?? null,
+        passedThisJob: hasPassedApplication(app),
+      })
+    ),
+  }));
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
@@ -124,7 +146,7 @@ export default async function ApplicationsPage({
         />
       ) : (
         <div className="grid gap-4">
-          {applications.map((app) => {
+          {rows.map(({ app, job, companyName }) => {
             const interviewable = isInterviewable(app.status);
             return (
               <article
@@ -134,12 +156,12 @@ export default async function ApplicationsPage({
                 <div className="min-w-0 space-y-0.5">
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-subheading font-semibold text-brand-primary">
-                      {app.job.title}
+                      {job.title}
                     </h2>
                     <StatusBadge status={app.status} />
                   </div>
                   <p className="flex flex-wrap items-center gap-2 text-small text-brand-ink-secondary">
-                    <span>{app.job.company.name}</span>
+                    <span>{companyName}</span>
                     <span
                       aria-hidden
                       className="size-1 rounded-full bg-brand-ink-secondary"
@@ -157,7 +179,7 @@ export default async function ApplicationsPage({
                       <ExternalLink /> View Role
                     </Link>
                   </Button>
-                  {/* Take Interview / View Result both resolve through
+                  {/* Continue Interview / View Result both resolve through
                       applicationPath() — the single source of routing truth. */}
                   <Button
                     asChild
@@ -169,7 +191,7 @@ export default async function ApplicationsPage({
                     <Link href={applicationPath(app.id, app.status)}>
                       {interviewable ? (
                         <>
-                          <FileText /> Take Interview
+                          <FileText /> Continue Interview
                         </>
                       ) : (
                         <>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -9,14 +10,22 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { label: "Pricing", href: "/pricing" },
   { label: "Contact", href: "/contact" },
-  { label: "Log In", href: "/login" },
+  { label: "Sign In", href: "/login" },
 ] as const;
 
+// No demo-booking flow exists — "Book a Demo" points at /contact.
+// The design's 155px width is a desktop measurement; alongside the wordmark and
+// the hamburger it overflows a 320px viewport, so the mobile instance sizes to
+// its label instead.
 const CTA_CLASS =
-  "rounded-[12px] bg-brand-secondary text-white hover:bg-brand-secondary/90";
+  "h-[41px] rounded-[12px] bg-brand-secondary text-white hover:bg-brand-secondary/90";
+const CTA_DESKTOP_CLASS = "min-w-[155px]";
+const CTA_HREF = "/contact";
+const CTA_LABEL = "Book a Demo";
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
 
   return (
     <header className="sticky top-0 z-30 border-b border-brand-border bg-brand-surface font-body">
@@ -33,19 +42,25 @@ export function PublicNav() {
             <Link
               key={link.href}
               href={link.href}
-              className="text-sm font-semibold text-brand-ink-secondary transition-colors hover:text-brand-primary"
+              aria-current={pathname === link.href ? "page" : undefined}
+              className={cn(
+                "text-sm transition-colors hover:text-brand-primary",
+                pathname === link.href
+                  ? "font-semibold text-brand-secondary"
+                  : "font-normal text-brand-ink"
+              )}
             >
               {link.label}
             </Link>
           ))}
-          <Button asChild className={CTA_CLASS}>
-            <Link href="/signup">Get Started</Link>
+          <Button asChild className={cn(CTA_CLASS, CTA_DESKTOP_CLASS)}>
+            <Link href={CTA_HREF}>{CTA_LABEL}</Link>
           </Button>
         </nav>
 
         <div className="flex shrink-0 items-center gap-1 md:hidden">
           <Button asChild className={CTA_CLASS}>
-            <Link href="/signup">Get Started</Link>
+            <Link href={CTA_HREF}>{CTA_LABEL}</Link>
           </Button>
           <Button
             variant="ghost"
@@ -81,7 +96,13 @@ export function PublicNav() {
             key={link.href}
             href={link.href}
             onClick={() => setOpen(false)}
-            className="flex h-12 items-center rounded-[8px] px-4 text-body font-medium text-brand-ink-sidebar transition-colors hover:bg-brand-container"
+            aria-current={pathname === link.href ? "page" : undefined}
+            className={cn(
+              "flex h-12 items-center rounded-[8px] px-4 text-small transition-colors hover:bg-brand-container",
+              pathname === link.href
+                ? "font-semibold text-brand-secondary"
+                : "font-normal text-brand-ink"
+            )}
           >
             {link.label}
           </Link>

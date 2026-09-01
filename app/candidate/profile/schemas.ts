@@ -99,6 +99,16 @@ export const basicInfoSchema = z.object({
     .string()
     .trim()
     .max(FIELD_LIMITS.preferredRole, tooLong(FIELD_LIMITS.preferredRole)),
+  // Set through the "Edit Profile Image" modal (which requires a value);
+  // optional here so profiles that never set one still validate.
+  profileImageUrl: z.union([
+    z.literal(""),
+    z
+      .string()
+      .trim()
+      .url("Enter a valid URL")
+      .max(FIELD_LIMITS.url, tooLong(FIELD_LIMITS.url)),
+  ]),
 });
 
 export type BasicInfoValues = z.infer<typeof basicInfoSchema>;

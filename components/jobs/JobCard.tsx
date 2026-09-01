@@ -11,8 +11,12 @@ import {
 } from "@/lib/jobs";
 import { JobCardApplyButton } from "./JobCardApplyButton";
 
+// NOTE: deliberately WITHOUT the company relation. The employer is anonymized
+// for candidates (U5), so callers resolve the display name themselves via
+// lib/company-visibility and pass it as `companyName` — the company object must
+// never be serialized into a candidate-facing payload.
 export type JobCardData = Prisma.JobGetPayload<{
-  include: { company: true; skills: { include: { skill: true } } };
+  include: { skills: { include: { skill: true } } };
 }>;
 
 // Redesigned job card (brand tokens). Reused by the dashboard's
@@ -24,12 +28,15 @@ export type JobCardData = Prisma.JobGetPayload<{
 //   - `actions={null}` → no action row at all
 export function JobCard({
   job,
+  companyName,
   applied = false,
   noSeats = false,
   actions,
   className,
 }: {
   job: JobCardData;
+  /** Already resolved by the caller — real name or "Anonymous Company". */
+  companyName: string;
   applied?: boolean;
   noSeats?: boolean;
   actions?: ReactNode | null;
@@ -51,7 +58,11 @@ export function JobCard({
   return (
     <article
       className={cn(
-        "flex flex-col gap-3 rounded-[12px] border border-brand-border bg-brand-surface p-5 font-body",
+        // min-w-0: as a grid/flex child the card defaults to min-width:auto,
+        // which floors its track at the card's min-content width. The truncated
+        // (white-space:nowrap) title below makes that the FULL title width, so
+        // a long-titled job would push the card past the container padding.
+        "flex min-w-0 flex-col gap-3 rounded-[12px] border border-brand-border bg-brand-surface p-5 font-body",
         className
       )}
     >
@@ -62,7 +73,7 @@ export function JobCard({
           </Link>
         </h3>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-small text-brand-ink-secondary">
-          <span>{job.company.name}</span>
+          <span>{companyName}</span>
           {salary ? (
             <>
               <span aria-hidden className="size-1 rounded-full bg-brand-ink-secondary" />
@@ -104,7 +115,7 @@ export function JobCard({
         actions
       )}
 
-      <p className="flex items-center gap-1.5 text-meta text-brand-ink-secondary">
+      <p className="flex flex-wrap items-center gap-1.5 text-meta text-brand-ink-secondary">
         <span>{postedAgo(job.createdAt)}</span>
         {state ? (
           <>

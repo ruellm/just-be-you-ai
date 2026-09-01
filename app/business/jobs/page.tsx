@@ -247,7 +247,12 @@ export default async function BusinessJobsPage({
                       >
                         <Link href={`/business/jobs/${job.id}/edit`}>Edit</Link>
                       </Button>
-                      <JobStatusToggle jobId={job.id} status={job.status} />
+                      <JobStatusToggle
+                        jobId={job.id}
+                        jobTitle={job.title}
+                        companyName={company.name}
+                        status={job.status}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>

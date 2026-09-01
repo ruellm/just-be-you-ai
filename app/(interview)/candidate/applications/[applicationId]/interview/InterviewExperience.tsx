@@ -27,11 +27,9 @@ type Phase = "connecting" | "live" | "ending" | "error";
 export function InterviewExperience({
   applicationId,
   jobTitle,
-  companyName,
 }: {
   applicationId: string;
   jobTitle: string;
-  companyName: string;
 }) {
   const router = useRouter();
   const [conn, setConn] = useState<InterviewConnection | null>(null);
@@ -141,19 +139,13 @@ export function InterviewExperience({
       className="!bg-transparent"
     >
       <RoomAudioRenderer />
-      <InterviewStage jobTitle={jobTitle} companyName={companyName} />
+      <InterviewStage jobTitle={jobTitle} />
     </LiveKitRoom>
   );
 }
 
 // Rendered INSIDE <LiveKitRoom>, so the LiveKit hooks have their context.
-function InterviewStage({
-  jobTitle,
-  companyName,
-}: {
-  jobTitle: string;
-  companyName: string;
-}) {
+function InterviewStage({ jobTitle }: { jobTitle: string }) {
   const room = useRoomContext();
   const { state } = useVoiceAssistant();
   const { localParticipant } = useLocalParticipant();
@@ -176,7 +168,6 @@ function InterviewStage({
   return (
     <LiveStage
       jobTitle={jobTitle}
-      companyName={companyName}
       speaking={agentSpeaking}
       latestMessage={latestAgent?.text ?? null}
       onEnd={() => room.disconnect()}

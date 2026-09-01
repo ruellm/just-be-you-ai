@@ -3,6 +3,7 @@ import { CandidateSidebar } from "@/components/candidate/CandidateSidebar";
 import { getCurrentDbUser, getDashboardPath } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getInterviewSeatBalance } from "@/lib/interview-seats";
+import { displayAvatarUrl } from "@/lib/profile-format";
 
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -30,6 +31,7 @@ export default async function CandidateLayout({
       lastName: true,
       preferredRole: true,
       avatarUrl: true,
+      profileImageUrl: true,
     },
   });
   const seatBalance = profile
@@ -47,7 +49,10 @@ export default async function CandidateLayout({
       <CandidateSidebar
         name={displayName}
         initials={initialsOf(displayName)}
-        avatarUrl={profile?.avatarUrl ?? null}
+        avatarUrl={displayAvatarUrl(
+          profile?.profileImageUrl,
+          profile?.avatarUrl
+        )}
         jobTitle={profile?.preferredRole ?? null}
         seatsRemaining={seatsRemaining}
         seatsTotal={seatsTotal}

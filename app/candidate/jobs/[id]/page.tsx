@@ -13,6 +13,11 @@ import {
   formatSalary,
   postedAgo,
 } from "@/lib/jobs";
+import {
+  canSeeHiringCompany,
+  hasPassedApplication,
+  hiringCompanyName,
+} from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
 import {
   DarkTag,
@@ -31,11 +36,20 @@ export default async function JobDetailPage({
 }) {
   const { id } = await params;
 
-  const job = await prisma.job.findUnique({
+  // company.name ONLY — the full Company row (description, website, logoUrl,
+  // contactEmail, phone, headquarters, type, industry, yearFounded, userId,
+  // seat counts) must never be fetched for a candidate-facing page.
+  const jobRow = await prisma.job.findUnique({
     where: { id },
-    include: { company: true, skills: { include: { skill: true } } },
+    include: {
+      company: { select: { name: true } },
+      skills: { include: { skill: true } },
+    },
   });
-  if (!job) notFound();
+  if (!jobRow) notFound();
+  // Strip the company object off the render model; the resolved display name
+  // is the only employer data that may reach the client.
+  const { company, ...job } = jobRow;
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const closed = job.status === "closed";
@@ -45,7 +59,7 @@ export default async function JobDetailPage({
   const profile = user
     ? await prisma.candidateProfile.findUnique({
         where: { userId: user.id },
-        select: { id: true },
+        select: { id: true, tier: true },
       })
     : null;
   const existing = profile
@@ -56,12 +70,27 @@ export default async function JobDetailPage({
             jobId: job.id,
           },
         },
-        select: { id: true, status: true },
+        // interviewResult rides along — no extra query for the reveal gate.
+        select: {
+          id: true,
+          status: true,
+          interviewResult: { select: { passed: true } },
+        },
       })
     : null;
   const seatBalance =
     profile && !existing ? await getInterviewSeatBalance(prisma, profile.id) : null;
   const noSeats = seatBalance != null && seatBalance.remaining === 0;
+
+  // The ONE employer value this page may render. Everything else about the
+  // company is already absent from `job` (stripped above).
+  const companyName = hiringCompanyName(
+    company.name,
+    canSeeHiringCompany({
+      tier: profile?.tier ?? null,
+      passedThisJob: hasPassedApplication(existing),
+    })
+  );
 
   // Four CTA states, all preserved: closed / no profile / already applied /
   // apply. Only the disabled + helper-link variants need extra markup.
@@ -104,7 +133,7 @@ export default async function JobDetailPage({
       >
         <Link href={applicationPath(existing.id, existing.status)}>
           {existing.status === "submitted"
-            ? "Continue your interview"
+            ? "Continue Interview"
             : "View your result"}
         </Link>
       </Button>
@@ -154,7 +183,7 @@ export default async function JobDetailPage({
               {job.title}
             </h1>
             <p className="text-body text-brand-ink-secondary">
-              {job.company.name}
+              {companyName}
             </p>
           </div>
           {salary ? (
@@ -201,7 +230,7 @@ export default async function JobDetailPage({
         <SectionCard title="Evaluation Process" tone="container">
           <p className="text-body text-brand-ink">
             After you apply, you&apos;ll complete a short AI interview. Results
-            are shared with {job.company.name} along with your profile.
+            are shared with {companyName} along with your profile.
           </p>
         </SectionCard>
       </div>

@@ -30,7 +30,6 @@ export default async function InterviewPage({
         select: {
           title: true,
           voiceAgentType: true,
-          company: { select: { name: true } },
         },
       },
     },
@@ -51,7 +50,6 @@ export default async function InterviewPage({
       <AdvancedInterviewExperience
         applicationId={application.id}
         jobTitle={application.job.title}
-        companyName={application.job.company.name}
       />
     );
   }
@@ -60,7 +58,6 @@ export default async function InterviewPage({
     <InterviewExperience
       applicationId={application.id}
       jobTitle={application.job.title}
-      companyName={application.job.company.name}
     />
   );
 }

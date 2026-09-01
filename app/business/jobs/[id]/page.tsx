@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
-import { ArrowLeft, Users } from "lucide-react";
+import { ArrowLeft, Pencil, Users } from "lucide-react";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { recommendationRank, scoreToPercent } from "@/lib/applications";
@@ -29,6 +29,7 @@ import {
   TH_CLASS,
   TR_CLASS,
 } from "@/components/data-table/TableCard";
+import { AiRecommendButton } from "./AiRecommendButton";
 import {
   DarkTag,
   SectionCard,
@@ -153,7 +154,7 @@ export default async function JobApplicantsPage({
 
   const salary = formatSalary(job.salaryMin, job.salaryMax);
   const HEADER_BTN =
-    "h-9 rounded-[8px] px-5 font-body text-small font-medium text-white";
+    "h-[35px] rounded-[8px] px-5 font-body text-small font-medium text-white";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
@@ -191,11 +192,22 @@ export default async function JobApplicantsPage({
           <div className="flex flex-wrap gap-2">
             <Button
               asChild
-              className={cn(HEADER_BTN, "bg-brand-secondary hover:bg-brand-secondary/90")}
+              className={cn(
+                HEADER_BTN,
+                "min-w-[118px] bg-brand-secondary hover:bg-brand-secondary/90"
+              )}
             >
-              <Link href={`/business/jobs/${job.id}/edit`}>Edit Job</Link>
+              <Link href={`/business/jobs/${job.id}/edit`}>
+                <Pencil /> Edit Job
+              </Link>
             </Button>
-            <JobStatusToggle jobId={job.id} status={job.status} variant="header" />
+            <JobStatusToggle
+              jobId={job.id}
+              jobTitle={job.title}
+              companyName={job.company.name}
+              status={job.status}
+              variant="header"
+            />
           </div>
           <p className="text-meta text-brand-ink-secondary">
             {postedAgo(job.createdAt)}
@@ -218,6 +230,7 @@ export default async function JobApplicantsPage({
             clearLabel="All results"
             options={[...RESULT_OPTIONS]}
           />
+          <AiRecommendButton />
         </div>
 
         {rows.length === 0 ? (
@@ -305,13 +318,6 @@ export default async function JobApplicantsPage({
                             >
                               View Profile
                             </Link>
-                          </Button>
-                          <Button
-                            asChild
-                            size="sm"
-                            className={cn(ACTION_BTN, "bg-brand-ink hover:bg-brand-ink/90")}
-                          >
-                            <a href={`mailto:${email}`}>Email Candidate</a>
                           </Button>
                         </div>
                       </TableCell>

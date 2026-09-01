@@ -17,8 +17,21 @@ import { cn } from "@/lib/utils";
 // tables (white, brand border, 40px, 12px radius). Each field owns ONE search
 // param; any change resets `page`. The server does the filtering.
 
+// ONE shared shape for all three field types (search / date / select) so their
+// height, radius, border and font size can't drift apart again. Class strings
+// are written out literally — Tailwind scans source text, so an interpolated
+// class name would never be generated.
+// `md:text-small` neutralises the `md:text-sm` that Input/Textarea carry in
+// their base classes — without it the two text fields would flip to a flat 14px
+// at >=768px while the select stayed on the fluid scale.
 const FIELD_CLASS =
-  "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-small font-normal text-brand-ink shadow-none";
+  "h-10 rounded-[12px] border-brand-border bg-brand-surface font-body text-small md:text-small font-normal text-brand-ink shadow-none";
+
+// shadcn's SelectTrigger sets its own height via `data-[size=default]:h-8`,
+// whose attribute selector out-specifies a plain `h-10`, so the trigger
+// rendered 32px next to the 40px inputs. Repeating the height at the SAME
+// specificity lets tailwind-merge drop the h-8 outright.
+const SELECT_TRIGGER_CLASS = cn(FIELD_CLASS, "data-[size=default]:h-10");
 
 // "Clear" item value — Radix Select shows the placeholder for value "" (no
 // filter) but a SelectItem itself can't have an empty value.
@@ -136,7 +149,7 @@ export function SelectField({
       <SelectTrigger
         aria-label={placeholder}
         className={cn(
-          FIELD_CLASS,
+          SELECT_TRIGGER_CLASS,
           "w-full sm:w-[154px] data-[placeholder]:text-brand-ink-secondary [&_svg]:text-brand-ink-secondary",
           className
         )}
