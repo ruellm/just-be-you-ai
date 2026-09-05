@@ -113,8 +113,10 @@ export function TableCard({
 // Header/body cell classes shared by both tables.
 export const TH_CLASS =
   "h-12 px-4 text-small font-semibold whitespace-nowrap text-brand-ink";
+// Body rows only (headers use their own class): even rows carry a 10%
+// brand-secondary tint so long lists scan more easily.
 export const TR_CLASS =
-  "border-brand-border text-meta font-medium text-brand-ink-secondary hover:bg-brand-canvas/60";
+  "border-brand-border text-meta font-medium text-brand-ink-secondary even:bg-brand-secondary/10 hover:bg-brand-canvas/60";
 export const TD_CLASS = "px-4 py-3";
 // Small action button (24px, 5px radius, 12px semibold, canvas text).
 export const ACTION_BTN =

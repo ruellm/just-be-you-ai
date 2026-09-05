@@ -196,6 +196,7 @@ export default async function AdminDashboardPage() {
               recentJobs.map((j) => (
                 <ListRow
                   key={j.id}
+                  href={`/admin/jobs/${j.id}`}
                   title={j.title}
                   subtitle={j.company.name}
                   date={j.createdAt}

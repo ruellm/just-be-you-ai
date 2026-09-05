@@ -4,11 +4,11 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import {
+  CANDIDATE_RECOMMENDATION_LABELS,
   formatDuration,
   isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
-  RECOMMENDATION_LABELS,
   RECOMMENDATION_TEXT_CLASS,
   scoreToPercent,
   TIER_LABELS,
@@ -108,11 +108,12 @@ export default async function ResultPage({
     result.compositeScore != null
       ? Math.round(result.compositeScore)
       : scoreToPercent(result.score);
-  // Label and colour both key off the VALUE, not the pass/fail outcome:
-  // "Pass" means the employer passes ON the candidate, so it must read red even
-  // though a borderline result can still carry it.
+  // Label and colour both key off the VALUE, not the pass/fail outcome. The
+  // candidate map renders "pass" as "Not Selected" (the employer passes ON
+  // the candidate), and it stays red even though a borderline result can
+  // still carry it.
   const recommendationLabel = isRecommendation(result.recommendation)
-    ? RECOMMENDATION_LABELS[result.recommendation]
+    ? CANDIDATE_RECOMMENDATION_LABELS[result.recommendation]
     : "—";
   const recommendationClass = isRecommendation(result.recommendation)
     ? RECOMMENDATION_TEXT_CLASS[result.recommendation]

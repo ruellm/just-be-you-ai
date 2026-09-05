@@ -77,10 +77,20 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 export type Recommendation = "hire" | "consider" | "pass";
 
-export const RECOMMENDATION_LABELS: Record<Recommendation, string> = {
+// Two label maps for one enum. Recruiters read "pass" as jargon (the employer
+// passes on the candidate) and asked to keep it; a candidate reads the same
+// word as "I passed", so their result page says "Not Selected" instead. The
+// stored value is unchanged either way.
+export const BUSINESS_RECOMMENDATION_LABELS: Record<Recommendation, string> = {
   hire: "Hire",
   consider: "Consider",
   pass: "Pass",
+};
+
+export const CANDIDATE_RECOMMENDATION_LABELS: Record<Recommendation, string> = {
+  hire: "Hire",
+  consider: "Consider",
+  pass: "Not Selected",
 };
 
 export const RECOMMENDATION_BADGE_CLASS: Record<Recommendation, string> = {

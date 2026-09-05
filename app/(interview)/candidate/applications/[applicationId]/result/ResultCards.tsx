@@ -90,6 +90,12 @@ export function ScoreRing({
 }
 
 // One "PILL LABEL" + value stat row from the role card.
+//
+// The pill sizes to its label (min 176px so short labels stay uniform, no max
+// so RECOMMENDATION is never clipped) and may wrap. Callers place StatRows in
+// a `grid`; each row spans two subgrid tracks (pill, value), so pills that
+// share a track line up in height even when one wraps. The pill is a block
+// wrapper's inline child so the caller's text-align still positions it.
 export function StatRow({
   label,
   value,
@@ -100,10 +106,12 @@ export function StatRow({
   valueClassName?: string;
 }) {
   return (
-    <div className="min-w-0 space-y-1.5">
-      <span className="font-display inline-flex h-7 w-full max-w-[176px] items-center justify-center rounded-[8px] bg-tag-1 px-3 text-meta font-medium tracking-[1.2px] text-brand-ink-secondary uppercase">
-        {label}
-      </span>
+    <div className="row-span-2 grid min-w-0 grid-rows-subgrid gap-1.5">
+      <div className="min-w-0">
+        <span className="font-display inline-flex h-full min-h-7 max-w-full min-w-[176px] items-center justify-center rounded-[8px] bg-tag-1 px-3 py-1 text-center text-meta leading-tight font-medium tracking-[1.2px] [overflow-wrap:anywhere] text-brand-ink-secondary uppercase">
+          {label}
+        </span>
+      </div>
       <p
         className={cn(
           "text-subheading font-semibold text-brand-ink",

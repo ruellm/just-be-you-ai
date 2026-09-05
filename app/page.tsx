@@ -142,8 +142,11 @@ export default async function HomePage() {
 
       <main className="flex-1">
         {/* ── 1. Hero ─────────────────────────────────────────────────── */}
+        {/* section-t (top padding only) + a block-level image: the people
+            illustration must sit flush on the purple divider that opens the
+            next section, so nothing may add space below it here. */}
         <section className="bg-brand-surface">
-          <div className="mx-auto max-w-6xl section-x section-y text-center">
+          <div className="mx-auto max-w-6xl section-x section-t text-center">
             <h1 className="font-display text-display font-semibold text-brand-ink">
               Experience the Future of Recruitment.{" "}
               <span className="text-brand-secondary">Just Be You.</span>
@@ -166,7 +169,7 @@ export default async function HomePage() {
               height={363}
               priority
               unoptimized
-              className="mx-auto mt-12 h-auto w-full max-w-[914px]"
+              className="mx-auto mt-12 block h-auto w-full max-w-[914px]"
             />
           </div>
         </section>

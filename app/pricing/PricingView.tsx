@@ -84,9 +84,9 @@ function FeatureList({
 function CandidatePlans({ cycle }: { cycle: BillingCycle }) {
   const yearly = cycle === "yearly";
   return (
-    <div className="mx-auto mt-12 grid max-w-4xl grid-cols-1 gap-8 lg:grid-cols-2">
+    <div className="mx-auto mt-12 grid max-w-5xl grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
       {/* Free — no yearly variant, always $0 */}
-      <div className="flex min-w-0 flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-[12px] border border-brand-border bg-brand-surface">
         <div aria-hidden className="h-[13px] bg-brand-secondary" />
         <div className="flex flex-1 flex-col stack-gap card-pad">
           <Tag label="Free" />
@@ -119,7 +119,7 @@ function CandidatePlans({ cycle }: { cycle: BillingCycle }) {
       </div>
 
       {/* Professional */}
-      <div className="flex min-w-0 flex-col overflow-hidden rounded-[12px] bg-brand-primary">
+      <div className="flex h-full min-w-0 flex-col overflow-hidden rounded-[12px] bg-brand-primary">
         <div aria-hidden className="h-[13px] bg-brand-tertiary" />
         <div className="flex flex-1 flex-col stack-gap card-pad">
           <div className="flex items-start justify-between gap-4">
@@ -163,7 +163,7 @@ function BusinessCard({
   const card = (
     <div
       className={cn(
-        "flex min-w-0 flex-col rounded-[12px]",
+        "flex flex-1 min-w-0 flex-col rounded-[12px]",
         plan.variant === "light" &&
           "overflow-hidden border border-brand-border bg-brand-surface",
         plan.variant === "primary" && "overflow-hidden bg-brand-primary",
@@ -230,22 +230,29 @@ function BusinessCard({
           {plan.blurb}
         </p>
         <FeatureList features={plan.features} tone={light ? "light" : "dark"} />
-        <Button
-          asChild
-          className={cn(CTA_CLASS, "mt-4", CTA_TONE[plan.cta.tone])}
-        >
-          <Link href={plan.cta.href}>{plan.cta.label}</Link>
-        </Button>
+        {/* mt-auto pins the CTA to the card bottom so equal-height cards
+            line their buttons up. */}
+        <div className="mt-auto pt-4">
+          <Button asChild className={cn(CTA_CLASS, CTA_TONE[plan.cta.tone])}>
+            <Link href={plan.cta.href}>{plan.cta.label}</Link>
+          </Button>
+        </div>
       </div>
     </div>
   );
 
-  if (!plan.mostPopular) return card;
-  // Badge floats ABOVE the card; the wrapper is the grid item so items-end
-  // still bottom-aligns the cards themselves.
+  // The "Most Popular" badge floats ABOVE its card. Every card renders the
+  // badge slot (invisible when unused) once cards sit side by side, so all
+  // four card boxes share the same top edge and height; on the single-column
+  // layout the empty slot is dropped so it doesn't read as extra spacing.
   return (
     <div className="flex min-w-0 flex-col">
-      <div className="flex justify-center pb-3">
+      <div
+        className={cn(
+          "justify-center pb-3",
+          plan.mostPopular ? "flex" : "hidden sm:invisible sm:flex"
+        )}
+      >
         <span className="font-display rounded-full bg-brand-tertiary px-4 py-1 text-meta font-semibold tracking-[1.2px] whitespace-nowrap text-brand-ink-secondary uppercase">
           Most Popular
         </span>
@@ -257,7 +264,7 @@ function BusinessCard({
 
 function BusinessPlans({ cycle }: { cycle: BillingCycle }) {
   return (
-    <div className="mt-12 grid grid-cols-1 items-end gap-6 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mt-12 grid grid-cols-1 items-stretch gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {BUSINESS_PLANS.map((plan) => (
         <BusinessCard key={plan.key} plan={plan} cycle={cycle} />
       ))}

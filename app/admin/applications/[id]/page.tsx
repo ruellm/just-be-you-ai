@@ -6,11 +6,11 @@ import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import { displayAvatarUrl } from "@/lib/profile-format";
 import {
+  BUSINESS_RECOMMENDATION_LABELS,
   formatDuration,
   isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
-  RECOMMENDATION_LABELS,
   RECOMMENDATION_TEXT_CLASS,
   scoreToPercent,
   TIER_LABELS,
@@ -114,9 +114,10 @@ export default async function AdminApplicationResultPage({
       ? Math.round(result.compositeScore)
       : scoreToPercent(result.score)
     : 0;
+  // Admin reads the recruiter-side label ("Pass"), like the business views.
   const recommendationLabel =
     result && isRecommendation(result.recommendation)
-      ? RECOMMENDATION_LABELS[result.recommendation]
+      ? BUSINESS_RECOMMENDATION_LABELS[result.recommendation]
       : "—";
   // Coloured by VALUE, not outcome: Hire green / Consider amber / Pass red.
   const recommendationClass =

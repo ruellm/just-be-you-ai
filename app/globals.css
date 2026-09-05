@@ -201,6 +201,11 @@
 @utility section-y {
   padding-block: clamp(2.5rem, 1.522rem + 4.348vw, 5rem);
 }
+/* Top-only variant of section-y, for a section whose content must sit flush
+   on whatever follows it (the homepage hero illustration on its divider). */
+@utility section-t {
+  padding-block-start: clamp(2.5rem, 1.522rem + 4.348vw, 5rem);
+}
 @utility section-x {
   padding-inline: clamp(1rem, 0.8043rem + 0.870vw, 1.5rem);
 }

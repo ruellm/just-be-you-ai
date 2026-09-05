@@ -172,14 +172,12 @@ export function ProfileForm({
               name="firstName"
               label="First Name"
               required
-              placeholder="Juan"
               maxLength={FIELD_LIMITS.name}
             />
             <TextField
               form={form}
               name="middleName"
               label="Middle Name"
-              placeholder="Santos"
               maxLength={FIELD_LIMITS.middleName}
             />
             <TextField
@@ -187,14 +185,12 @@ export function ProfileForm({
               name="lastName"
               label="Last Name"
               required
-              placeholder="Dela Cruz"
               maxLength={FIELD_LIMITS.name}
             />
             <TextField
               form={form}
               name="suffix"
               label="Suffix"
-              placeholder="Jr."
               maxLength={FIELD_LIMITS.suffix}
             />
           </div>

@@ -6,8 +6,8 @@ import {
   APPLICATION_STATUS_LABELS,
   isRecommendation,
   isRubricVerdict,
+  BUSINESS_RECOMMENDATION_LABELS,
   RECOMMENDATION_BADGE_CLASS,
-  RECOMMENDATION_LABELS,
   TIER_BADGE_CLASS,
   TIER_LABELS,
   VERDICT_BADGE_CLASS,
@@ -63,6 +63,7 @@ export function VerdictBadge({
 
 // Phase 2.3 — the grader's hire/consider/pass recommendation. Renders nothing
 // for an unknown value so old rows without a recommendation stay clean.
+// Business-side labels ("Pass"); the candidate result page has its own map.
 export function RecommendationBadge({
   recommendation,
   className,
@@ -79,7 +80,7 @@ export function RecommendationBadge({
         className
       )}
     >
-      {RECOMMENDATION_LABELS[recommendation]}
+      {BUSINESS_RECOMMENDATION_LABELS[recommendation]}
     </Badge>
   );
 }
