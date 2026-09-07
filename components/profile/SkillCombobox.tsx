@@ -55,7 +55,12 @@ export function SkillCombobox({
           <ChevronsUpDown className="opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      {/* Portalled to <body>, so it does not inherit font-body from the form;
+          set it here once for every caller (same as SelectContent call sites). */}
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0 font-body"
+        align="start"
+      >
         <Command>
           <CommandInput placeholder="Search skills…" />
           <CommandList>
