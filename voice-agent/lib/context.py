@@ -37,6 +37,10 @@ class CandidateContext(BaseModel):
     # Claude-cleaned (PII-stripped) resume text, written at Apply time.
     # None for older applications — fall back to parsed_resume_text.
     cleaned_resume_text: Optional[str] = None
+    # Where the two resume texts above came from: "snapshot" (the application's
+    # apply-time copy) or "profile" (pre-snapshot application, live profile).
+    # Set by load_context._resolve_resume.
+    resume_source: str = "profile"
     languages: List[str] = Field(default_factory=list)
     total_years_experience: Optional[int] = None
     preferred_role: Optional[str] = None

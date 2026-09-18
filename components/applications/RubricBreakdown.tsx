@@ -6,6 +6,11 @@ import {
   type RubricBreakdownView,
   type RubricGateView,
 } from "@/lib/applications";
+import {
+  MANIPULATION_LABELS,
+  manipulationSourceLabel,
+  parseManipulationAttempts,
+} from "@/lib/integrity-flags";
 
 // Session 3 — BUSINESS-side full rubric breakdown for one InterviewResult:
 // verdict + composite + which passing bar applied, any hard gates that fired,
@@ -13,20 +18,28 @@ import {
 // nothing when the result has no rubric data (old rows) — the caller keeps its
 // existing display as the fallback. Business-only: never render this to the
 // candidate (it exposes scores, evidence quotes, and gate mechanics).
+//
+// manipulationAttemptsJson (optional): attempts to manipulate the interview,
+// shown as advisories next to the gate notices with the verbatim quote so the
+// recruiter judges for themselves. Advisory only: they had no effect on the
+// score or the verdict.
 export function RubricBreakdown({
   rubricScoresJson,
   compositeScore,
   verdict,
   gatesFiredJson,
+  manipulationAttemptsJson,
 }: {
   rubricScoresJson: unknown;
   compositeScore: number | null;
   verdict: string | null;
   gatesFiredJson: unknown;
+  manipulationAttemptsJson?: unknown;
 }) {
   const breakdown = parseRubricBreakdown(rubricScoresJson);
   if (!breakdown) return null;
   const gates = parseGatesFired(gatesFiredJson);
+  const attempts = parseManipulationAttempts(manipulationAttemptsJson);
 
   return (
     <div className="space-y-4">
@@ -47,8 +60,8 @@ export function RubricBreakdown({
         </div>
       </div>
 
-      {/* Hard gates */}
-      {gates.length ? (
+      {/* Hard gates + integrity advisories */}
+      {gates.length || attempts.length ? (
         <div className="space-y-2">
           {gates.map((gate, i) => (
             <div
@@ -57,6 +70,22 @@ export function RubricBreakdown({
             >
               <AlertTriangle className="mt-0.5 size-4 shrink-0" />
               <span>{gateDescription(gate, breakdown)}</span>
+            </div>
+          ))}
+          {attempts.map((attempt, i) => (
+            <div
+              key={`attempt-${i}`}
+              className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-small text-amber-900 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-200"
+            >
+              <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+              <span>
+                Integrity advisory:{" "}
+                {MANIPULATION_LABELS[attempt.classification] ??
+                  "Possible attempt to influence the interview"}{" "}
+                ({manipulationSourceLabel(attempt.source)}). The score was not
+                affected. Judge the quote for yourself:{" "}
+                <span className="italic">&ldquo;{attempt.quote}&rdquo;</span>
+              </span>
             </div>
           ))}
         </div>

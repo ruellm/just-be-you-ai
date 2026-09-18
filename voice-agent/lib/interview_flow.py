@@ -42,6 +42,12 @@ from livekit.agents import Agent, AgentSession, function_tool
 from livekit import rtc
 
 from .context import InterviewContext
+from .prompts import (
+    is_plausible_first_name,
+    render_agent_rules,
+    untrusted_notice,
+    wrap_untrusted,
+)
 
 logger = logging.getLogger("jbu-voice-agent.flow")
 
@@ -81,44 +87,18 @@ def _resolve_first_name(full_name: Optional[str]) -> Optional[str]:
     full = (full_name or "").strip()
     if not full or "@" in full:
         return None
-    return full.split()[0]
+    # Typed by the candidate and used outside the untrusted-data tags, so
+    # anything that doesn't look like a name counts as "no name" too.
+    first = full.split()[0]
+    return first if is_plausible_first_name(first) else None
 
 
 # ── system prompt ────────────────────────────────────────────────────────────
 
-# The conversational rules block, verbatim from the Phase 2.3 spec. {company}
-# is substituted at build time.
-_CONVERSATION_RULES = """You are conducting a job interview to assess whether this candidate is a fit for this specific role. Your goal is NOT to check off a list of questions — it is to gather evidence about fit.
-
-Style:
-- Warm and conversational. Not a robot. Use natural fillers: 'okay,' 'got it,' 'makes sense,' 'that's interesting,' 'let me ask you something else.'
-- Keep your spoken lines under 2 sentences most of the time. Longer only if you need to explain context.
-- React to what the candidate says. If they mention something interesting, go deeper. If they give a solid answer, acknowledge and move on — don't over-probe.
-
-How to conduct the interview:
-- Start with a warm greeting and confirm they're ready.
-- Explore the fit dimensions that matter for this job. Use the fallback question pool if you're not sure what to ask next.
-- Follow interesting threads. A great answer often opens up a better follow-up than the next scripted question.
-- When you hear meaningful evidence about fit (strong or weak), immediately call note_fit_signal with the dimension, evidence, and strength.
-- If the candidate asks you to repeat or clarify, do so. That is NOT an answer. Ask the question again in slightly different words.
-- If they say 'I don't know' or refuse: try ONE rephrase or a different angle. If they still can't answer, accept gracefully and move on.
-- Handle ambient noise and short pauses gracefully. If you're not sure they finished, wait. Do NOT jump in on a short pause.
-
-When to end the assessment:
-- When you have solid fit evidence across the important dimensions (usually within 5-10 minutes for clear cases).
-- When the candidate asks to stop.
-- When you've spent enough time and further probing won't add signal.
-- Always signal closing first: 'Alright, I think I have enough to work with — before we wrap up, is there anything you want to add?' After they respond, move into the closing questions phase below. Do not end the interview yet.
-
-Closing questions phase (after the assessment is complete, before ending the interview):
-- Ask whether the candidate has any questions for you: 'Before we wrap up, do you have any questions for me about the role or the company?'
-- Answer their questions using ONLY the role and company information provided in this prompt (job title, description, role overview, requirements, day-to-day, company name, ideal candidate profile, interviewer hints). Do not guess or invent anything beyond it.
-- If a question falls outside the information you have, do NOT improvise an answer. Warmly tell them you'll pass the question along to the team at {company} and they can follow up directly.
-- After answering a question, ask 'Is there anything else?' and keep answering until they have no more questions.
-- When they have no further questions, thank them warmly for their time and end the interview by calling end_interview.
-
-If asked if you're an AI:
-'Yes, I'm an AI interviewer, but everything you say is recorded and reviewed by real people at {company}. Happy to continue whenever you're ready.'"""
+# The conversation rules (persona, flow, scope control) live in
+# shared/interview-prompts.json and are rendered by prompts.py, so the basic and
+# advanced tiers cannot drift. Everything the candidate supplied is wrapped in
+# untrusted-data tags: it is data for the interviewer, never instructions.
 
 
 def _section(title: str, value: Optional[str], *, limit: int = 2000) -> str:
@@ -170,8 +150,28 @@ def build_system_prompt(ctx: InterviewContext) -> str:
     else:
         pool = "(No pre-generated questions — rely on the job and your judgment.)"
 
+    # Everything the candidate typed or uploaded, kept together so it can be
+    # wrapped as untrusted data.
+    candidate_data = "".join(
+        [
+            f"Name: {cand.full_name}\n",
+            _section("Preferred role", cand.preferred_role, limit=200),
+            _section("Summary", cand.summary),
+            f"Skills: {skills}\n",
+            f"Work experience:\n{work}\n",
+            # Cleaned (PII-stripped) text when cleanup produced it; raw text
+            # otherwise. Both are the apply-time snapshot (see load_context).
+            _section(
+                "Parsed resume",
+                cand.cleaned_resume_text or cand.parsed_resume_text,
+                limit=_MAX_RESUME_CHARS,
+            ),
+        ]
+    )
+
     parts = [
-        _CONVERSATION_RULES.format(company=job.company_name),
+        render_agent_rules("basic", job.company_name),
+        f"\n\n{untrusted_notice('agent')}",
         "\n\n=== THE ROLE ===\n",
         f"Job title: {job.title}\n",
         f"Company: {job.company_name}\n",
@@ -184,17 +184,7 @@ def build_system_prompt(ctx: InterviewContext) -> str:
         _section("Passing criteria", job.passing_criteria),
         _section("Interviewer hints", job.interview_hints),
         "\n=== THE CANDIDATE ===\n",
-        f"Name: {cand.full_name}\n",
-        _section("Preferred role", cand.preferred_role, limit=200),
-        _section("Summary", cand.summary),
-        f"Skills: {skills}\n",
-        f"Work experience:\n{work}\n",
-        # Cleaned (PII-stripped) text when Apply produced it; raw text otherwise.
-        _section(
-            "Parsed resume",
-            cand.cleaned_resume_text or cand.parsed_resume_text,
-            limit=_MAX_RESUME_CHARS,
-        ),
+        f"{wrap_untrusted(candidate_data.rstrip())}\n",
         "\n=== FALLBACK QUESTION POOL (use only if you're unsure what to ask next) ===\n",
         f"{pool}\n",
         f"\n{name_line}\n",

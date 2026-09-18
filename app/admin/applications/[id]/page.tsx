@@ -23,6 +23,8 @@ import {
   ProfileSectionCard,
 } from "@/app/candidate/profile/ProfileSectionCard";
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
+import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
+import { parseResumeFlags, RESUME_FLAG_LABELS } from "@/lib/integrity-flags";
 import {
   ADMIN_CANDIDATE_INCLUDE,
   AdminProfileHeader,
@@ -100,6 +102,8 @@ export default async function AdminApplicationResultPage({
     profile.avatarUrl
   );
   const result = application.interviewResult;
+  const resume = resolveApplicationResume(application);
+  const resumeFlags = parseResumeFlags(resume.flagsJson);
 
   // Old mocked rows default passed=false but carry status "passed" — prefer the
   // graded flag, fall back to status (same expression the result page uses).
@@ -228,11 +232,45 @@ export default async function AdminApplicationResultPage({
                 compositeScore={result.compositeScore}
                 verdict={result.verdict}
                 gatesFiredJson={result.gatesFiredJson}
+                manipulationAttemptsJson={result.manipulationAttemptsJson}
               />
             </ProfileSectionCard>
           ) : null}
         </>
       )}
+
+      {/* Hidden text found in the resume THIS application was made with (the
+          apply-time snapshot), so a later re-upload cannot erase it. Admin
+          only: the candidate is never told. */}
+      {resumeFlags.length ? (
+        <details
+          open
+          className="rounded-[12px] border border-amber-200 bg-amber-50 text-amber-900"
+        >
+          <summary className="cursor-pointer px-6 py-4 text-small font-medium">
+            Resume integrity flags ({resumeFlags.length}),{" "}
+            {resume.source === "snapshot"
+              ? "resume as submitted with this application"
+              : "candidate's current resume (application predates snapshots)"}
+          </summary>
+          <ul className="space-y-3 border-t border-amber-200 px-6 py-4 text-small">
+            {resumeFlags.map((flag, i) => (
+              <li key={i}>
+                <p className="font-medium">
+                  {RESUME_FLAG_LABELS[flag.signature] ?? flag.signature}
+                  {flag.page != null ? `, page ${flag.page}` : ""}
+                  {flag.detail ? ` (${flag.detail})` : ""}
+                </p>
+                {flag.text ? (
+                  <p className="mt-0.5 font-mono text-meta whitespace-pre-wrap italic">
+                    &ldquo;{flag.text}&rdquo;
+                  </p>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </details>
+      ) : null}
 
       <h2 className="text-section font-semibold text-brand-primary">
         Profile Information

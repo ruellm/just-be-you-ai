@@ -18,6 +18,17 @@
 // because the grading orchestrator maps them onto the camelCase
 // InterviewResult columns exactly like save_result.py does.
 //
+// Injection defense: every candidate-derived field in the user content sits
+// inside untrusted-data tags (resume, profile, transcript, fit signals), the
+// system prompt says instructions in there are reported, not followed, and the
+// model reports manipulation attempts with verbatim quotes. Quotes that are
+// not really in the text are dropped in code. Attempts are evidence only and
+// have NO score effect (the integrity gate in rubric.ts stays dormant).
+//
+// KNOWN LIMIT: the call that scores is also the call that detects, so a
+// sufficiently effective injection could suppress its own detection. A
+// separate classification call addresses this later. Do not solve it here.
+//
 // If voice-agent/lib/evaluate.py changes, mirror it here.
 //
 // NOTE: no `import "server-only"` — same reasoning as load-interview-context.ts
@@ -28,6 +39,15 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
 import type { InterviewApplication } from "@/lib/ai/load-interview-context";
+import {
+  buildManipulationToolSchema,
+  keepVerbatimAttempts,
+  manipulationPromptSection,
+  untrustedNotice,
+  wrapUntrusted,
+  type ManipulationAttempt,
+} from "@/lib/ai/interview-prompts";
+import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
 import {
   ALL_SUB_CRITERION_KEYS,
   buildRubricPromptBlock,
@@ -62,6 +82,12 @@ const subScoreSchema = z.object({
   evidence: z.string().nullable(),
 });
 
+const manipulationAttemptSchema = z.object({
+  quote: z.string(),
+  classification: z.string(),
+  source: z.string(),
+});
+
 // What the MODEL returns via the forced tool. The decision-shaped fields
 // (composite/verdict/passed/tier/score) are deliberately absent — they are
 // computed in code from rubric_scores.
@@ -71,6 +97,7 @@ const modelOutputSchema = z.object({
   strengths: z.array(evidenceItemSchema).default([]),
   concerns: z.array(evidenceItemSchema).default([]),
   recommendation: z.enum(["hire", "consider", "pass"]),
+  manipulation_attempts: z.array(manipulationAttemptSchema).default([]),
 });
 
 export type EvidenceItem = z.infer<typeof evidenceItemSchema>;
@@ -90,6 +117,8 @@ export interface EvaluationResult {
   composite_score: number | null; // 0-100, per the job's passing bar
   verdict: Verdict | null;
   gates_fired: GateFired[] | null;
+  // Verified-verbatim manipulation attempts. null = not assessed (fallback).
+  manipulation_attempts: ManipulationAttempt[] | null;
 }
 
 /** Neutral result used when the Claude call fails (mirrors fallback_evaluation). */
@@ -106,6 +135,7 @@ export function fallbackEvaluation(): EvaluationResult {
     composite_score: null,
     verdict: null,
     gates_fired: null,
+    manipulation_attempts: null,
   };
 }
 
@@ -116,6 +146,8 @@ const SYSTEM_PROMPT =
   "scoring the candidate against a fixed rubric. Score STRICTLY against the " +
   "rubric anchors below — not against vibes or your own standards. Be honest " +
   "and direct; base every score on evidence from the transcript, not sympathy.\n\n" +
+  untrustedNotice("evaluator") +
+  "\n\n" +
   "SCORING SCALE — every sub-criterion gets an integer score 1-5:\n" +
   "  1-2 = Below the anchor\n" +
   "  3   = Meets the anchor\n" +
@@ -143,7 +175,8 @@ const SYSTEM_PROMPT =
   "The transcript may end with a closing segment where the CANDIDATE asks " +
   "questions about the role or the company and the interviewer answers them. " +
   "Disregard that closing segment entirely — do not score it under any " +
-  "sub-criterion, positively or negatively.";
+  "sub-criterion, positively or negatively.\n\n" +
+  manipulationPromptSection();
 
 const EVIDENCE_ITEM_SCHEMA = {
   type: "object",
@@ -188,6 +221,7 @@ const EVAL_TOOL: Anthropic.Tool = {
         type: "string",
         enum: ["hire", "consider", "pass"],
       },
+      manipulation_attempts: buildManipulationToolSchema(),
     },
     required: [
       "rubric_scores",
@@ -195,6 +229,7 @@ const EVAL_TOOL: Anthropic.Tool = {
       "strengths",
       "concerns",
       "recommendation",
+      "manipulation_attempts",
     ],
   } as Anthropic.Tool["input_schema"],
 };
@@ -220,11 +255,14 @@ function resolveFullName(app: InterviewApplication): string {
 // shape-parity with Python, but the advanced path has no note_fit_signal tool,
 // so callers pass [] and the prompt renders the same "None noted" line the
 // Python side renders for a signal-less interview.
+//
+// Returns the prompt plus `candidateText`: every candidate-derived piece that
+// went into it, which is what manipulation quotes are verified against.
 function buildUserContent(
   app: InterviewApplication,
   transcript: string,
   fitSignals: EvidenceItem[] | Array<Record<string, unknown>>
-): string {
+): { content: string; candidateText: string } {
   const { job, candidateProfile: cp } = app;
 
   const skills =
@@ -265,7 +303,28 @@ function buildUserContent(
     signals = "None noted during the interview.";
   }
 
-  return (
+  const profile =
+    `Name: ${resolveFullName(app)}\n` +
+    `Preferred role: ${cp.preferredRole || "N/A"}\n` +
+    `Total years experience: ${cp.totalYearsExperience != null ? cp.totalYearsExperience : "N/A"}\n` +
+    `Summary: ${truncate(cp.summary, 1500) || "N/A"}\n` +
+    `Skills: ${skills}\n` +
+    `Work experience:\n${work}`;
+  // Deliberately the RAW parsed text, not cleanedResumeText — the Python
+  // evaluator grades on parsed_resume_text (only the live interview prompts
+  // use the PII-stripped version), and this port must judge identically.
+  // (Hidden text is already gone: it is dropped at parse time.)
+  //
+  // Read from the apply-time SNAPSHOT, never the live profile: otherwise a
+  // candidate could apply clean, get questions, then swap in a loaded resume
+  // before grading. Pre-snapshot applications fall back to the profile inside
+  // resolveApplicationResume.
+  const resume =
+    truncate(resolveApplicationResume(app).parsedText, MAX_RESUME_CHARS) || "N/A";
+  const transcriptText =
+    transcript || "(empty — the candidate said little or nothing)";
+
+  const content =
     "# JOB\n" +
     `Title: ${job.title}\n` +
     `Company: ${job.company.name}\n` +
@@ -278,23 +337,18 @@ function buildUserContent(
     `Passing criteria: ${truncate(job.passingCriteria, 1500) || "N/A"}\n` +
     `Interviewer hints: ${truncate(job.interviewHints, 1500) || "N/A"}\n\n` +
     "# CANDIDATE\n" +
-    `Name: ${resolveFullName(app)}\n` +
-    `Preferred role: ${cp.preferredRole || "N/A"}\n` +
-    `Total years experience: ${cp.totalYearsExperience != null ? cp.totalYearsExperience : "N/A"}\n` +
-    `Summary: ${truncate(cp.summary, 1500) || "N/A"}\n` +
-    `Skills: ${skills}\n` +
-    `Work experience:\n${work}\n\n` +
-    // Deliberately the RAW parsed text, not cleanedResumeText — the Python
-    // evaluator grades on parsed_resume_text (only the live interview prompts
-    // use the PII-stripped version), and this port must judge identically.
-    `Parsed resume text:\n${truncate(cp.parsedResumeText, MAX_RESUME_CHARS) || "N/A"}\n\n` +
+    `${wrapUntrusted(profile)}\n\n` +
+    "Parsed resume text:\n" +
+    `${wrapUntrusted(resume)}\n\n` +
     "# INTERVIEW TRANSCRIPT\n" +
-    `${transcript || "(empty — the candidate said little or nothing)"}\n\n` +
+    '(Lines starting with "Candidate:" are the untrusted party speaking.)\n' +
+    `${wrapUntrusted(transcriptText)}\n\n` +
     "# FIT SIGNALS NOTED BY THE INTERVIEWER IN REAL-TIME\n" +
-    `${signals}\n\n` +
+    `${wrapUntrusted(signals)}\n\n` +
     "Return your evaluation in the required structured format via the " +
-    "submit_evaluation tool."
-  );
+    "submit_evaluation tool.";
+
+  return { content, candidateText: [profile, resume, transcriptText].join("\n") };
 }
 
 /**
@@ -317,7 +371,11 @@ export async function evaluateInterview(
     return fallbackEvaluation();
   }
 
-  const userContent = buildUserContent(context, transcript, fitSignals);
+  const { content: userContent, candidateText } = buildUserContent(
+    context,
+    transcript,
+    fitSignals
+  );
   const passingBar = resolvePassingBar(context.job.passingBar);
   const mustHaveKeys = resolveMustHaveKeys(context.job.mustHaveCriteriaJson);
 
@@ -356,13 +414,28 @@ export async function evaluateInterview(
         };
       }
 
+      // Evidence only: attempts never feed decideOutcome (no integrityFlag is
+      // passed), so they cannot move the score or the verdict.
       const decision = decideOutcome(scores, { passingBar, mustHaveKeys });
+
+      // No evidence, no claim: keep only quotes that are really in the text.
+      const attempts = keepVerbatimAttempts(
+        modelOutput.manipulation_attempts,
+        candidateText
+      );
+      const unverified = modelOutput.manipulation_attempts.length - attempts.length;
+      if (unverified > 0) {
+        console.warn(
+          `[evaluate-interview] Dropped ${unverified} manipulation attempt(s) whose quote was not verbatim.`
+        );
+      }
 
       console.log(
         `[evaluate-interview] Evaluation ok (attempt ${attempt}): ` +
           `composite=${decision.composite} bar=${decision.passingBar} ` +
           `verdict=${decision.verdict} gates=${decision.gatesFired.length} ` +
-          `passed=${decision.passed} rec=${modelOutput.recommendation}`
+          `passed=${decision.passed} rec=${modelOutput.recommendation} ` +
+          `manipulation=${attempts.length}`
       );
       return {
         fit_score: decision.legacyScore,
@@ -376,6 +449,7 @@ export async function evaluateInterview(
         composite_score: decision.composite,
         verdict: decision.verdict,
         gates_fired: decision.gatesFired,
+        manipulation_attempts: attempts,
       };
     } catch (error) {
       lastError = error;

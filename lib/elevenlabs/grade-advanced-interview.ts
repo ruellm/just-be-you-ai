@@ -115,6 +115,12 @@ async function grade(applicationId: string): Promise<void> {
         gatesFiredJson: evaluation.gates_fired
           ? (evaluation.gates_fired as unknown as Prisma.InputJsonValue)
           : undefined,
+        // Manipulation attempts (verbatim quotes). Evidence for business and
+        // admin review only: no score effect, never shown to the candidate.
+        // null (column default) = not assessed, [] = none found.
+        manipulationAttemptsJson: evaluation.manipulation_attempts
+          ? (evaluation.manipulation_attempts as unknown as Prisma.InputJsonValue)
+          : undefined,
       },
     }),
     prisma.application.update({

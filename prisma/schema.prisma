@@ -173,6 +173,13 @@ model CandidateProfile {
   // older applications — interview prompt builders fall back to parsedResumeText.
   cleanedResumeText String?
 
+  // Hidden-text evidence for the CURRENT resume (lib/resume-hidden-text.ts):
+  // list of {signature, text, page, detail, dropped}. null = never scanned,
+  // [] = scanned clean. Lives with the resume fields because it describes the
+  // uploaded file; replaced on re-upload, cleared on remove. Never shown to the
+  // candidate.
+  resumeFlagsJson Json?
+
   // Languages spoken (e.g. ["English", "Filipino"])
   languages String[]
 
@@ -397,6 +404,18 @@ model Application {
   // (LiveKit) interview.
   voiceConversationId String?
 
+  // Resume snapshot, copied from the profile inside the applyToJob transaction.
+  // The resume that shaped this application's questions is the one that gets
+  // graded and shown to reviewers, whatever the candidate uploads afterwards.
+  // resumeSnapshotAt is the marker: null = application predates snapshots
+  // (readers fall back to the live profile for those rows only); set = the
+  // three fields below are authoritative, including when they are null (the
+  // candidate applied with no resume). Read via lib/ai/resume-snapshot.ts.
+  resumeSnapshotAt          DateTime?
+  appliedParsedResumeText   String?
+  appliedCleanedResumeText  String?
+  appliedResumeFlagsJson    Json?
+
   candidateProfile CandidateProfile    @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
   job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?
@@ -445,6 +464,12 @@ model InterviewResult {
   compositeScore   Float? // 0-100 weighted composite
   verdict          String? // "strong_pass" | "pass" | "borderline" | "fail" (rubric scoreBands keys)
   gatesFiredJson   Json? // which must-have hard gates fired, if any
+
+  // Manipulation attempts the evaluator found in THIS interview: list of
+  // {quote, classification, source}. null = not assessed (old rows, fallback),
+  // [] = assessed, none found. Evidence only, no score effect. Business/admin
+  // only, never shown to the candidate.
+  manipulationAttemptsJson Json?
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

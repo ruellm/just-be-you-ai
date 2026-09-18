@@ -141,7 +141,12 @@ async function main() {
         }\n` +
         `Legacy mapping:    passed=${evaluation.passed}, tier=${evaluation.tier}, ` +
         `score=${evaluation.fit_score}\n` +
-        `Recommendation:    ${evaluation.recommendation}\n`
+        `Recommendation:    ${evaluation.recommendation}\n` +
+        `Manipulation:      ${
+          evaluation.manipulation_attempts && evaluation.manipulation_attempts.length
+            ? JSON.stringify(evaluation.manipulation_attempts, null, 2)
+            : "(none)"
+        }\n`
     );
 
     process.stdout.write(banner("FIT SUMMARY"));

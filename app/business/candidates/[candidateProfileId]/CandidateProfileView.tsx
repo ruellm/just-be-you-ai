@@ -52,6 +52,7 @@ export type InterviewResultDTO = {
   compositeScore: number | null;
   verdict: string | null;
   gatesFiredJson: unknown;
+  manipulationAttemptsJson: unknown;
   transcript: string | null;
   completedAt: string;
 };
@@ -422,6 +423,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
             compositeScore={r.compositeScore}
             verdict={r.verdict}
             gatesFiredJson={r.gatesFiredJson}
+            manipulationAttemptsJson={r.manipulationAttemptsJson}
           />
         </Card>
       ) : null}

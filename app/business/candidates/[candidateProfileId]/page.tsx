@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getCompanySeatBalance } from "@/lib/interview-seats";
 import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
 import { parseEvidence } from "@/lib/applications";
+import { parseManipulationAttempts } from "@/lib/integrity-flags";
 import { displayAvatarUrl } from "@/lib/profile-format";
 import {
   CandidateProfileView,
@@ -175,6 +176,11 @@ export default async function CandidateDetailPage({
           compositeScore: app.interviewResult.compositeScore,
           verdict: app.interviewResult.verdict,
           gatesFiredJson: app.interviewResult.gatesFiredJson,
+          // Quotes are the candidate's own words, so the name redaction of a
+          // locked profile applies to them too.
+          manipulationAttemptsJson: parseManipulationAttempts(
+            app.interviewResult.manipulationAttemptsJson
+          ).map((attempt) => ({ ...attempt, quote: redact(attempt.quote) })),
           transcript: locked ? null : app.interviewResult.transcript,
           completedAt: app.interviewResult.completedAt.toISOString(),
         }

@@ -65,8 +65,32 @@ export async function applyToJob(rawJobId: string): Promise<ApplyResult> {
             total: balance.total,
           };
         }
+        // Resume snapshot: read the profile's resume fields and write them onto
+        // the application in this same transaction, so an application can
+        // never exist without its snapshot and a concurrent re-upload cannot
+        // slip in between. Question generation and grading read these, not
+        // the live profile (see lib/ai/resume-snapshot.ts).
+        const resume = await tx.candidateProfile.findUniqueOrThrow({
+          where: { id: profile.id },
+          select: {
+            parsedResumeText: true,
+            cleanedResumeText: true,
+            resumeFlagsJson: true,
+          },
+        });
         const created = await tx.application.create({
-          data: { candidateProfileId: profile.id, jobId, status: "submitted" },
+          data: {
+            candidateProfileId: profile.id,
+            jobId,
+            status: "submitted",
+            resumeSnapshotAt: new Date(),
+            appliedParsedResumeText: resume.parsedResumeText,
+            appliedCleanedResumeText: resume.cleanedResumeText,
+            appliedResumeFlagsJson:
+              resume.resumeFlagsJson === null
+                ? Prisma.DbNull
+                : (resume.resumeFlagsJson as Prisma.InputJsonValue),
+          },
           select: { id: true },
         });
         return { kind: "created" as const, id: created.id };

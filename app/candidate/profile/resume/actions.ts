@@ -2,10 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { extractResumeText } from "@/lib/resume-parse";
+import { extractResume } from "@/lib/resume-parse";
+import type { ResumeFlag } from "@/lib/resume-hidden-text";
 import { cleanResumeText } from "@/lib/ai/clean-resume";
 import {
   RESUME_ALLOWED_TYPES,
@@ -77,10 +79,23 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
   // re-download from Storage). Parsing must NEVER fail the upload — on any
   // error/empty result we store null. On a replace this also overwrites (i.e.
   // clears) any previously parsed text.
+  //
+  // extractResume returns the VISIBLE text only. Hidden text (white, tiny,
+  // invisible...) is dropped there and comes back as flags, stored as evidence
+  // for business/admin review. It never blocks the upload and the candidate is
+  // never told. null flags = the file could not be scanned at all.
   let parsedText: string | null = null;
+  let resumeFlags: ResumeFlag[] | null = null;
   try {
-    const text = await extractResumeText(buffer, meta.data.ext);
-    parsedText = text.length > 0 ? text : null;
+    const parsed = await extractResume(buffer, meta.data.ext);
+    parsedText = parsed.text.length > 0 ? parsed.text : null;
+    resumeFlags = parsed.flags;
+    if (resumeFlags.length) {
+      console.warn(
+        `[resume-parse] ${resumeFlags.length} hidden-text flag(s) on ${path}: ` +
+          resumeFlags.map((f) => f.signature).join(", ")
+      );
+    }
     if (!parsedText) {
       console.warn(`[resume-parse] No text extracted from ${path}`);
     }
@@ -88,6 +103,10 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
     console.error("[resume-parse] Failed to parse uploaded resume:", parseError);
     parsedText = null;
   }
+  const resumeFlagsJson =
+    resumeFlags === null
+      ? Prisma.DbNull
+      : (resumeFlags as unknown as Prisma.InputJsonValue);
 
   // cleanedResumeText derives from parsedResumeText, so a new resume clears it
   // first; the cleanup pass below repopulates it from the fresh parsed text.
@@ -98,6 +117,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
       parsedResumeText: parsedText,
       resumeParsedAt: parsedText ? new Date() : null,
       cleanedResumeText: null,
+      resumeFlagsJson,
     },
     create: {
       userId: user.id,
@@ -105,6 +125,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
       parsedResumeText: parsedText,
       resumeParsedAt: parsedText ? new Date() : null,
       cleanedResumeText: null,
+      resumeFlagsJson,
     },
   });
 
@@ -161,6 +182,7 @@ export async function deleteResume(): Promise<ActionResult> {
         parsedResumeText: null,
         resumeParsedAt: null,
         cleanedResumeText: null,
+        resumeFlagsJson: Prisma.DbNull,
       },
     });
   }

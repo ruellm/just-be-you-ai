@@ -6,6 +6,7 @@ import { getInterviewSeatBalance } from "@/lib/interview-seats";
 import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import { displayAvatarUrl } from "@/lib/profile-format";
+import { parseResumeFlags, RESUME_FLAG_LABELS } from "@/lib/integrity-flags";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +96,7 @@ export default async function AdminUserDetailPage({
       : [];
 
   const profile = user.candidateProfile;
+  const resumeFlags = parseResumeFlags(profile?.resumeFlagsJson);
   const avatarUrl = displayAvatarUrl(
     profile?.profileImageUrl,
     profile?.avatarUrl
@@ -180,6 +182,37 @@ export default async function AdminUserDetailPage({
           {/* Sections 2-8 come from the shared component so this page and
               /admin/applications/[id] cannot drift apart. */}
           <CandidateProfileSections profile={profile} joinedAt={user.createdAt} />
+
+          {/* Hidden text found in the uploaded resume. Admin only: the
+              candidate is never told. The text was dropped before storage, so
+              it is not in the parsed resume text below. */}
+          {resumeFlags.length ? (
+            <details
+              open
+              className="rounded-[12px] border border-amber-200 bg-amber-50 text-amber-900"
+            >
+              <summary className="cursor-pointer px-6 py-4 text-small font-medium">
+                Resume integrity flags ({resumeFlags.length}), current resume.
+                Each application keeps its own copy.
+              </summary>
+              <ul className="space-y-3 border-t border-amber-200 px-6 py-4 text-small">
+                {resumeFlags.map((flag, i) => (
+                  <li key={i}>
+                    <p className="font-medium">
+                      {RESUME_FLAG_LABELS[flag.signature] ?? flag.signature}
+                      {flag.page != null ? `, page ${flag.page}` : ""}
+                      {flag.detail ? ` (${flag.detail})` : ""}
+                    </p>
+                    {flag.text ? (
+                      <p className="mt-0.5 font-mono text-meta whitespace-pre-wrap italic">
+                        &ldquo;{flag.text}&rdquo;
+                      </p>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </details>
+          ) : null}
 
           {profile.parsedResumeText ? (
             <details className="rounded-[12px] border border-brand-border bg-brand-surface">

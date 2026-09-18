@@ -37,6 +37,9 @@ from .supabase_client import supabase
 # Embedded select tree. Keys before ":" are the aliases we read back below.
 _SELECT = """
 id,
+resumeSnapshotAt,
+appliedParsedResumeText,
+appliedCleanedResumeText,
 candidate:candidate_profiles(
     firstName,
     lastName,
@@ -118,6 +121,7 @@ def load_interview_context(application_id: str) -> InterviewContext:
         raise ValueError(f"Application {application_id!r} has no job attached.")
 
     candidate = _build_candidate(candidate_row)
+    _resolve_resume(row, candidate)
     job = _build_job(job_row)
     questions = _build_questions(row.get("questions") or [])
 
@@ -127,6 +131,32 @@ def load_interview_context(application_id: str) -> InterviewContext:
         job=job,
         questions=questions,
     )
+
+
+def _resolve_resume(application_row: Dict[str, Any], candidate: CandidateContext) -> None:
+    """Point the candidate's resume text at the apply-time SNAPSHOT.
+
+    The interview prompt (interview_flow.py) and the evaluator (evaluate.py)
+    both read ``candidate.parsed_resume_text`` / ``cleaned_resume_text``, so
+    resolving here covers both. Without this a candidate could apply clean, get
+    questions, then swap in a loaded resume before the interview is graded.
+
+    MIRROR: lib/ai/resume-snapshot.ts#resolveApplicationResume.
+    """
+    if application_row.get("resumeSnapshotAt") is not None:
+        # Snapshot rows are authoritative even where a field is None: None text
+        # means the candidate applied with no resume, and must NOT fall through
+        # to whatever they uploaded later.
+        candidate.parsed_resume_text = application_row.get("appliedParsedResumeText")
+        candidate.cleaned_resume_text = application_row.get("appliedCleanedResumeText")
+        candidate.resume_source = "snapshot"
+        return
+
+    # PRE-SNAPSHOT FALLBACK, deliberate: applications created before the
+    # snapshot columns existed have resumeSnapshotAt = NULL and were never
+    # backfilled. For those rows only, keep the live profile text that
+    # _build_candidate already loaded.
+    candidate.resume_source = "profile"
 
 
 def _build_candidate(row: Dict[str, Any]) -> CandidateContext:

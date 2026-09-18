@@ -131,6 +131,10 @@ def save_interview_result(
             "compositeScore": evaluation.composite_score,
             "verdict": evaluation.verdict,
             "gatesFiredJson": evaluation.gates_fired,
+            # Manipulation attempts (verbatim quotes). Evidence for business
+            # and admin review only: no score effect, never shown to the
+            # candidate. None = not assessed (fallback), [] = none found.
+            "manipulationAttemptsJson": evaluation.manipulation_attempts,
         }
     ).execute()
 

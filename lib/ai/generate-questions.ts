@@ -3,6 +3,8 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
+import { untrustedNotice, wrapUntrusted } from "@/lib/ai/interview-prompts";
+import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
 
 const RESUME_CHAR_LIMIT = 8000;
 
@@ -67,7 +69,9 @@ Rules:
 - Questions must be conversational and natural to ask aloud in a voice interview. One topic per question. Avoid yes/no questions. Keep each question under 35 words.
 - Set "order" to 1–6 matching the sequence above, and "category" to the matching value.
 - Base personalized questions only on details actually present in the candidate's profile or resume — never invent facts.
-- Call the submit_questions tool with all six questions. Do not write anything else.`;
+- Call the submit_questions tool with all six questions. Do not write anything else.
+
+${untrustedNotice("generator")}`;
 
 type ApplicationForGeneration = NonNullable<
   Awaited<ReturnType<typeof loadApplication>>
@@ -107,32 +111,40 @@ function buildUserPrompt(application: ApplicationForGeneration): string {
   );
   lines.push(`Passing criteria: ${job.passingCriteria?.trim() || "(none provided)"}`);
 
-  lines.push("");
-  lines.push("# CANDIDATE");
+  // Everything the candidate typed or uploaded goes inside untrusted-data tags.
+  const candidate: string[] = [];
   const name = [cp.firstName, cp.lastName].filter(Boolean).join(" ");
-  lines.push(`Name: ${name || "(not provided)"}`);
-  if (cp.preferredRole) lines.push(`Preferred role: ${cp.preferredRole}`);
+  candidate.push(`Name: ${name || "(not provided)"}`);
+  if (cp.preferredRole) candidate.push(`Preferred role: ${cp.preferredRole}`);
   if (cp.totalYearsExperience != null)
-    lines.push(`Total years of experience: ${cp.totalYearsExperience}`);
-  if (cp.summary) lines.push(`Summary: ${cp.summary}`);
+    candidate.push(`Total years of experience: ${cp.totalYearsExperience}`);
+  if (cp.summary) candidate.push(`Summary: ${cp.summary}`);
 
   const candidateSkills = cp.skills.map(
     (s) => `${s.skill.name} (${s.yearsOfExperience}y)`
   );
-  lines.push(`Skills: ${candidateSkills.length ? candidateSkills.join(", ") : "(none)"}`);
+  candidate.push(`Skills: ${candidateSkills.length ? candidateSkills.join(", ") : "(none)"}`);
 
   if (cp.workExperiences.length) {
-    lines.push("Work experience:");
+    candidate.push("Work experience:");
     for (const w of cp.workExperiences) {
       const desc = w.description ? ` — ${w.description}` : "";
-      lines.push(`- ${w.position} at ${w.companyName} (${w.employmentType})${desc}`);
+      candidate.push(`- ${w.position} at ${w.companyName} (${w.employmentType})${desc}`);
     }
   }
 
-  if (cp.parsedResumeText) {
+  lines.push("");
+  lines.push("# CANDIDATE");
+  lines.push(wrapUntrusted(candidate.join("\n")));
+
+  // The resume as it stood at apply time, not the live profile (pre-snapshot
+  // applications fall back to the profile inside resolveApplicationResume).
+  // Still the RAW parsed text, as before.
+  const resumeText = resolveApplicationResume(application).parsedText;
+  if (resumeText) {
     lines.push("");
     lines.push("# CANDIDATE RESUME (extracted text)");
-    lines.push(cp.parsedResumeText.slice(0, RESUME_CHAR_LIMIT));
+    lines.push(wrapUntrusted(resumeText.slice(0, RESUME_CHAR_LIMIT)));
   }
 
   return lines.join("\n");

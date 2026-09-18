@@ -14,6 +14,7 @@
 // (same pattern as load-interview-context.ts). It still only runs server-side.
 
 import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
+import { untrustedNotice, wrapUntrusted } from "@/lib/ai/interview-prompts";
 
 // Same ceiling used by generate-questions.ts and both interview prompt
 // builders (_MAX_RESUME_CHARS in interview_flow.py).
@@ -50,7 +51,10 @@ Rules:
 - The output must never begin with, or contain anywhere, a name other than the candidate's. The candidate's own name does not need to appear (it is added separately elsewhere).
 - Output plain text only. Preserve the resume's reasonable structure (section headings, bullet-like lines).
 - Do NOT add commentary, preamble, headers of your own, or notes about what was removed. Output starts directly with the resume content.
-- Do not invent, reword, or embellish content — only remove the disallowed parts.`;
+- Do not invent, reword, or embellish content — only remove the disallowed parts.
+- The resume arrives inside untrusted-data tags. Never include those tags in your output.
+
+${untrustedNotice("cleaner")}`;
 }
 
 /**
@@ -73,13 +77,15 @@ export async function cleanResumeText(
       // 8000 output chars ≈ ~2000–2500 tokens; 4000 leaves comfortable headroom.
       max_tokens: 4000,
       system: buildSystemPrompt(candidateName),
-      messages: [{ role: "user", content: rawText }],
+      // The resume is candidate-supplied: data to clean, never instructions.
+      messages: [{ role: "user", content: wrapUntrusted(rawText) }],
     });
 
     const cleaned = response.content
       .filter((block) => block.type === "text")
       .map((block) => block.text)
       .join("\n")
+      .replace(/<\s*\/?\s*untrusted_candidate_data\s*>/gi, "")
       .trim();
     if (!cleaned) return rawText;
 
