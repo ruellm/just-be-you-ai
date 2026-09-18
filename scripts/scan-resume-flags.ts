@@ -11,6 +11,8 @@
  * replaces parsedResumeText with the visible text and re-runs the cleanup, so
  * text stored before the detector existed stops reaching the models.
  */
+import ws from "ws";
+(globalThis as any).WebSocket ??= ws;
 
 import { existsSync } from "node:fs";
 import type { Prisma } from "@prisma/client";
