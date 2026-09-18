@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ApplyConsentDialog } from "@/components/jobs/ApplyConsentDialog";
 import { applyToJob } from "@/app/candidate/jobs/[id]/actions";
 
 // "Apply Now" for the redesigned JobCard. Same server action + redirect
@@ -19,37 +20,43 @@ export function JobCardApplyButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  return (
-    <Button
-      type="button"
-      disabled={disabled || pending}
-      className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-small font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
-      onClick={() =>
-        startTransition(async () => {
-          try {
-            const result = await applyToJob(jobId);
-            if (result && !result.ok) {
-              toast.error(result.message);
-              router.refresh();
-            }
-          } catch (error) {
-            // A redirect throws NEXT_REDIRECT — let it propagate.
-            if (
-              error &&
-              typeof error === "object" &&
-              "digest" in error &&
-              String((error as { digest?: string }).digest).startsWith(
-                "NEXT_REDIRECT"
-              )
-            ) {
-              throw error;
-            }
-            toast.error("Could not apply. Please try again.");
-          }
-        })
+  // Runs only after the consent modal is agreed to.
+  const apply = () =>
+    startTransition(async () => {
+      try {
+        const result = await applyToJob(jobId);
+        if (result && !result.ok) {
+          toast.error(result.message);
+          router.refresh();
+        }
+      } catch (error) {
+        // A redirect throws NEXT_REDIRECT — let it propagate.
+        if (
+          error &&
+          typeof error === "object" &&
+          "digest" in error &&
+          String((error as { digest?: string }).digest).startsWith(
+            "NEXT_REDIRECT"
+          )
+        ) {
+          throw error;
+        }
+        toast.error("Could not apply. Please try again.");
       }
-    >
-      {pending ? "Preparing…" : "Apply Now"}
-    </Button>
+    });
+
+  return (
+    <ApplyConsentDialog
+      onAgree={apply}
+      trigger={
+        <Button
+          type="button"
+          disabled={disabled || pending}
+          className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-small font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
+        >
+          {pending ? "Preparing…" : "Apply Now"}
+        </Button>
+      }
+    />
   );
 }

@@ -18,6 +18,8 @@ import { cn } from "@/lib/utils";
 // The app's one confirmation-gate dialog: 64px status-fail circle, centred
 // title + body, stacked full-width buttons (destructive action on top, Cancel
 // below). Same visual language as components/profile/ConfirmDelete.
+// `tone="info"` swaps the destructive treatment for the brand one (light
+// purple tile, brand-primary action) for non-destructive gates.
 //
 // It ONLY gates — `onConfirm` runs the caller's existing behaviour verbatim.
 // No pending state, no toast, no refresh here; callers that already own those
@@ -32,6 +34,7 @@ export function ConfirmDialog({
   confirmLabel,
   onConfirm,
   contentClassName,
+  tone = "destructive",
 }: {
   trigger: ReactNode;
   icon: LucideIcon;
@@ -41,6 +44,7 @@ export function ConfirmDialog({
   onConfirm: () => void;
   /** Width override, e.g. "sm:max-w-[693px]". */
   contentClassName?: string;
+  tone?: "destructive" | "info";
 }) {
   const [open, setOpen] = useState(false);
 
@@ -53,7 +57,14 @@ export function ConfirmDialog({
           contentClassName
         )}
       >
-        <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-status-fail text-accent-2">
+        <div
+          className={cn(
+            "mx-auto flex size-16 items-center justify-center rounded-full",
+            tone === "info"
+              ? "bg-brand-secondary/10 text-brand-primary"
+              : "bg-status-fail text-accent-2"
+          )}
+        >
           <Icon className="size-[29px]" />
         </div>
         <AlertDialogHeader className="items-center gap-2 pt-5 text-center sm:text-center">
@@ -67,7 +78,12 @@ export function ConfirmDialog({
         <AlertDialogFooter className="mx-auto mt-6 flex w-full max-w-[320px] flex-col gap-3 sm:flex-col sm:justify-stretch">
           <AlertDialogAction
             onClick={() => onConfirm()}
-            className="h-auto w-full rounded-[8px] bg-accent-2 py-3 font-body text-small font-semibold text-white hover:bg-accent-2/90"
+            className={cn(
+              "h-auto w-full rounded-[8px] py-3 font-body text-small font-semibold text-white",
+              tone === "info"
+                ? "bg-brand-primary hover:bg-brand-primary/90"
+                : "bg-accent-2 hover:bg-accent-2/90"
+            )}
           >
             {confirmLabel}
           </AlertDialogAction>

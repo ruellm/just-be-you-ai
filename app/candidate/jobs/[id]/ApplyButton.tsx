@@ -4,6 +4,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ApplyConsentDialog } from "@/components/jobs/ApplyConsentDialog";
 import { applyToJob } from "./actions";
 
 // Creates a submitted Application then (server-side) redirects to the
@@ -21,37 +22,39 @@ export function ApplyButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  return (
-    <Button
-      size="lg"
-      className={className}
-      disabled={pending}
-      onClick={() =>
-        startTransition(async () => {
-          try {
-            const result = await applyToJob(jobId);
-            if (result && !result.ok) {
-              toast.error(result.message);
-              router.refresh();
-            }
-          } catch (error) {
-            // A redirect throws NEXT_REDIRECT — let it propagate.
-            if (
-              error &&
-              typeof error === "object" &&
-              "digest" in error &&
-              String((error as { digest?: string }).digest).startsWith(
-                "NEXT_REDIRECT"
-              )
-            ) {
-              throw error;
-            }
-            toast.error("Could not apply. Please try again.");
-          }
-        })
+  // Runs only after the consent modal is agreed to.
+  const apply = () =>
+    startTransition(async () => {
+      try {
+        const result = await applyToJob(jobId);
+        if (result && !result.ok) {
+          toast.error(result.message);
+          router.refresh();
+        }
+      } catch (error) {
+        // A redirect throws NEXT_REDIRECT — let it propagate.
+        if (
+          error &&
+          typeof error === "object" &&
+          "digest" in error &&
+          String((error as { digest?: string }).digest).startsWith(
+            "NEXT_REDIRECT"
+          )
+        ) {
+          throw error;
+        }
+        toast.error("Could not apply. Please try again.");
       }
-    >
-      {pending ? "Preparing your interview…" : label}
-    </Button>
+    });
+
+  return (
+    <ApplyConsentDialog
+      onAgree={apply}
+      trigger={
+        <Button size="lg" className={className} disabled={pending}>
+          {pending ? "Preparing your interview…" : label}
+        </Button>
+      }
+    />
   );
 }
