@@ -1,7 +1,12 @@
 import { PDFParse } from "pdf-parse";
 import * as mammoth from "mammoth";
 import JSZip from "jszip";
-import { DOMParser, XMLSerializer } from "@xmldom/xmldom";
+import {
+  DOMParser,
+  XMLSerializer,
+  type Document as XmlDocument,
+  type Element as XmlElement,
+} from "@xmldom/xmldom";
 
 // Hidden-text detection for uploaded resumes (injection defense, Part 1).
 //
@@ -944,21 +949,21 @@ interface RunProps {
   sizePt?: number;
 }
 
-function child(el: Element | null | undefined, name: string): Element | null {
+function child(el: XmlElement | null | undefined, name: string): XmlElement | null {
   if (!el) return null;
   for (let n = el.firstChild; n; n = n.nextSibling) {
-    if (n.nodeType === 1 && (n as Element).nodeName === name) return n as Element;
+    if (n.nodeType === 1 && (n as XmlElement).nodeName === name) return n as XmlElement;
   }
   return null;
 }
 
-function isOn(el: Element | null): boolean | undefined {
+function isOn(el: XmlElement | null): boolean | undefined {
   if (!el) return undefined;
   const val = el.getAttribute("w:val");
   return !(val === "0" || val === "false" || val === "off");
 }
 
-function readRunProps(rPr: Element | null): RunProps {
+function readRunProps(rPr: XmlElement | null): RunProps {
   const props: RunProps = {};
   if (!rPr) return props;
   const vanish = isOn(child(rPr, "w:vanish"));
@@ -973,30 +978,30 @@ function readRunProps(rPr: Element | null): RunProps {
   return props;
 }
 
-function shadingOf(pr: Element | null): Rgb | null {
+function shadingOf(pr: XmlElement | null): Rgb | null {
   const fill = child(pr, "w:shd")?.getAttribute("w:fill");
   return fill && fill !== "auto" ? parseHex(fill) : null;
 }
 
-function ancestor(el: Element, name: string): Element | null {
+function ancestor(el: XmlElement, name: string): XmlElement | null {
   for (let n = el.parentNode; n; n = n.parentNode) {
-    if (n.nodeType === 1 && (n as Element).nodeName === name) return n as Element;
+    if (n.nodeType === 1 && (n as XmlElement).nodeName === name) return n as XmlElement;
   }
   return null;
 }
 
-function runText(run: Element): string {
+function runText(run: XmlElement): string {
   let text = "";
   for (let n = run.firstChild; n; n = n.nextSibling) {
     if (n.nodeType !== 1) continue;
-    const name = (n as Element).nodeName;
+    const name = (n as XmlElement).nodeName;
     if (name === "w:t") text += n.textContent ?? "";
     else if (name === "w:tab" || name === "w:br") text += " ";
   }
   return text;
 }
 
-function elementsText(root: Element | Document, tag: string): string {
+function elementsText(root: XmlElement | XmlDocument, tag: string): string {
   const out: string[] = [];
   const nodes = root.getElementsByTagName(tag);
   for (let i = 0; i < nodes.length; i += 1) out.push(nodes[i].textContent ?? "");
@@ -1053,7 +1058,7 @@ async function analyzeDocx(buffer: Buffer): Promise<ResumeExtraction> {
 
     // Tracked deletions: struck text a reader with changes accepted never sees.
     const delNodes = doc.getElementsByTagName("w:del");
-    const deletions: Element[] = [];
+    const deletions: XmlElement[] = [];
     for (let i = 0; i < delNodes.length; i += 1) deletions.push(delNodes[i]);
     for (const del of deletions) {
       const text = elementsText(del, "w:delText").trim();
@@ -1071,7 +1076,7 @@ async function analyzeDocx(buffer: Buffer): Promise<ResumeExtraction> {
     }
 
     const runNodes = doc.getElementsByTagName("w:r");
-    const runs: Element[] = [];
+    const runs: XmlElement[] = [];
     for (let i = 0; i < runNodes.length; i += 1) runs.push(runNodes[i]);
     for (const run of runs) {
       const text = runText(run);
@@ -1153,7 +1158,7 @@ async function analyzeDocx(buffer: Buffer): Promise<ResumeExtraction> {
     const entries: [string, unknown][] = [];
     for (let n = root.firstChild; n; n = n.nextSibling) {
       if (n.nodeType !== 1) continue;
-      const el = n as Element;
+      const el = n as XmlElement;
       entries.push([el.getAttribute("name") ?? el.nodeName, el.textContent ?? ""]);
     }
     flags = flags.concat(metadataFlags(entries, "document property"));
