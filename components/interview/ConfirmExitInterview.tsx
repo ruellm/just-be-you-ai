@@ -5,12 +5,15 @@ import { XCircle } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 // Confirmation gate for every way OUT of a live interview (U4 #21) — the
-// "Done answering? End Interview" button and the header's "Return to Home".
+// "End Interview" button and the header's "Return to Home".
 //
 // Copy only: the dialog itself is the shared ConfirmDialog. `onConfirm` runs
 // the caller's existing behaviour verbatim (room.disconnect() / endSession() /
 // the navigation). Nothing about session, disconnect, or completion logic
 // lives here.
+//
+// Leaving ends the session and the interview is then graded on the answers
+// given so far; it cannot be restarted. The copy says exactly that.
 export function ConfirmExitInterview({
   trigger,
   onConfirm,
@@ -27,11 +30,10 @@ export function ConfirmExitInterview({
       onConfirm={onConfirm}
       description={
         <>
-          If you leave now, your session will{" "}
-          <span className="font-bold">end immediately</span>. Restoring your
-          seat credit can take between{" "}
-          <span className="font-bold">3 days to 2 weeks</span>, depending on
-          your membership tier.
+          If you leave now, this interview will{" "}
+          <span className="font-bold">end immediately</span> and be scored on
+          the answers you have given so far. You will not be able to restart
+          it.
         </>
       }
     />

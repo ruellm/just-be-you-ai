@@ -4,11 +4,11 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ApplyConsentDialog } from "@/components/jobs/ApplyConsentDialog";
 import { applyToJob } from "./actions";
 
 // Creates a submitted Application then (server-side) redirects to the
-// on-demand interview screen.
+// interview, which opens on the Setup page where the candidate consents and
+// checks their camera and mic before anything starts.
 // `className` / `label` are visual-only hooks for the redesigned detail page.
 export function ApplyButton({
   jobId,
@@ -22,7 +22,6 @@ export function ApplyButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  // Runs only after the consent modal is agreed to.
   const apply = () =>
     startTransition(async () => {
       try {
@@ -48,13 +47,8 @@ export function ApplyButton({
     });
 
   return (
-    <ApplyConsentDialog
-      onAgree={apply}
-      trigger={
-        <Button size="lg" className={className} disabled={pending}>
-          {pending ? "Preparing your interview…" : label}
-        </Button>
-      }
-    />
+    <Button size="lg" className={className} disabled={pending} onClick={apply}>
+      {pending ? "Preparing your interview…" : label}
+    </Button>
   );
 }

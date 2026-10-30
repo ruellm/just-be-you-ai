@@ -427,6 +427,7 @@ model Application {
   job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?
   questions        GeneratedQuestion[]
+  recordings       InterviewRecording[]
 
   @@unique([candidateProfileId, jobId])
   @@index([jobId])
@@ -481,6 +482,41 @@ model InterviewResult {
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@map("interview_results")
+}
+
+// Candidate camera + mic recording of one interview attempt, stored as 10s
+// parts in the private `interview-recordings` bucket under storagePrefix.
+// Never played in the app; the team exports it with scripts/export-recording.ts
+// and scripts/purge-expired-recordings.ts deletes the objects after deleteAfter
+// (90 days from startedAt) while keeping the row. A retake gets a new row.
+// While status is `recording`, partCount is the highest part number issued;
+// finalize overwrites it with the number of parts actually uploaded.
+enum RecordingStatus {
+  recording
+  complete
+  incomplete
+  deleted
+}
+
+model InterviewRecording {
+  id            String          @id @default(cuid())
+  applicationId String
+  consentAt     DateTime
+  startedAt     DateTime
+  endedAt       DateTime?
+  status        RecordingStatus @default(recording)
+  mimeType      String
+  partCount     Int             @default(0)
+  totalBytes    BigInt          @default(0)
+  storagePrefix String
+  deleteAfter   DateTime
+  deletedAt     DateTime?
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@index([deleteAfter])
+  @@map("interview_recordings")
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

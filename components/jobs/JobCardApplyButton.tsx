@@ -4,12 +4,12 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { ApplyConsentDialog } from "@/components/jobs/ApplyConsentDialog";
 import { applyToJob } from "@/app/candidate/jobs/[id]/actions";
 
 // "Apply Now" for the redesigned JobCard. Same server action + redirect
 // handling as the job-detail ApplyButton; the card passes `disabled` for the
-// closed / already-applied states.
+// closed / already-applied states. Consent is collected on the interview
+// Setup page the redirect lands on.
 export function JobCardApplyButton({
   jobId,
   disabled,
@@ -20,7 +20,6 @@ export function JobCardApplyButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
 
-  // Runs only after the consent modal is agreed to.
   const apply = () =>
     startTransition(async () => {
       try {
@@ -46,17 +45,13 @@ export function JobCardApplyButton({
     });
 
   return (
-    <ApplyConsentDialog
-      onAgree={apply}
-      trigger={
-        <Button
-          type="button"
-          disabled={disabled || pending}
-          className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-small font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
-        >
-          {pending ? "Preparing…" : "Apply Now"}
-        </Button>
-      }
-    />
+    <Button
+      type="button"
+      disabled={disabled || pending}
+      onClick={apply}
+      className="h-9 flex-1 rounded-[8px] bg-brand-secondary font-body text-small font-medium text-white hover:bg-brand-secondary/90 disabled:bg-brand-border disabled:text-white disabled:opacity-100"
+    >
+      {pending ? "Preparing…" : "Apply Now"}
+    </Button>
   );
 }

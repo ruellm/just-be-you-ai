@@ -1,26 +1,35 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Conversation } from "@elevenlabs/client";
+import { Conversation, VoiceConversation } from "@elevenlabs/client";
 import { Button } from "@/components/ui/button";
+import {
+  InterviewSetup,
+  type InterviewMedia,
+} from "@/components/interview/InterviewSetup";
 import {
   LiveStage,
   StatusScreen,
   useElapsedSeconds,
 } from "@/components/interview/InterviewUi";
+import {
+  applicationRecordingBackend,
+  useInterviewRecorder,
+} from "@/components/interview/useInterviewRecorder";
 import { startAdvancedInterview } from "@/lib/elevenlabs/start-advanced-interview";
 import { completeAdvancedInterview } from "@/lib/elevenlabs/complete-advanced-interview";
 
 // Phase 3.3 — the ADVANCED (ElevenLabs) counterpart of InterviewExperience.tsx.
-// Same page states (connecting / live / ending / error) and the same exit
-// (router.replace to the result page, whose "Finalizing…" pending state covers
-// the grading wait), but the voice call runs on ElevenLabs Conversational AI
-// in the browser instead of a LiveKit room + Python worker. On disconnect we
-// stamp the application interview_completed + save the conversation id via
-// completeAdvancedInterview; grading is a separate session (3.4).
+// Same page states (setup / connecting / live / ending / error) and the same
+// exit (router.replace to the result page, whose "Finalizing…" pending state
+// covers the grading wait), but the voice call runs on ElevenLabs
+// Conversational AI in the browser instead of a LiveKit room + Python worker.
+// On disconnect we stamp the application interview_completed + save the
+// conversation id via completeAdvancedInterview; grading is a separate
+// session (3.4).
 
-type Phase = "connecting" | "live" | "ending" | "error";
+type Phase = "setup" | "connecting" | "live" | "ending" | "error";
 
 type TranscriptLine = {
   id: number;
@@ -30,18 +39,24 @@ type TranscriptLine = {
 
 export function AdvancedInterviewExperience({
   applicationId,
-  jobTitle,
+  candidateName,
+  durationMinutes,
 }: {
   applicationId: string;
-  jobTitle: string;
+  candidateName: string;
+  durationMinutes: number;
 }) {
   const router = useRouter();
-  const [phase, setPhase] = useState<Phase>("connecting");
+  const [phase, setPhase] = useState<Phase>("setup");
   const [mode, setMode] = useState<"speaking" | "listening">("listening");
   const [lines, setLines] = useState<TranscriptLine[]>([]);
-  const started = useRef(false); // StrictMode-safe start guard (same as LiveKit path)
+  const [micMuted, setMicMuted] = useState(false);
+  const [media, setMedia] = useState<InterviewMedia | null>(null);
+  const [consentAt, setConsentAt] = useState<Date | null>(null);
+  const mediaRef = useRef<InterviewMedia | null>(null);
+  const started = useRef(false); // start runs exactly once
   const ended = useRef(false); // completion runs exactly once
-  const conversationRef = useRef<Conversation | null>(null);
+  const conversationRef = useRef<VoiceConversation | null>(null);
   const conversationIdRef = useRef<string | null>(null);
   const nextLineId = useRef(0);
 
@@ -52,10 +67,32 @@ export function AdvancedInterviewExperience({
   // condition.
   const elapsed = useElapsedSeconds(phase === "live");
 
+  // Video recording of the candidate. Runs beside the voice connection and
+  // never affects it; see useInterviewRecorder.
+  const recordingBackend = useMemo(
+    () => applicationRecordingBackend(applicationId),
+    [applicationId]
+  );
+  const recorder = useInterviewRecorder({
+    stream: media?.stream ?? null,
+    active: phase === "live",
+    consentAt,
+    backend: recordingBackend,
+  });
+
+  // The camera + mic stream opened on the Setup page lives until this screen
+  // unmounts, whatever way the interview ends.
+  useEffect(
+    () => () => {
+      mediaRef.current?.stream.getTracks().forEach((track) => track.stop());
+    },
+    []
+  );
+
   // The interview ends when the agent hangs up OR the candidate clicks
   // "End interview". Either way: stamp interview_completed + conversation id,
   // then straight to the result page — its "Finalizing…" state handles the
-  // wait for grading (which doesn't exist yet for the advanced path; expected).
+  // wait for grading.
   async function handleEnded() {
     if (ended.current) return;
     ended.current = true;
@@ -66,13 +103,22 @@ export function AdvancedInterviewExperience({
       // A stamp failure must not strand the candidate on a dead call screen.
       console.error("Failed to complete advanced interview:", error);
     }
+    // Last chunk + pending uploads (capped at ~15s) behind the "Wrapping up"
+    // screen before the result page loads.
+    await recorder.stop("complete");
     router.replace(resultPath);
   }
 
-  // Kick off the session once on mount (StrictMode-safe via the ref guard).
-  useEffect(() => {
+  // Kick off the session once the candidate has agreed on the Setup page.
+  // Permission was already granted there, so the SDK's own mic capture does
+  // not prompt again.
+  function handleStart(nextMedia: InterviewMedia) {
     if (started.current) return;
     started.current = true;
+    mediaRef.current = nextMedia;
+    setMedia(nextMedia);
+    setConsentAt(new Date());
+    setPhase("connecting");
     (async () => {
       try {
         const setup = await startAdvancedInterview(applicationId);
@@ -82,13 +128,11 @@ export function AdvancedInterviewExperience({
           return;
         }
 
-        // Ask for the mic up front so a permission denial surfaces as our
-        // error state instead of a mid-handshake failure.
-        await navigator.mediaDevices.getUserMedia({ audio: true });
-
         const conversation = await Conversation.startSession({
           agentId: setup.agentId,
           connectionType: "websocket",
+          // The mic the candidate picked on the Setup page.
+          inputDeviceId: nextMedia.micDeviceId ?? undefined,
           // NOTE: the nesting is agent.prompt.prompt (a string inside a
           // `prompt` object). Flattening it makes ElevenLabs silently reject
           // the override (1008 "override not allowed").
@@ -116,14 +160,39 @@ export function AdvancedInterviewExperience({
             console.error("[advanced-interview] ElevenLabs error:", message, context);
           },
         });
-        conversationRef.current = conversation;
+        // A websocket voice session is always a VoiceConversation; the check
+        // only narrows the SDK's union type.
+        conversationRef.current =
+          conversation instanceof VoiceConversation ? conversation : null;
       } catch (error) {
         console.error("Failed to start advanced interview:", error);
         setPhase("error");
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
+
+  function handleCancel() {
+    if (window.history.length > 1) router.back();
+    else router.push("/candidate/applications");
+  }
+
+  function toggleMic() {
+    const next = !micMuted;
+    conversationRef.current?.setMicMuted(next);
+    // The recording follows the mute so it holds what the interviewer heard.
+    mediaRef.current?.stream.getAudioTracks().forEach((t) => (t.enabled = !next));
+    setMicMuted(next);
+  }
+
+  if (phase === "setup") {
+    return (
+      <InterviewSetup
+        durationMinutes={durationMinutes}
+        onCancel={handleCancel}
+        onStart={handleStart}
+      />
+    );
+  }
 
   if (phase === "connecting") {
     return (
@@ -186,11 +255,15 @@ export function AdvancedInterviewExperience({
 
   return (
     <LiveStage
-      jobTitle={jobTitle}
+      candidateName={candidateName}
       speaking={agentSpeaking}
       latestMessage={latestAgent?.text ?? null}
-      onEnd={() => void conversationRef.current?.endSession()}
       elapsedSeconds={elapsed}
+      cameraStream={media?.stream ?? null}
+      micMuted={micMuted}
+      onToggleMic={toggleMic}
+      onEnd={() => void conversationRef.current?.endSession()}
+      recording={recorder.recording}
     />
   );
 }

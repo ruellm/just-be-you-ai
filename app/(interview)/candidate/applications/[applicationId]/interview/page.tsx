@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db";
 import { InterviewExperience } from "./InterviewExperience";
 import { AdvancedInterviewExperience } from "./AdvancedInterviewExperience";
 
+// Matches DEFAULT_MAX_MINUTES in voice-agent/lib/interview_flow.py, the cap the
+// agent applies when the job sets none.
+const DEFAULT_INTERVIEW_MINUTES = 30;
+
 export default async function InterviewPage({
   params,
 }: {
@@ -16,7 +20,7 @@ export default async function InterviewPage({
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true },
+    select: { id: true, firstName: true },
   });
   if (!profile) redirect("/candidate/profile");
 
@@ -30,6 +34,7 @@ export default async function InterviewPage({
         select: {
           title: true,
           voiceAgentType: true,
+          interviewMaxMinutes: true,
         },
       },
     },
@@ -43,13 +48,18 @@ export default async function InterviewPage({
     redirect(`/candidate/applications/${applicationId}/result`);
   }
 
+  const candidateName = profile.firstName?.trim() || "You";
+  const durationMinutes =
+    application.job.interviewMaxMinutes ?? DEFAULT_INTERVIEW_MINUTES;
+
   // Phase 3.3 — branch on the job's voice engine: "advanced" runs the
   // ElevenLabs path; everything else runs the existing basic (LiveKit) path.
   if (application.job.voiceAgentType === "advanced") {
     return (
       <AdvancedInterviewExperience
         applicationId={application.id}
-        jobTitle={application.job.title}
+        candidateName={candidateName}
+        durationMinutes={durationMinutes}
       />
     );
   }
@@ -57,7 +67,8 @@ export default async function InterviewPage({
   return (
     <InterviewExperience
       applicationId={application.id}
-      jobTitle={application.job.title}
+      candidateName={candidateName}
+      durationMinutes={durationMinutes}
     />
   );
 }
