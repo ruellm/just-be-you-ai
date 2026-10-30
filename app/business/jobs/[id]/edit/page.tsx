@@ -61,19 +61,13 @@ export default async function EditJobPage({
       >
         <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
-      <div className="space-y-2 border-b border-brand-border pb-5">
-        <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
-          Edit Job Posting
-        </h1>
-        <p className="text-body tracking-[-0.5px] text-brand-ink-secondary">
-          Update role details, adjust requirements, or modify interview settings for this posting.
-        </p>
-      </div>
       <JobForm
         mode="edit"
         jobId={job.id}
         defaultValues={defaults}
         skillOptions={skillOptions}
+        title="Edit Job Posting"
+        subtitle="Update role details, adjust requirements, or modify interview settings for this posting."
       />
     </div>
   );

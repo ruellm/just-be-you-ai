@@ -48,42 +48,64 @@ export interface ParsedResume {
   flags: ResumeFlag[];
 }
 
-// Extract and clean text from a resume buffer. `ext` is "pdf" or "docx".
-// Throws on an unsupported type or a parser failure (callers decide how to
-// handle). Truncates to RESUME_TEXT_MAX_CHARS for LLM-context safety.
+export type DocumentExt = "pdf" | "docx" | "txt";
+
+// Extract and clean text from an uploaded document. `ext` is "pdf", "docx"
+// or "txt". PDF and DOCX go through the hidden-text scan; TXT has no way to
+// hide text, so it is decoded as UTF-8 and normalized. Throws on an
+// unsupported type or a parser failure (callers decide how to handle).
+// Truncates to `maxChars` for LLM-context safety.
+export async function extractDocument(
+  buffer: Buffer,
+  ext: string,
+  maxChars: number
+): Promise<ParsedResume> {
+  let visibleText: string;
+  let flags: ResumeFlag[];
+  if (ext === "txt") {
+    visibleText = buffer.toString("utf8").replace(/^﻿/, "");
+    flags = [];
+  } else {
+    try {
+      ({ visibleText, flags } = await extractResumeWithFlags(buffer, ext));
+    } catch (scanError) {
+      // Flag, never block: if the hidden-text scan itself breaks, fall back to
+      // the plain extraction and leave a marker so an admin can see this file
+      // was NOT scanned. A file that can't be parsed at all still throws below.
+      console.error(
+        "[resume-parse] Hidden-text scan failed; using plain extraction:",
+        scanError
+      );
+      visibleText = await extractPlainText(buffer, ext);
+      flags = [
+        {
+          signature: "scan_failed",
+          text: "",
+          page: null,
+          detail: "hidden-text scan failed; text stored unscanned",
+          dropped: false,
+        },
+      ];
+    }
+  }
+
+  let text = normalizeWhitespace(visibleText);
+  if (text.length > maxChars) {
+    console.warn(
+      `[resume-parse] Extracted text is ${text.length} chars; truncating to ${maxChars}.`
+    );
+    text = text.slice(0, maxChars);
+  }
+  return { text, flags };
+}
+
+// Resume entry point: PDF or DOCX, capped at RESUME_TEXT_MAX_CHARS. The text
+// returned is the VISIBLE text only (see extractDocument).
 export async function extractResume(
   buffer: Buffer,
   ext: string
 ): Promise<ParsedResume> {
-  let visibleText: string;
-  let flags: ResumeFlag[];
-  try {
-    ({ visibleText, flags } = await extractResumeWithFlags(buffer, ext));
-  } catch (scanError) {
-    // Flag, never block: if the hidden-text scan itself breaks, fall back to
-    // the plain extraction and leave a marker so an admin can see this resume
-    // was NOT scanned. A file that can't be parsed at all still throws below.
-    console.error("[resume-parse] Hidden-text scan failed; using plain extraction:", scanError);
-    visibleText = await extractPlainText(buffer, ext);
-    flags = [
-      {
-        signature: "scan_failed",
-        text: "",
-        page: null,
-        detail: "hidden-text scan failed; resume text stored unscanned",
-        dropped: false,
-      },
-    ];
-  }
-
-  let text = normalizeWhitespace(visibleText);
-  if (text.length > RESUME_TEXT_MAX_CHARS) {
-    console.warn(
-      `[resume-parse] Extracted text is ${text.length} chars; truncating to ${RESUME_TEXT_MAX_CHARS}.`
-    );
-    text = text.slice(0, RESUME_TEXT_MAX_CHARS);
-  }
-  return { text, flags };
+  return extractDocument(buffer, ext, RESUME_TEXT_MAX_CHARS);
 }
 
 // Visible text only, for callers that don't store the flags.

@@ -22,18 +22,12 @@ export default async function NewJobPage() {
       >
         <ArrowLeft className="size-5" /> Back to Jobs
       </Link>
-      <div className="space-y-2 border-b border-brand-border pb-5">
-        <h1 className="text-page-title font-semibold tracking-[-0.5px] text-brand-primary">
-          Post a New Job
-        </h1>
-        <p className="text-body tracking-[-0.5px] text-brand-ink-secondary">
-          Fill out job details and publish a new listing to start your recruitment process.
-        </p>
-      </div>
       <JobForm
         mode="create"
         defaultValues={EMPTY_JOB}
         skillOptions={skillOptions}
+        title="Post a New Job"
+        subtitle="Fill out job details and publish a new listing to start your recruitment process."
       />
     </div>
   );
