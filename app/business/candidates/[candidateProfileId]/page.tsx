@@ -5,6 +5,7 @@ import { getCompanySeatBalance } from "@/lib/interview-seats";
 import { EMPLOYMENT_TYPE_LABELS } from "@/app/candidate/profile/schemas";
 import { parseEvidence } from "@/lib/applications";
 import { parseManipulationAttempts } from "@/lib/integrity-flags";
+import { parseMatchSummary } from "@/lib/match/match-display";
 import { displayAvatarUrl } from "@/lib/profile-format";
 import {
   CandidateProfileView,
@@ -160,6 +161,7 @@ export default async function CandidateDetailPage({
     id: app.id,
     status: app.status,
     jobTitle: app.job.title,
+    match: parseMatchSummary(app.matchPercent, app.matchJson),
     interviewResult: app.interviewResult
       ? {
           score: app.interviewResult.score,

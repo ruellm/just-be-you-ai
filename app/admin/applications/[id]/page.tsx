@@ -24,6 +24,8 @@ import {
   ProfileSectionCard,
 } from "@/app/candidate/profile/ProfileSectionCard";
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
+import { MatchBanner } from "@/components/applications/MatchBanner";
+import { parseMatchSummary } from "@/lib/match/match-display";
 import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
 import { parseResumeFlags, RESUME_FLAG_LABELS } from "@/lib/integrity-flags";
 import {
@@ -113,6 +115,7 @@ export default async function AdminApplicationResultPage({
   const strengths = parseEvidence(result?.strengthsJson);
   const concerns = parseEvidence(result?.concernsJson);
   const fitSummary = (result?.fitSummary ?? "").trim();
+  const match = parseMatchSummary(application.matchPercent, application.matchJson);
 
   const scorePercent = result
     ? result.compositeScore != null
@@ -186,12 +189,15 @@ export default async function AdminApplicationResultPage({
             </div>
           </ProfileSectionCard>
 
-          {fitSummary ? (
+          {fitSummary || match ? (
             <ProfileSectionCard>
               <SectionTitle>Fit Summary</SectionTitle>
-              <p className="text-body whitespace-pre-line text-brand-ink-secondary">
-                {fitSummary}
-              </p>
+              <MatchBanner match={match} />
+              {fitSummary ? (
+                <p className="text-body whitespace-pre-line text-brand-ink-secondary">
+                  {fitSummary}
+                </p>
+              ) : null}
             </ProfileSectionCard>
           ) : null}
 

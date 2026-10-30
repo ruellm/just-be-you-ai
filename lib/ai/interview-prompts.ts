@@ -9,7 +9,12 @@
 import promptsJson from "@/shared/interview-prompts.json";
 
 export type VoiceTier = "basic" | "advanced";
-export type UntrustedRole = "agent" | "evaluator" | "generator" | "cleaner";
+export type UntrustedRole =
+  | "agent"
+  | "evaluator"
+  | "generator"
+  | "cleaner"
+  | "matcher";
 
 type Line = string | { tiers?: string[]; text: string };
 interface Block {

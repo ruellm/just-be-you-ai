@@ -11,6 +11,7 @@ import {
   getInterviewSeatBalance,
 } from "@/lib/interview-seats";
 import { generateQuestionsForApplication } from "@/lib/ai/generate-questions";
+import { computeApplicationMatch } from "@/lib/match/compute-match";
 
 const idSchema = z.string().min(1);
 
@@ -141,6 +142,15 @@ export async function applyToJob(rawJobId: string): Promise<ApplyResult> {
   void generateQuestionsForApplication(application.id).catch((error) => {
     console.error(
       `[generate-questions] Failed for application ${application.id}:`,
+      error
+    );
+  });
+
+  // Resume-vs-job match runs the same way: detached, skipped if already set,
+  // and a failure only leaves the match columns null.
+  void computeApplicationMatch(application.id).catch((error) => {
+    console.error(
+      `[compute-match] Failed for application ${application.id}:`,
       error
     );
   });

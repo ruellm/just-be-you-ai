@@ -416,6 +416,13 @@ model Application {
   appliedCleanedResumeText  String?
   appliedResumeFlagsJson    Json?
 
+  // Resume-vs-job match, computed once at apply time (lib/match/compute-match.ts).
+  // Independent of the interview score. null = not computed (or the call failed).
+  // matchJson holds {requirements: [...], unmetQualifiers: [...]}.
+  matchPercent Int?
+  matchJson    Json?
+  matchedAt    DateTime?
+
   candidateProfile CandidateProfile    @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
   job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?

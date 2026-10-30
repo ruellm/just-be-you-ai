@@ -35,6 +35,8 @@ import {
   BTN_PRIMARY,
   INSET_PANEL,
 } from "@/app/candidate/profile/ProfileSectionCard";
+import { MatchBanner } from "@/components/applications/MatchBanner";
+import type { MatchSummary } from "@/lib/match/match-display";
 import type { ApplicationStatus, Level } from "@prisma/client";
 import {
   BUSINESS_RECOMMENDATION_LABELS,
@@ -75,6 +77,7 @@ export type ApplicationDTO = {
   id: string;
   status: ApplicationStatus;
   jobTitle: string;
+  match: MatchSummary | null;
   interviewResult: InterviewResultDTO | null;
 };
 
@@ -187,26 +190,46 @@ function LockedPanel({
   caption,
   onUnlock,
   className,
+  inline = false,
 }: {
   caption: string;
   onUnlock: () => void;
   className?: string;
+  // Row layout: icon and caption on the left, button on the right.
+  inline?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center gap-3 rounded-[8px] bg-tag-2 px-6 py-8 text-center backdrop-blur-[1px]",
+        "rounded-[8px] bg-tag-2 backdrop-blur-[1px]",
+        inline
+          ? "flex flex-wrap items-center justify-between gap-4 px-5 py-6"
+          : "flex flex-col items-center justify-center gap-3 px-6 py-8 text-center",
         className
       )}
     >
-      <Lock className="size-9 text-brand-tertiary" strokeWidth={1.75} />
-      <p className="text-body font-medium tracking-[-0.5px] text-white">
-        {caption}
-      </p>
+      {inline ? (
+        <div className="flex min-w-0 items-center gap-4">
+          <Lock className="size-9 shrink-0 text-brand-tertiary" strokeWidth={1.75} />
+          <p className="text-subheading font-semibold tracking-[-0.5px] text-white">
+            {caption}
+          </p>
+        </div>
+      ) : (
+        <>
+          <Lock className="size-9 text-brand-tertiary" strokeWidth={1.75} />
+          <p className="text-body font-medium tracking-[-0.5px] text-white">
+            {caption}
+          </p>
+        </>
+      )}
       <Button
         type="button"
         onClick={onUnlock}
-        className="h-[39px] w-full max-w-[386px] rounded-[12px] bg-brand-tertiary px-6 text-body font-medium tracking-[-0.5px] text-brand-ink hover:bg-brand-tertiary/90"
+        className={cn(
+          "h-[39px] rounded-[12px] bg-brand-tertiary px-6 text-body font-medium tracking-[-0.5px] text-brand-ink hover:bg-brand-tertiary/90",
+          inline ? "w-full sm:w-auto sm:min-w-[300px]" : "w-full max-w-[386px]"
+        )}
       >
         Use 1 Seat Credit to Unlock Profile
       </Button>
@@ -291,38 +314,46 @@ function ResumeCard({
   return (
     <Card title="Resume">
       {!profile ? (
-        <LockedPanel caption="Unlock to View Resume" onUnlock={onUnlock} />
+        <LockedPanel caption="Unlock to View Resume" onUnlock={onUnlock} inline />
       ) : meta ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-3 rounded-[12px] border border-brand-border bg-brand-surface px-4 py-3">
-            <FileText className="size-8 shrink-0 text-brand-ink-secondary" strokeWidth={1.5} />
+        <div
+          className={cn(
+            INSET_PANEL,
+            "flex flex-wrap items-center justify-between gap-4 bg-brand-surface p-5"
+          )}
+        >
+          <div className="flex min-w-0 items-center gap-4">
+            <FileText
+              className="size-10 shrink-0 text-brand-ink-secondary"
+              strokeWidth={1.25}
+            />
             <div className="min-w-0">
-              <p className="truncate text-small font-semibold text-brand-ink">
+              <p className="truncate text-body font-semibold text-brand-ink">
                 {meta.filename}
               </p>
               {meta.uploadedAt ? (
-                <p className="text-meta text-brand-ink-secondary">
+                <p className="text-small text-brand-ink-secondary">
                   Uploaded on {longDate(meta.uploadedAt)}
                 </p>
               ) : null}
             </div>
           </div>
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               onClick={() => open(false)}
               disabled={pending}
-              className="h-9 w-full rounded-[8px] bg-brand-ink text-small font-semibold text-white hover:bg-brand-ink/90"
+              className={BTN_INK}
             >
-              View in New Tab
+              <Eye className="size-4" /> View
             </Button>
             <Button
               type="button"
               onClick={() => open(true)}
               disabled={pending}
-              className="h-9 w-full rounded-[8px] bg-brand-secondary text-small font-semibold text-white hover:bg-brand-secondary/90"
+              className={BTN_PRIMARY}
             >
-              Download Resume
+              <Download className="size-4" /> Download Resume
             </Button>
           </div>
         </div>
@@ -446,6 +477,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
       </Card>
 
       <Card title="Fit Summary">
+        <MatchBanner match={app.match} />
         <p className="text-body whitespace-pre-line text-brand-ink">
           {summary || "No summary available."}
         </p>
