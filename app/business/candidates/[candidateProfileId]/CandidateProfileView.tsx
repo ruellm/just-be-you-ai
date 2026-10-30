@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   Building2,
   CheckCircle2,
+  Download,
+  Eye,
   FileText,
   Info,
   Lock,
@@ -22,20 +24,31 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  RecommendationBadge,
-  StatusBadge,
-  TierBadge,
-  VerdictBadge,
-} from "@/components/applications/Badges";
+import { StatusBadge } from "@/components/applications/Badges";
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
+import {
+  ScoreRing,
+  StatRow,
+} from "@/app/(interview)/candidate/applications/[applicationId]/result/ResultCards";
+import {
+  BTN_INK,
+  BTN_PRIMARY,
+  INSET_PANEL,
+} from "@/app/candidate/profile/ProfileSectionCard";
 import type { ApplicationStatus, Level } from "@prisma/client";
 import {
+  BUSINESS_RECOMMENDATION_LABELS,
+  formatDuration,
   humanizeDimension,
+  isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
+  RECOMMENDATION_TEXT_CLASS,
+  rubricAverageScore,
   scoreToPercent,
+  TIER_LABELS,
 } from "@/lib/applications";
+import { formatLongDate } from "@/lib/dates";
 import { parseResumeMeta } from "@/lib/profile-format";
 import { cn } from "@/lib/utils";
 import { getCandidateResumeSignedUrl, unlockCandidateProfile } from "./actions";
@@ -53,7 +66,8 @@ export type InterviewResultDTO = {
   verdict: string | null;
   gatesFiredJson: unknown;
   manipulationAttemptsJson: unknown;
-  transcript: string | null;
+  durationSeconds: number | null;
+  transcriptUnlocked: boolean;
   completedAt: string;
 };
 
@@ -210,46 +224,19 @@ function Field({ label, value }: { label: string; value: ReactNode }) {
   );
 }
 
-function ResultTag({
-  children,
-  tone,
-}: {
-  children: ReactNode;
-  tone: "success" | "neutral";
-}) {
-  return (
-    <span
-      className={cn(
-        "inline-flex h-[27px] items-center rounded-[6px] px-3 text-small text-brand-canvas",
-        tone === "success" ? "bg-accent-3" : "bg-brand-ink-sidebar"
-      )}
-    >
-      {children}
-    </span>
-  );
-}
-
-function ResultRow({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-body text-brand-ink-secondary">{label}</span>
-      <span className="flex flex-wrap items-center justify-end gap-2">
-        {children}
-      </span>
-    </div>
-  );
-}
-
 function EvidenceCard({
   title,
   items,
   impact,
+  hideWhenEmpty = false,
 }: {
   title: string;
   items: { dimension: string; evidence: string }[];
   impact: "positive" | "negative";
+  hideWhenEmpty?: boolean;
 }) {
   const Icon = impact === "positive" ? CheckCircle2 : XCircle;
+  if (hideWhenEmpty && items.length === 0) return null;
   return (
     <Card title={title}>
       {items.length === 0 ? (
@@ -346,6 +333,55 @@ function ResumeCard({
   );
 }
 
+function TranscriptCard({
+  candidateProfileId,
+  app,
+}: {
+  candidateProfileId: string;
+  app: ApplicationDTO;
+}) {
+  const r = app.interviewResult;
+  if (!r || !r.transcriptUnlocked) return null;
+  const base = `/business/candidates/${candidateProfileId}/applications/${app.id}/transcript`;
+  return (
+    <Card title="Interview Transcript">
+      <div
+        className={cn(
+          INSET_PANEL,
+          "flex flex-wrap items-center justify-between gap-4 bg-brand-surface p-5"
+        )}
+      >
+        <div className="flex min-w-0 items-center gap-4">
+          <FileText
+            className="size-10 shrink-0 text-brand-ink-secondary"
+            strokeWidth={1.25}
+          />
+          <div className="min-w-0">
+            <p className="truncate text-body font-semibold text-brand-ink">
+              Transcript.txt
+            </p>
+            <p className="text-small text-brand-ink-secondary">
+              Recorded on {formatLongDate(new Date(r.completedAt))}
+            </p>
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild className={BTN_INK}>
+            <Link href={base}>
+              <Eye className="size-4" /> View
+            </Link>
+          </Button>
+          <Button asChild className={BTN_PRIMARY}>
+            <a href={`${base}/download`}>
+              <Download className="size-4" /> Download Transcript
+            </a>
+          </Button>
+        </div>
+      </div>
+    </Card>
+  );
+}
+
 function ApplicationResults({ app }: { app: ApplicationDTO }) {
   const r = app.interviewResult;
   if (!r) {
@@ -361,62 +397,69 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
       </Card>
     );
   }
-  const hasRubric = parseRubricBreakdown(r.rubricScoresJson) != null;
+  const breakdown = parseRubricBreakdown(r.rubricScoresJson);
   const passed = app.status === "passed";
   const strengths = parseEvidence(r.strengthsJson);
   const concerns = parseEvidence(r.concernsJson);
   const summary = r.fitSummary.trim();
+  const scorePercent =
+    breakdown && r.compositeScore != null
+      ? Math.round(r.compositeScore)
+      : scoreToPercent(r.score);
+  const recommendationLabel = isRecommendation(r.recommendation)
+    ? BUSINESS_RECOMMENDATION_LABELS[r.recommendation]
+    : "—";
+  const recommendationClass = isRecommendation(r.recommendation)
+    ? RECOMMENDATION_TEXT_CLASS[r.recommendation]
+    : "text-brand-ink";
+  const averageScore = rubricAverageScore(breakdown);
 
   return (
     <div className="space-y-5">
-      <div className="grid gap-5 lg:grid-cols-2">
-        <div className="space-y-5">
-          <Card>
-            <div className="flex flex-wrap items-center gap-2">
-              <h3 className={CARD_TITLE_CLASS}>{app.jobTitle}</h3>
-              <StatusBadge status={app.status} />
-            </div>
-            <div className="space-y-3">
-              {hasRubric ? (
-                <ResultRow label="Verdict">
-                  <VerdictBadge verdict={r.verdict} />
-                </ResultRow>
-              ) : (
-                <ResultRow label="Tier">
-                  <TierBadge tier={r.tier} />
-                </ResultRow>
-              )}
-              <ResultRow label="Score">
-                <ResultTag tone={passed ? "success" : "neutral"}>
-                  {hasRubric && r.compositeScore != null
-                    ? `${r.compositeScore}/100`
-                    : `${scoreToPercent(r.score)}%`}
-                </ResultTag>
-              </ResultRow>
-              <ResultRow label="Recommendation">
-                <RecommendationBadge recommendation={r.recommendation} />
-                <ResultTag tone={passed ? "success" : "neutral"}>
-                  {passed ? "Passed" : app.status === "failed" ? "Failed" : "Pending"}
-                </ResultTag>
-              </ResultRow>
-            </div>
-            <p className="text-meta text-brand-ink-secondary">
-              Completed {longDate(r.completedAt)}
-            </p>
-          </Card>
-          <EvidenceCard title="Strengths" items={strengths} impact="positive" />
+      <Card>
+        <div className="flex flex-wrap items-center gap-2">
+          <h3 className={CARD_TITLE_CLASS}>{app.jobTitle}</h3>
+          <StatusBadge status={app.status} />
         </div>
-        <div className="space-y-5">
-          <Card title="Fit Summary">
-            <p className="text-body whitespace-pre-line text-brand-ink">
-              {summary || "No summary available."}
-            </p>
-          </Card>
-          <EvidenceCard title="Concerns" items={concerns} impact="negative" />
+        <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center">
+          <ScoreRing percent={scorePercent} passed={passed} />
+          <div className="grid w-full min-w-0 gap-5 text-center sm:grid-cols-2 sm:text-left xl:grid-cols-3">
+            <StatRow label="Role Tier" value={TIER_LABELS[r.tier]} />
+            <StatRow
+              label="Recommendation"
+              value={recommendationLabel}
+              valueClassName={recommendationClass}
+            />
+            <StatRow
+              label="Time Elapsed"
+              value={formatDuration(r.durationSeconds)}
+            />
+            <StatRow
+              label="Completed Date"
+              value={formatLongDate(new Date(r.completedAt))}
+            />
+            {averageScore ? (
+              <StatRow label="Average Score" value={`${averageScore} out of 5`} />
+            ) : null}
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {hasRubric ? (
+      <Card title="Fit Summary">
+        <p className="text-body whitespace-pre-line text-brand-ink">
+          {summary || "No summary available."}
+        </p>
+      </Card>
+
+      <EvidenceCard title="Strengths" items={strengths} impact="positive" />
+      <EvidenceCard
+        title="Weaknesses"
+        items={concerns}
+        impact="negative"
+        hideWhenEmpty
+      />
+
+      {breakdown ? (
         <Card title="Rubric Breakdown">
           <RubricBreakdown
             rubricScoresJson={r.rubricScoresJson}
@@ -425,19 +468,6 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
             gatesFiredJson={r.gatesFiredJson}
             manipulationAttemptsJson={r.manipulationAttemptsJson}
           />
-        </Card>
-      ) : null}
-
-      {r.transcript != null ? (
-        <Card>
-          <details>
-            <summary className="cursor-pointer text-body font-semibold text-brand-primary">
-              View transcript
-            </summary>
-            <p className="mt-3 text-small whitespace-pre-line text-brand-ink-secondary">
-              {r.transcript}
-            </p>
-          </details>
         </Card>
       ) : null}
     </div>
@@ -523,9 +553,14 @@ export function CandidateProfileView({
         {applications.map((app) => (
           <ApplicationResults key={app.id} app={app} />
         ))}
-        <div className="grid gap-5 lg:grid-cols-2">
-          <ResumeCard profile={profile} onUnlock={openModal} />
-        </div>
+        <ResumeCard profile={profile} onUnlock={openModal} />
+        {applications.map((app) => (
+          <TranscriptCard
+            key={app.id}
+            candidateProfileId={candidateProfileId}
+            app={app}
+          />
+        ))}
       </section>
 
       <section className="space-y-4">

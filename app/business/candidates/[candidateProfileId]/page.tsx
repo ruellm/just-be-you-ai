@@ -181,7 +181,9 @@ export default async function CandidateDetailPage({
           manipulationAttemptsJson: parseManipulationAttempts(
             app.interviewResult.manipulationAttemptsJson
           ).map((attempt) => ({ ...attempt, quote: redact(attempt.quote) })),
-          transcript: locked ? null : app.interviewResult.transcript,
+          durationSeconds: app.interviewResult.durationSeconds,
+          // The transcript unlocks with the profile, like the resume.
+          transcriptUnlocked: !locked,
           completedAt: app.interviewResult.completedAt.toISOString(),
         }
       : null,

@@ -12,6 +12,7 @@ import {
   parseEvidence,
   parseRubricBreakdown,
   RECOMMENDATION_TEXT_CLASS,
+  rubricAverageScore,
   scoreToPercent,
   TIER_LABELS,
   type EvidenceItem,
@@ -128,15 +129,7 @@ export default async function AdminApplicationResultPage({
     result && isRecommendation(result.recommendation)
       ? RECOMMENDATION_TEXT_CLASS[result.recommendation]
       : "text-brand-ink";
-  // "AVERAGE SCORE — 4.5 out of 5" in the design: the mean of the five rubric
-  // category scores, which are each already a 1-5 mean of their sub-criteria.
-  const averageScore =
-    breakdown && breakdown.categories.length > 0
-      ? (
-          breakdown.categories.reduce((sum, c) => sum + c.categoryScore, 0) /
-          breakdown.categories.length
-        ).toFixed(1)
-      : null;
+  const averageScore = rubricAverageScore(breakdown);
 
   return (
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
@@ -183,10 +176,12 @@ export default async function AdminApplicationResultPage({
                   label="Completed Date"
                   value={formatLongDate(result.completedAt)}
                 />
-                <StatRow
-                  label="Average Score"
-                  value={averageScore ? `${averageScore} out of 5` : "—"}
-                />
+                {averageScore ? (
+                  <StatRow
+                    label="Average Score"
+                    value={`${averageScore} out of 5`}
+                  />
+                ) : null}
               </div>
             </div>
           </ProfileSectionCard>

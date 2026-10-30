@@ -276,6 +276,19 @@ export function parseRubricBreakdown(json: unknown): RubricBreakdownView | null 
   };
 }
 
+// Mean of every rubric sub-criterion score (1-5), one decimal, for the
+// "Average score" stat. Null when the result has no rubric data.
+export function rubricAverageScore(
+  breakdown: RubricBreakdownView | null
+): string | null {
+  if (!breakdown) return null;
+  const scores = breakdown.categories.flatMap((cat) =>
+    cat.subCriteria.map((sub) => sub.score)
+  );
+  if (scores.length === 0) return null;
+  return (scores.reduce((sum, n) => sum + n, 0) / scores.length).toFixed(1);
+}
+
 // ── gates (InterviewResult.gatesFiredJson) ───────────────────────────────────
 
 export type RubricGateView = {
