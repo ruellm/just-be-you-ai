@@ -37,9 +37,18 @@ export async function applyToJob(rawJobId: string): Promise<ApplyResult> {
 
   const job = await prisma.job.findUnique({
     where: { id: jobId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, company: { select: { hiddenAt: true } } },
   });
   if (!job) redirect("/candidate/jobs");
+  // Same rule as visibleJobWhere, checked here so the candidate gets a
+  // message instead of a silent redirect.
+  if (job.company.hiddenAt) {
+    return {
+      ok: false,
+      reason: "error",
+      message: "This job is no longer available.",
+    };
+  }
   if (job.status === "closed") redirect(`/candidate/jobs/${jobId}`);
 
   const existing = await prisma.application.findUnique({

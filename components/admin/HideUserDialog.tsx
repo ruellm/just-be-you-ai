@@ -12,17 +12,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { HIDE_REASON_MAX } from "@/lib/admin";
 
 // Hide / unhide confirmation for a user or a company. Hiding a user takes an
-// optional reason (the design says the user will be notified with it); the
-// reason is handed to onConfirm and nothing stores it yet, the same as the
-// hide itself, which is page state only.
+// optional reason, stored with the hide for the notification that is not
+// built yet.
 export function HideUserDialog({
   open,
   onOpenChange,
   hidden,
   name,
   subject = "user",
+  pending = false,
   onConfirm,
 }: {
   open: boolean;
@@ -30,6 +31,7 @@ export function HideUserDialog({
   hidden: boolean;
   name: string;
   subject?: "user" | "company";
+  pending?: boolean;
   onConfirm: (reason: string) => void;
 }) {
   const [reason, setReason] = useState("");
@@ -90,13 +92,15 @@ export function HideUserDialog({
               value={reason}
               onChange={(e) => setReason(e.target.value)}
               aria-label="Reason"
-              maxLength={1000}
+              maxLength={HIDE_REASON_MAX}
+              disabled={pending}
               className="mt-5 min-h-[153px] w-full resize-y rounded-[12px] border-brand-border bg-brand-surface px-4 py-3 font-body text-small text-brand-ink shadow-none"
             />
           ) : null}
           <div className="mt-6 flex w-full max-w-[320px] flex-col gap-3">
             <Button
               type="button"
+              disabled={pending}
               onClick={() => onConfirm(reason.trim())}
               className={cn(
                 "h-11 w-full rounded-[8px] text-small font-semibold text-white",
@@ -105,7 +109,9 @@ export function HideUserDialog({
                   : "bg-accent-2 hover:bg-accent-2/90"
               )}
             >
-              {hidden ? (
+              {pending ? (
+                "Saving…"
+              ) : hidden ? (
                 <>
                   <Eye className="size-4" /> Unhide {label}
                 </>
@@ -119,6 +125,7 @@ export function HideUserDialog({
               <Button
                 type="button"
                 variant="outline"
+                disabled={pending}
                 className="h-11 w-full rounded-[8px] border-brand-border text-small font-medium text-brand-ink hover:bg-brand-container"
               >
                 Cancel

@@ -1,4 +1,10 @@
 import type { Role } from "@prisma/client";
+import { z } from "zod";
+
+// Optional reason an admin gives when hiding an account. Stored for the
+// notification that is not built yet.
+export const HIDE_REASON_MAX = 500;
+export const hideReasonSchema = z.string().trim().max(HIDE_REASON_MAX);
 
 export type UserNameSource = {
   email: string;

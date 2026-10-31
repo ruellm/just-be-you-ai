@@ -3,36 +3,29 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, EyeOff, Pencil } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  BTN_DANGER,
   BTN_INK,
   BTN_PRIMARY,
 } from "@/app/candidate/profile/ProfileSectionCard";
 import { ChangeSeatsModal } from "@/components/admin/ChangeSeatsModal";
-import { HideUserDialog } from "@/components/admin/HideUserDialog";
-
-const BTN_UNDO = cn(
-  "h-[35px] rounded-[8px] px-4 font-body text-small font-semibold text-white",
-  "bg-accent-1 hover:bg-accent-1/90"
-);
+import { HideAccountButton } from "@/components/admin/HideAccountButton";
 
 export function CompanyHeaderActions({
   companyId,
   name,
+  hidden,
   seatsUsed,
   seatsTotal,
 }: {
   companyId: string;
   name: string;
+  hidden: boolean;
   seatsUsed: number;
   seatsTotal: number;
 }) {
   const [seatsOpen, setSeatsOpen] = useState(false);
-  const [hideOpen, setHideOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -52,21 +45,13 @@ export function CompanyHeaderActions({
         />
         Change Seats
       </Button>
-      <Button
-        type="button"
-        onClick={() => setHideOpen(true)}
-        className={hidden ? BTN_UNDO : BTN_DANGER}
-      >
-        {hidden ? (
-          <>
-            <Eye className="size-4" /> Unhide Account
-          </>
-        ) : (
-          <>
-            <EyeOff className="size-4" /> Hide Account
-          </>
-        )}
-      </Button>
+      <HideAccountButton
+        target="company"
+        targetId={companyId}
+        name={name}
+        hidden={hidden}
+        variant="header"
+      />
 
       <ChangeSeatsModal
         open={seatsOpen}
@@ -75,17 +60,6 @@ export function CompanyHeaderActions({
         targetId={companyId}
         seatsUsed={seatsUsed}
         seatsTotal={seatsTotal}
-      />
-      <HideUserDialog
-        open={hideOpen}
-        onOpenChange={setHideOpen}
-        hidden={hidden}
-        name={name}
-        subject="company"
-        onConfirm={() => {
-          setHidden((v) => !v);
-          setHideOpen(false);
-        }}
       />
     </div>
   );

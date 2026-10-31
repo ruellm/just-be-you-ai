@@ -19,6 +19,7 @@ import {
   hiringCompanyName,
 } from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
+import { visibleJobWhere } from "@/lib/visibility";
 import {
   DarkTag,
   SectionCard,
@@ -39,8 +40,9 @@ export default async function JobDetailPage({
   // company.name ONLY — the full Company row (description, website, logoUrl,
   // contactEmail, phone, headquarters, type, industry, yearFounded, userId,
   // seat counts) must never be fetched for a candidate-facing page.
-  const jobRow = await prisma.job.findUnique({
-    where: { id },
+  // A hidden company's job is a 404 here, like a job that does not exist.
+  const jobRow = await prisma.job.findFirst({
+    where: { id, ...visibleJobWhere },
     include: {
       company: { select: { name: true } },
       skills: { include: { skill: true } },

@@ -28,6 +28,7 @@ import {
   TH_CLASS,
   TR_CLASS,
 } from "@/components/data-table/TableCard";
+import { HiddenBadge } from "@/components/admin/HiddenBadge";
 import { UserRowActions } from "./UserRowActions";
 
 const ROLES: Role[] = ["candidate", "business", "admin"];
@@ -80,8 +81,10 @@ export default async function AdminUsersPage({
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: {
-        candidateProfile: { select: { firstName: true, lastName: true } },
-        company: { select: { id: true, name: true } },
+        candidateProfile: {
+          select: { id: true, firstName: true, lastName: true, hiddenAt: true },
+        },
+        company: { select: { id: true, name: true, hiddenAt: true } },
       },
     }),
   ]);
@@ -157,12 +160,23 @@ export default async function AdminUsersPage({
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map((u) => (
+                users.map((u) => {
+                  // A business account's hide lives on its company.
+                  const hidden =
+                    u.role === "candidate"
+                      ? u.candidateProfile?.hiddenAt != null
+                      : u.role === "business"
+                        ? u.company?.hiddenAt != null
+                        : false;
+                  return (
                   <TableRow key={u.id} className={TR_CLASS}>
                     <TableCell
                       className={`${TD_CLASS} text-small font-medium text-brand-ink`}
                     >
-                      {userDisplayName(u)}
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {userDisplayName(u)}
+                        {hidden ? <HiddenBadge /> : null}
+                      </span>
                     </TableCell>
                     <TableCell className={`${TD_CLASS} whitespace-nowrap`}>
                       {formatLongDate(u.createdAt)}
@@ -186,11 +200,14 @@ export default async function AdminUsersPage({
                         userId={u.id}
                         role={u.role}
                         name={userDisplayName(u)}
+                        candidateProfileId={u.candidateProfile?.id ?? null}
                         companyId={u.company?.id ?? null}
+                        hidden={hidden}
                       />
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

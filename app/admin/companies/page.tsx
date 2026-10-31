@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { DateField, SearchField } from "@/components/data-table/FilterFields";
+import { HiddenBadge } from "@/components/admin/HiddenBadge";
 import { CompanyRowActions } from "./CompanyRowActions";
 import {
   dayRangeFrom,
@@ -116,7 +117,10 @@ export default async function AdminCompaniesPage({
                 companies.map((c) => (
                   <TableRow key={c.id} className={TR_CLASS}>
                     <TableCell className={`${TD_CLASS} text-small font-medium text-brand-ink`}>
-                      {c.name || "(unnamed)"}
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        {c.name || "(unnamed)"}
+                        {c.hiddenAt ? <HiddenBadge /> : null}
+                      </span>
                     </TableCell>
                     <TableCell className={`${TD_CLASS} whitespace-nowrap`}>
                       {formatLongDate(c.createdAt)}
@@ -141,6 +145,7 @@ export default async function AdminCompaniesPage({
                       <CompanyRowActions
                         companyId={c.id}
                         name={c.name || "(unnamed)"}
+                        hidden={c.hiddenAt != null}
                       />
                     </TableCell>
                   </TableRow>

@@ -19,6 +19,7 @@ import {
   BTN_PRIMARY,
   ProfileSectionCard,
 } from "@/app/candidate/profile/ProfileSectionCard";
+import { HiddenBadge, HiddenNotice } from "@/components/admin/HiddenBadge";
 import { CompanyHeaderActions } from "./CompanyHeaderActions";
 
 const MAX_SKILL_CHIPS = 3;
@@ -105,19 +106,25 @@ export default async function AdminCompanyDetailPage({
             </AvatarFallback>
           </Avatar>
           <div className="min-w-0">
-            <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
-              {name}
-            </h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="truncate text-section font-semibold tracking-[-0.5px] text-brand-primary">
+                {name}
+              </h1>
+              {company.hiddenAt ? <HiddenBadge /> : null}
+            </div>
             <p className="mt-1 text-body text-brand-ink-secondary">{company.user.email}</p>
           </div>
         </div>
         <CompanyHeaderActions
           companyId={company.id}
           name={name}
+          hidden={company.hiddenAt != null}
           seatsUsed={seatBalance.used}
           seatsTotal={seatBalance.total}
         />
       </div>
+
+      <HiddenNotice hiddenAt={company.hiddenAt} reason={company.hiddenReason} />
 
       <ProfileSectionCard>
         <h2 className="text-heading font-semibold text-brand-primary">Basic Information</h2>

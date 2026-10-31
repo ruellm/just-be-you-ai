@@ -3,10 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { getCurrentUserRole } from "@/lib/auth";
-import { MAX_SEATS_TOTAL } from "@/lib/admin";
+import { getCurrentDbUser, getCurrentUserRole } from "@/lib/auth";
+import { hideReasonSchema, MAX_SEATS_TOTAL } from "@/lib/admin";
 import { countInterviewSeatsUsed, seatsRemaining } from "@/lib/interview-seats";
-import type { SeatsInput, SetSeatsResult } from "@/app/admin/companies/actions";
+import type {
+  HideResult,
+  SeatsInput,
+  SetSeatsResult,
+} from "@/app/admin/companies/actions";
 
 const roleSchema = z.enum(["candidate", "business", "admin"]);
 
@@ -147,4 +151,69 @@ export async function setCandidateSeats(
     };
   }
   return result;
+}
+
+// Hides a candidate from every company: their applications, results, profile,
+// transcript and questions leave the business portal and unlock is refused.
+// The candidate can still sign in and use their own portal.
+export async function hideCandidate(
+  candidateProfileId: string,
+  reason: string
+): Promise<HideResult> {
+  const admin = await getCurrentDbUser();
+  if (admin?.role !== "admin") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  const idParsed = z.string().min(1).safeParse(candidateProfileId);
+  const reasonParsed = hideReasonSchema.safeParse(reason);
+  if (!idParsed.success || !reasonParsed.success) {
+    return { success: false, error: "Invalid request." };
+  }
+
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { id: idParsed.data },
+    select: { id: true, userId: true },
+  });
+  if (!profile) return { success: false, error: "Candidate not found." };
+
+  await prisma.candidateProfile.update({
+    where: { id: profile.id },
+    data: {
+      hiddenAt: new Date(),
+      hiddenReason: reasonParsed.data || null,
+      hiddenById: admin.id,
+    },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${profile.userId}`);
+  return { success: true };
+}
+
+export async function unhideCandidate(
+  candidateProfileId: string
+): Promise<HideResult> {
+  const admin = await getCurrentDbUser();
+  if (admin?.role !== "admin") {
+    return { success: false, error: "Not authorized." };
+  }
+
+  const idParsed = z.string().min(1).safeParse(candidateProfileId);
+  if (!idParsed.success) return { success: false, error: "Invalid request." };
+
+  const profile = await prisma.candidateProfile.findUnique({
+    where: { id: idParsed.data },
+    select: { id: true, userId: true },
+  });
+  if (!profile) return { success: false, error: "Candidate not found." };
+
+  await prisma.candidateProfile.update({
+    where: { id: profile.id },
+    data: { hiddenAt: null, hiddenReason: null, hiddenById: null },
+  });
+
+  revalidatePath("/admin/users");
+  revalidatePath(`/admin/users/${profile.userId}`);
+  return { success: true };
 }

@@ -3,24 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Eye, EyeOff, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import type { Role } from "@prisma/client";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
-  BTN_DANGER,
   BTN_INK,
   BTN_PRIMARY,
 } from "@/app/candidate/profile/ProfileSectionCard";
 import type { CandidateTier } from "@prisma/client";
 import { ChangeSeatsModal } from "@/components/admin/ChangeSeatsModal";
+import { HideAccountButton } from "@/components/admin/HideAccountButton";
 import { TierToggle } from "./TierToggle";
-import { HideUserDialog } from "@/components/admin/HideUserDialog";
-
-const BTN_UNDO = cn(
-  "h-[35px] rounded-[8px] px-4 font-body text-small font-semibold text-white",
-  "bg-accent-1 hover:bg-accent-1/90"
-);
 
 export function UserHeaderActions({
   userId,
@@ -29,6 +22,7 @@ export function UserHeaderActions({
   candidateProfileId,
   candidateTier,
   companyId,
+  hidden,
   seatsUsed,
   seatsTotal,
 }: {
@@ -38,12 +32,19 @@ export function UserHeaderActions({
   candidateProfileId: string | null;
   candidateTier: CandidateTier | null;
   companyId: string | null;
+  hidden: boolean;
   seatsUsed: number;
   seatsTotal: number;
 }) {
   const [seatsOpen, setSeatsOpen] = useState(false);
-  const [hideOpen, setHideOpen] = useState(false);
-  const [hidden, setHidden] = useState(false);
+
+  // A business account is hidden through its company; admins are never hidden.
+  const hideTarget =
+    role === "candidate" && candidateProfileId
+      ? { target: "candidate" as const, id: candidateProfileId }
+      : role === "business" && companyId
+        ? { target: "company" as const, id: companyId }
+        : null;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -90,21 +91,15 @@ export function UserHeaderActions({
           tier={candidateTier}
         />
       ) : null}
-      <Button
-        type="button"
-        onClick={() => setHideOpen(true)}
-        className={hidden ? BTN_UNDO : BTN_DANGER}
-      >
-        {hidden ? (
-          <>
-            <Eye className="size-4" /> Unhide Account
-          </>
-        ) : (
-          <>
-            <EyeOff className="size-4" /> Hide Account
-          </>
-        )}
-      </Button>
+      {hideTarget ? (
+        <HideAccountButton
+          target={hideTarget.target}
+          targetId={hideTarget.id}
+          name={name}
+          hidden={hidden}
+          variant="header"
+        />
+      ) : null}
 
       {role === "candidate" && candidateProfileId ? (
         <ChangeSeatsModal
@@ -116,17 +111,6 @@ export function UserHeaderActions({
           seatsTotal={seatsTotal}
         />
       ) : null}
-      <HideUserDialog
-        open={hideOpen}
-        onOpenChange={setHideOpen}
-        hidden={hidden}
-        name={name}
-        subject="user"
-        onConfirm={() => {
-          setHidden((v) => !v);
-          setHideOpen(false);
-        }}
-      />
     </div>
   );
 }

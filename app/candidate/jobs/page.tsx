@@ -13,6 +13,7 @@ import {
   hiringCompanyName,
 } from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
+import { visibleJobWhere } from "@/lib/visibility";
 import { JobFilters } from "./JobFilters";
 
 // 9 fills the 3-column grid evenly.
@@ -63,7 +64,7 @@ export default async function JobsPage({
   const hasFilters =
     !!q || !!location || modes.length > 0 || levels.length > 0 || skillIds.length > 0;
 
-  const where: Prisma.JobWhereInput = {};
+  const where: Prisma.JobWhereInput = { ...visibleJobWhere };
   if (q) {
     where.OR = [
       { title: { contains: q, mode: "insensitive" } },

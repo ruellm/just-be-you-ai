@@ -6,6 +6,7 @@ import {
   hasPassedApplication,
   hiringCompanyName,
 } from "@/lib/company-visibility";
+import { visibleJobWhere } from "@/lib/visibility";
 
 export type RecommendedJob = {
   job: JobCardData;
@@ -72,14 +73,17 @@ export async function getRecommendedJobs(
     // at least one skill; then a single findMany hydrates the top 4.
     const grouped = await prisma.jobSkill.groupBy({
       by: ["jobId"],
-      where: { skillId: { in: skillIds }, job: { status: "open" } },
+      where: {
+        skillId: { in: skillIds },
+        job: { status: "open", ...visibleJobWhere },
+      },
       _count: { skillId: true },
     });
     overlapByJob = new Map(grouped.map((g) => [g.jobId, g._count.skillId]));
 
     if (grouped.length > 0) {
       const candidates = await prisma.job.findMany({
-        where: { id: { in: grouped.map((g) => g.jobId) } },
+        where: { id: { in: grouped.map((g) => g.jobId) }, ...visibleJobWhere },
         include: jobInclude,
       });
       candidates.sort((a, b) => {
@@ -95,7 +99,7 @@ export async function getRecommendedJobs(
 
   if (jobs.length === 0) {
     jobs = await prisma.job.findMany({
-      where: { status: "open" },
+      where: { status: "open", ...visibleJobWhere },
       include: jobInclude,
       orderBy: { createdAt: "desc" },
       take: RECOMMENDATION_LIMIT,

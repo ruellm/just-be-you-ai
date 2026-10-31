@@ -23,6 +23,7 @@ import {
   CandidateProfileSections,
   SectionTitle,
 } from "@/components/admin/CandidateProfileSections";
+import { HiddenBadge, HiddenNotice } from "@/components/admin/HiddenBadge";
 import { UserHeaderActions } from "./UserHeaderActions";
 import { applicationDisplayTitle } from "@/lib/prescreen";
 
@@ -107,6 +108,13 @@ export default async function AdminUserDetailPage({
       ? await getInterviewSeatBalance(prisma, profile.id)
       : null;
   const name = userDisplayName(user);
+  // A business account's hide lives on its company; admins are never hidden.
+  const hiddenOn =
+    user.role === "candidate"
+      ? profile
+      : user.role === "business"
+        ? user.company
+        : null;
 
   return (
     <div className="space-y-6 px-6 py-8 font-body lg:px-14">
@@ -124,6 +132,7 @@ export default async function AdminUserDetailPage({
         badges={
           <>
             <RoleBadge role={user.role} />
+            {hiddenOn?.hiddenAt ? <HiddenBadge /> : null}
             {user.requiresPasswordChange ? (
               <Badge
                 variant="outline"
@@ -142,10 +151,16 @@ export default async function AdminUserDetailPage({
             candidateProfileId={profile?.id ?? null}
             candidateTier={profile?.tier ?? null}
             companyId={user.company?.id ?? null}
+            hidden={hiddenOn?.hiddenAt != null}
             seatsUsed={seatBalance?.used ?? 0}
             seatsTotal={seatBalance?.total ?? 0}
           />
         }
+      />
+
+      <HiddenNotice
+        hiddenAt={hiddenOn?.hiddenAt ?? null}
+        reason={hiddenOn?.hiddenReason ?? null}
       />
 
       {/* Basic Information for business/admin only — candidates get theirs

@@ -6,6 +6,7 @@ import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { LEVELS } from "@/lib/jobs";
 import { scoreToPercent, TIER_LABELS } from "@/lib/applications";
+import { visibleCandidateWhere } from "@/lib/visibility";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/EmptyState";
@@ -63,12 +64,18 @@ export default async function BusinessDashboardPage({
   // `date` = YYYY-MM-DD from the native date input → that calendar day (UTC).
   const dayRange = dayRangeFrom(dateStr);
 
-  const companyJobs = { job: { companyId: company.id } };
+  // Every count and row on this page: this company's jobs, hidden candidates
+  // excluded.
+  const companyJobs: Prisma.ApplicationWhereInput = {
+    job: { companyId: company.id },
+    candidateProfile: visibleCandidateWhere,
+  };
   const where: Prisma.ApplicationWhereInput = {
     ...companyJobs,
     ...(q
       ? {
           candidateProfile: {
+            ...visibleCandidateWhere,
             OR: [
               { firstName: { contains: q, mode: "insensitive" } },
               { lastName: { contains: q, mode: "insensitive" } },

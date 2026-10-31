@@ -1,10 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { HideUserDialog } from "@/components/admin/HideUserDialog";
+import { HideAccountButton } from "@/components/admin/HideAccountButton";
 import { ACTION_BTN } from "@/components/data-table/TableCard";
 
 const ROW_BTN = cn(ACTION_BTN, "font-medium");
@@ -12,13 +11,12 @@ const ROW_BTN = cn(ACTION_BTN, "font-medium");
 export function CompanyRowActions({
   companyId,
   name,
+  hidden,
 }: {
   companyId: string;
   name: string;
+  hidden: boolean;
 }) {
-  const [hidden, setHidden] = useState(false);
-  const [hideOpen, setHideOpen] = useState(false);
-
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Button
@@ -28,30 +26,12 @@ export function CompanyRowActions({
       >
         <Link href={`/admin/companies/${companyId}`}>View Profile</Link>
       </Button>
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => setHideOpen(true)}
-        className={cn(
-          ROW_BTN,
-          hidden
-            ? "bg-accent-1 hover:bg-accent-1/90"
-            : "bg-accent-2 hover:bg-accent-2/90"
-        )}
-      >
-        {hidden ? "Unhide Account" : "Hide Account"}
-      </Button>
-
-      <HideUserDialog
-        open={hideOpen}
-        onOpenChange={setHideOpen}
-        hidden={hidden}
+      <HideAccountButton
+        target="company"
+        targetId={companyId}
         name={name}
-        subject="company"
-        onConfirm={() => {
-          setHidden((v) => !v);
-          setHideOpen(false);
-        }}
+        hidden={hidden}
+        variant="row"
       />
     </div>
   );

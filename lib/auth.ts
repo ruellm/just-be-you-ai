@@ -1,6 +1,7 @@
 import type { Role } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+import { visibleApplicantWhere } from "@/lib/visibility";
 
 // Read-only auth helpers. No mutations here — sign-in/sign-up come in Step 3.
 
@@ -81,13 +82,13 @@ export async function getCurrentCompany() {
 
 // Authorization gate for the business side: a business may view a candidate's
 // profile only if that candidate has applied to at least one of the company's
-// jobs.
+// jobs. A hidden candidate never passes.
 export async function candidateAppliedToCompany(
   companyId: string,
   candidateProfileId: string
 ): Promise<boolean> {
   const count = await prisma.application.count({
-    where: { candidateProfileId, job: { companyId } },
+    where: { candidateProfileId, job: { companyId }, ...visibleApplicantWhere },
   });
   return count > 0;
 }

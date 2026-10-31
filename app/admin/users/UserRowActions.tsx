@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { HideUserDialog } from "@/components/admin/HideUserDialog";
+import { HideAccountButton } from "@/components/admin/HideAccountButton";
 import {
   Select,
   SelectContent,
@@ -34,19 +34,21 @@ export function UserRowActions({
   userId,
   role,
   name,
+  candidateProfileId,
   companyId,
+  hidden,
 }: {
   userId: string;
   role: Role;
   name: string;
+  candidateProfileId: string | null;
   companyId: string | null;
+  hidden: boolean;
 }) {
   const router = useRouter();
   const [roleOpen, setRoleOpen] = useState(false);
   const [value, setValue] = useState<Role>(role);
   const [pending, startTransition] = useTransition();
-  const [hidden, setHidden] = useState(false);
-  const [hideOpen, setHideOpen] = useState(false);
 
   function save() {
     startTransition(async () => {
@@ -60,6 +62,14 @@ export function UserRowActions({
       router.refresh();
     });
   }
+
+  // A business account is hidden through its company; admins are never hidden.
+  const hideTarget =
+    role === "candidate" && candidateProfileId
+      ? { target: "candidate" as const, id: candidateProfileId }
+      : role === "business" && companyId
+        ? { target: "company" as const, id: companyId }
+        : null;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -83,19 +93,15 @@ export function UserRowActions({
       >
         Change Role
       </Button>
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => setHideOpen(true)}
-        className={cn(
-          ROW_BTN,
-          hidden
-            ? "bg-accent-1 hover:bg-accent-1/90"
-            : "bg-accent-2 hover:bg-accent-2/90"
-        )}
-      >
-        {hidden ? "Unhide Account" : "Hide Account"}
-      </Button>
+      {hideTarget ? (
+        <HideAccountButton
+          target={hideTarget.target}
+          targetId={hideTarget.id}
+          name={name}
+          hidden={hidden}
+          variant="row"
+        />
+      ) : null}
 
       <Dialog open={roleOpen} onOpenChange={setRoleOpen}>
         <DialogContent className="rounded-[16px] font-body sm:max-w-sm">
@@ -137,18 +143,6 @@ export function UserRowActions({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <HideUserDialog
-        open={hideOpen}
-        onOpenChange={setHideOpen}
-        hidden={hidden}
-        name={name}
-        subject="user"
-        onConfirm={() => {
-          setHidden((v) => !v);
-          setHideOpen(false);
-        }}
-      />
     </div>
   );
 }

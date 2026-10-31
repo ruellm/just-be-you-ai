@@ -1,10 +1,12 @@
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { visibleApplicantWhere } from "@/lib/visibility";
 
 // Business access to one application's details (transcript, generated
 // questions). The signed-in company must own the job the application belongs
-// to and must have unlocked the candidate's profile (the same ProfileUnlock
-// row the resume uses). False for anything else, so callers answer 404.
+// to, the candidate must not be hidden, and the company must have unlocked
+// the candidate's profile (the same ProfileUnlock row the resume uses). False
+// for anything else, so callers answer 404.
 export async function unlockedApplicationAccess(
   candidateProfileId: string,
   applicationId: string
@@ -17,6 +19,7 @@ export async function unlockedApplicationAccess(
       id: applicationId,
       candidateProfileId,
       job: { companyId: company.id },
+      ...visibleApplicantWhere,
     },
     select: { id: true },
   });

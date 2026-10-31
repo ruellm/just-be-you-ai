@@ -127,6 +127,12 @@ model Company {
   seatsTotal      Int @default(25)
   seatsAdjustment Int @default(0)
 
+  // Set by an admin to hide the account from the other side of the platform
+  // (see lib/visibility.ts). null = visible. hiddenById is the admin's user id.
+  hiddenAt     DateTime?
+  hiddenReason String?
+  hiddenById   String?   @db.Uuid
+
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobs           Job[]
   profileUnlocks ProfileUnlock[]
@@ -211,6 +217,12 @@ model CandidateProfile {
 
   interviewSeatsTotal      Int @default(2)
   interviewSeatsAdjustment Int @default(0)
+
+  // Set by an admin to hide the account from the other side of the platform
+  // (see lib/visibility.ts). null = visible. hiddenById is the admin's user id.
+  hiddenAt     DateTime?
+  hiddenReason String?
+  hiddenById   String?   @db.Uuid
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

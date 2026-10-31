@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { recommendationRank, scoreToPercent } from "@/lib/applications";
 import { hasPassedApplication } from "@/lib/company-visibility";
 import { displayedRecommendation } from "@/lib/recommendation";
+import { visibleCandidateWhere } from "@/lib/visibility";
 import {
   LEVEL_LABELS,
   WORK_MODE_LABELS,
@@ -95,17 +96,18 @@ export default async function JobApplicantsPage({
 
   const where: Prisma.ApplicationWhereInput = {
     jobId: job.id,
-    ...(q
-      ? {
-          candidateProfile: {
+    candidateProfile: {
+      ...visibleCandidateWhere,
+      ...(q
+        ? {
             OR: [
               { firstName: { contains: q, mode: "insensitive" } },
               { lastName: { contains: q, mode: "insensitive" } },
               { user: { email: { contains: q, mode: "insensitive" } } },
             ],
-          },
-        }
-      : {}),
+          }
+        : {}),
+    },
     ...(dayRange ? { createdAt: dayRange } : {}),
     ...(result === "passed" ? { status: "passed" } : {}),
     ...(result === "failed" ? { status: "failed" } : {}),
