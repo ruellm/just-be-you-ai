@@ -27,7 +27,7 @@ import {
 } from "@/app/candidate/profile/schemas";
 
 const LABEL = "text-small font-semibold text-brand-ink";
-const INPUT = cn(MODAL_INPUT, "h-9 placeholder:text-brand-ink-secondary/60");
+const INPUT = cn(MODAL_INPUT, "h-9");
 const SMALL_BTN = "h-8 rounded-[8px] px-3 text-meta font-semibold text-white";
 
 type Resume = { filename: string; uploadedAt: string | null } | null;

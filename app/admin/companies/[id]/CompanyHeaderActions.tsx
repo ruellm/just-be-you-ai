@@ -81,6 +81,7 @@ export function CompanyHeaderActions({
         onOpenChange={setHideOpen}
         hidden={hidden}
         name={name}
+        subject="company"
         onConfirm={() => {
           setHidden((v) => !v);
           setHideOpen(false);

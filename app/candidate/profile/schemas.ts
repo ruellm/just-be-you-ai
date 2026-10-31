@@ -225,15 +225,24 @@ export type ProjectValues = z.infer<typeof projectSchema>;
 // ── Resume upload ────────────────────────────────────────────────────────────
 export const RESUME_MAX_BYTES = 5 * 1024 * 1024; // 5MB
 
+export const RESUME_ALLOWED_EXTS = ["pdf", "docx", "txt"] as const;
+
 // Allowed upload types: extension -> MIME (used for the storage contentType).
-export const RESUME_ALLOWED_TYPES: Record<string, string> = {
+export const RESUME_ALLOWED_TYPES: Record<
+  (typeof RESUME_ALLOWED_EXTS)[number],
+  string
+> = {
   pdf: "application/pdf",
   docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  txt: "text/plain",
 };
 
 // For the <input accept> attribute.
 export const RESUME_ACCEPT =
-  ".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  ".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain";
+
+export const RESUME_TYPES_LABEL = "PDF, TXT or DOCX";
+export const RESUME_HELPER_TEXT = "PDF, TXT, or DOCX, up to 5MB";
 
 // Labels for the EmploymentType enum (UI display).
 export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentTypeValue, string> = {

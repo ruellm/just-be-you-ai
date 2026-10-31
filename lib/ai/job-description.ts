@@ -16,9 +16,9 @@ import {
   type SkillRef,
 } from "@/app/business/jobs/ai-schemas";
 
-// Claude helpers behind the business job form: read a job description into
-// form fields plus hints, and rewrite one narrative section. Same client,
-// model and forced-tool pattern as generate-questions.ts.
+// Claude helper behind the business job form: read a job description (or the
+// typed form) into form fields plus hints. Same client, model and forced-tool
+// pattern as generate-questions.ts.
 
 // Uploaded files can be long; the prompt only needs the first part.
 const SOURCE_TEXT_LIMIT = 20000;
@@ -373,63 +373,4 @@ export async function analyzeJobDescription(
       unmentionedSkills,
     },
   };
-}
-
-// ── Improve one section ──────────────────────────────────────────────────────
-
-const FIELD_GUIDANCE: Record<NarrativeField, string> = {
-  description:
-    "Two or three sentences: what the person will own and why it matters.",
-  roleOverview:
-    "The scope of the role, its main responsibilities, and who the person works with.",
-  dayToDay:
-    "A concrete picture of a typical week: the work, the rituals, the people.",
-  requirements:
-    "One requirement per line, must-haves first. Keep every requirement that is already there.",
-};
-
-function buildImproveSystemPrompt(field: NarrativeField): string {
-  return `You improve one section of a job post on a hiring platform. Rewrite the section so it is clearer, more specific and better organized. Keep every fact and requirement it states. Add nothing the rest of the job post does not support. Keep the language it is written in and a plain, professional tone.
-
-Section: ${NARRATIVE_FIELD_LABELS[field]}. ${FIELD_GUIDANCE[field]}
-
-Output the rewritten section as plain text only: no markdown, no headings, no preamble, no notes. It must be at most ${NARRATIVE_FIELD_LIMITS[field]} characters. Shorten by rewriting, never by cutting mid-sentence.
-
-${UNTRUSTED_FILE_NOTICE}`;
-}
-
-/**
- * Rewrite one narrative field using the rest of the form as context. Returns
- * the new text; throws when the model returns nothing usable.
- */
-export async function improveJobField(
-  field: NarrativeField,
-  values: JobAiInput,
-  skillNames: string[]
-): Promise<string> {
-  const context = renderFormAsText(values, skillNames);
-  const userPrompt = [
-    "# JOB POST (context)",
-    wrapUntrusted(context),
-    "",
-    `# SECTION TO REWRITE: ${NARRATIVE_FIELD_LABELS[field]}`,
-    wrapUntrusted(values[field]),
-  ].join("\n");
-
-  const client = getAnthropicClient();
-  const response = await client.messages.create({
-    model: QUESTION_MODEL,
-    max_tokens: 1500,
-    system: buildImproveSystemPrompt(field),
-    messages: [{ role: "user", content: userPrompt }],
-  });
-
-  const text = response.content
-    .filter((block) => block.type === "text")
-    .map((block) => block.text)
-    .join("\n")
-    .replace(/<\s*\/?\s*untrusted_candidate_data\s*>/gi, "")
-    .trim();
-  if (!text) throw new Error("Model returned an empty rewrite.");
-  return text;
 }

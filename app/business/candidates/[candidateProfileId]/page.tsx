@@ -143,6 +143,7 @@ export default async function CandidateDetailPage({
     projects: profile.projects.map((p) => ({
       id: p.id,
       name: p.name,
+      url: p.url,
       description: p.description,
       startDate: iso(p.startDate),
       endDate: iso(p.endDate),
@@ -175,15 +176,14 @@ export default async function CandidateDetailPage({
           ),
           compositeScore: app.interviewResult.compositeScore,
           verdict: app.interviewResult.verdict,
-          gatesFiredJson: app.interviewResult.gatesFiredJson,
           // Quotes are the candidate's own words, so the name redaction of a
           // locked profile applies to them too.
           manipulationAttemptsJson: parseManipulationAttempts(
             app.interviewResult.manipulationAttemptsJson
           ).map((attempt) => ({ ...attempt, quote: redact(attempt.quote) })),
           durationSeconds: app.interviewResult.durationSeconds,
-          // The transcript unlocks with the profile, like the resume.
-          transcriptUnlocked: !locked,
+          // Transcript and generated questions unlock with the profile.
+          unlocked: !locked,
           completedAt: app.interviewResult.completedAt.toISOString(),
         }
       : null,

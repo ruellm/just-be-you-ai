@@ -19,6 +19,9 @@ import {
 // existing display as the fallback. Business-only: never render this to the
 // candidate (it exposes scores, evidence quotes, and gate mechanics).
 //
+// gatesFiredJson (optional): the hard gates that capped the verdict, shown as
+// amber notices. The admin view passes it; the business view leaves it out.
+//
 // manipulationAttemptsJson (optional): attempts to manipulate the interview,
 // shown as advisories next to the gate notices with the verbatim quote so the
 // recruiter judges for themselves. Advisory only: they had no effect on the
@@ -33,7 +36,7 @@ export function RubricBreakdown({
   rubricScoresJson: unknown;
   compositeScore: number | null;
   verdict: string | null;
-  gatesFiredJson: unknown;
+  gatesFiredJson?: unknown;
   manipulationAttemptsJson?: unknown;
 }) {
   const breakdown = parseRubricBreakdown(rubricScoresJson);

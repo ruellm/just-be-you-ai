@@ -32,7 +32,7 @@ import { saveBasicInfo, saveSummary } from "./actions";
 import { BTN_PRIMARY, ProfileSectionCard } from "./ProfileSectionCard";
 
 const INPUT_CLASS =
-  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
+  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none";
 const LABEL_CLASS = "font-body text-body font-semibold text-brand-ink";
 
 function Req() {

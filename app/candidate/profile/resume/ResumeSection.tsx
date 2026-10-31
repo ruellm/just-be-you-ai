@@ -16,8 +16,15 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ConfirmDelete } from "@/components/profile/ConfirmDelete";
+import { validateUploadFile } from "@/components/UploadFilePick";
 import { BTN_DANGER, BTN_INK, INSET_PANEL } from "../ProfileSectionCard";
-import { RESUME_ACCEPT, RESUME_MAX_BYTES } from "../schemas";
+import {
+  RESUME_ACCEPT,
+  RESUME_ALLOWED_EXTS,
+  RESUME_HELPER_TEXT,
+  RESUME_MAX_BYTES,
+  RESUME_TYPES_LABEL,
+} from "../schemas";
 import { deleteResume, getResumeSignedUrl, uploadResume } from "./actions";
 
 // Staged upload status. The server action (upload → parse → Claude cleanup →
@@ -89,20 +96,13 @@ export function ResumeSection({
   const hasResume = Boolean(filename);
   const showUploader = !hasResume || replacing;
 
-  function validate(file: File): string | null {
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-    if (ext !== "pdf" && ext !== "docx") {
-      return "Only PDF or DOCX files are allowed.";
-    }
-    if (file.size > RESUME_MAX_BYTES) {
-      return "File must be 5MB or smaller.";
-    }
-    if (file.size === 0) return "That file looks empty.";
-    return null;
-  }
-
   async function handleFile(file: File) {
-    const problem = validate(file);
+    const problem = validateUploadFile(
+      file,
+      RESUME_ALLOWED_EXTS,
+      RESUME_MAX_BYTES,
+      RESUME_TYPES_LABEL
+    );
     if (problem) {
       toast.error(problem);
       return;
@@ -289,7 +289,7 @@ export function ResumeSection({
                 Drag &amp; drop your resume here
               </p>
               <p className="text-meta text-brand-ink-secondary">
-                PDF or DOCX, up to 5MB
+                {RESUME_HELPER_TEXT}
               </p>
               <Button
                 type="button"

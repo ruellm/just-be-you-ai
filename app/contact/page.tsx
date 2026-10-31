@@ -42,10 +42,10 @@ export default function ContactPage() {
         <div className="mx-auto max-w-6xl section-x section-y">
           {/* Header */}
           <div className="space-y-4 text-center">
-            <h1 className="font-display text-page-title font-bold text-brand-primary">
+            <h1 className="font-display text-display font-bold text-brand-primary">
               Get In Touch
             </h1>
-            <p className="mx-auto max-w-3xl text-body text-brand-ink-secondary">
+            <p className="mx-auto max-w-3xl text-subheading text-brand-ink-secondary">
               Have questions or need support? Our team is always here to help
               you.
             </p>
@@ -69,18 +69,18 @@ export default function ContactPage() {
                       <row.icon className="size-5 text-brand-card" />
                     </span>
                     <span className="space-y-0.5">
-                      <span className="block text-body font-medium text-white">
+                      <span className="block text-body font-semibold text-white">
                         {row.label}
                       </span>
                       {"href" in row ? (
                         <a
                           href={row.href}
-                          className="text-small text-white hover:underline"
+                          className="text-meta text-white hover:underline"
                         >
                           {row.value}
                         </a>
                       ) : (
-                        <span className="block text-small text-white">
+                        <span className="block text-meta text-white">
                           {row.value}
                         </span>
                       )}

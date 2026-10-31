@@ -1,10 +1,8 @@
-import Link from "next/link";
 import { Check } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { BTN_PRIMARY } from "@/app/candidate/profile/ProfileSectionCard";
 import { PRESCREEN_DURATION_MINUTES } from "@/lib/prescreen";
 import { cn } from "@/lib/utils";
 import { StartPrescreenButton } from "./StartPrescreenButton";
+import { UploadResumeButton } from "./UploadResumeModal";
 
 // Top-of-profile card walking the candidate through resume upload and the
 // pre-screening interview. The "Required" badge is display only: applying
@@ -91,9 +89,7 @@ export function PrescreenBanner({
       {prescreenDone ? null : hasResume ? (
         <StartPrescreenButton />
       ) : (
-        <Button asChild className={BTN_PRIMARY}>
-          <Link href="#resume">Upload Resume</Link>
-        </Button>
+        <UploadResumeButton />
       )}
     </section>
   );

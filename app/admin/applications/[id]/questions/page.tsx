@@ -1,24 +1,14 @@
 import Link from "next/link";
 import { applicationDisplayTitle } from "@/lib/prescreen";
 import { notFound } from "next/navigation";
-import type { QuestionCategory } from "@prisma/client";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
-import { ProfileSectionCard } from "@/app/candidate/profile/ProfileSectionCard";
+import { GeneratedQuestions } from "@/components/applications/GeneratedQuestions";
 import { RegenerateButton } from "./RegenerateButton";
 
-// Admin-only debug view of an application's generated interview questions.
-// B7b restyled it to the Figma design; the data, the Regenerate action and the
-// admin-only nature are unchanged.
-
-// Section order + display labels for the QuestionCategory enum. The enum maps
-// 1:1 to the design's three headers — no remapping, and this is unrelated to
-// the rubric's five SCORING categories.
-const SECTIONS: { category: QuestionCategory; heading: string }[] = [
-  { category: "core", heading: "Core Competencies" },
-  { category: "behavioral", heading: "Behavioral" },
-  { category: "personalized", heading: "Personalized" },
-];
+// Admin-only debug view of an application's generated interview questions,
+// with the Regenerate action. The sections themselves are the shared
+// GeneratedQuestions component, also used by the business view.
 
 export default async function GeneratedQuestionsPage({
   params,
@@ -79,47 +69,10 @@ export default async function GeneratedQuestionsPage({
         <RegenerateButton applicationId={application.id} />
       </div>
 
-      {application.questions.length === 0 ? (
-        <ProfileSectionCard>
-          <p className="text-small text-brand-ink-secondary">
-            No questions have been generated for this application yet
-            (generation may have failed, or hasn&apos;t run). Use
-            &ldquo;Regenerate questions&rdquo;.
-          </p>
-        </ProfileSectionCard>
-      ) : (
-        SECTIONS.map(({ category, heading }) => {
-          const questions = application.questions.filter(
-            (q) => q.category === category
-          );
-          // Omit a section with no questions rather than render an empty card.
-          if (questions.length === 0) return null;
-          return (
-            <ProfileSectionCard key={category}>
-              <h2 className="text-heading font-semibold text-brand-primary">
-                {heading}
-              </h2>
-              <ol className="space-y-5">
-                {questions.map((question, index) => (
-                  <li key={question.id} className="flex gap-3">
-                    <span className="shrink-0 text-body text-brand-ink-sidebar">
-                      {index + 1}.
-                    </span>
-                    <div className="min-w-0 space-y-1">
-                      <p className="text-body text-brand-ink">{question.text}</p>
-                      {question.rationale ? (
-                        <p className="text-small text-brand-ink-secondary italic">
-                          {question.rationale}
-                        </p>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            </ProfileSectionCard>
-          );
-        })
-      )}
+      <GeneratedQuestions
+        questions={application.questions}
+        emptyMessage="No questions have been generated for this application yet (generation may have failed, or hasn't run). Use “Regenerate questions”."
+      />
     </div>
   );
 }

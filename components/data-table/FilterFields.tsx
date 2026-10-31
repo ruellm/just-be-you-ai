@@ -87,7 +87,7 @@ export function SearchField({
         onChange={(e) => setValue(e.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
-        className={cn(FIELD_CLASS, "pl-9 placeholder:text-brand-ink-secondary")}
+        className={cn(FIELD_CLASS, "pl-9")}
       />
     </div>
   );

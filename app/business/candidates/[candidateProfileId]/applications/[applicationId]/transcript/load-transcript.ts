@@ -1,23 +1,18 @@
-import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { unlockedApplicationAccess } from "../unlocked-access";
 
-// Transcript access for the View Transcript page and the .txt download. The
-// signed-in company must own the job the application belongs to and must have
-// unlocked the candidate's profile (same ProfileUnlock row the resume uses).
-// Returns null for anything else so callers can answer 404.
+// Transcript data for the View Transcript page and the .txt download, behind
+// the shared unlocked-application access check. Returns null for anything the
+// company may not see so callers can answer 404.
 export async function loadUnlockedTranscript(
   candidateProfileId: string,
   applicationId: string
 ) {
-  const company = await getCurrentCompany();
-  if (!company) return null;
+  const access = await unlockedApplicationAccess(candidateProfileId, applicationId);
+  if (!access) return null;
 
-  const application = await prisma.application.findFirst({
-    where: {
-      id: applicationId,
-      candidateProfileId,
-      job: { companyId: company.id },
-    },
+  const application = await prisma.application.findUnique({
+    where: { id: applicationId },
     select: {
       job: { select: { title: true } },
       candidateProfile: { select: { firstName: true, lastName: true } },
@@ -25,14 +20,6 @@ export async function loadUnlockedTranscript(
     },
   });
   if (!application?.interviewResult) return null;
-
-  const unlock = await prisma.profileUnlock.findUnique({
-    where: {
-      companyId_candidateProfileId: { companyId: company.id, candidateProfileId },
-    },
-    select: { id: true },
-  });
-  if (!unlock) return null;
 
   return {
     jobTitle: application.job?.title ?? "",

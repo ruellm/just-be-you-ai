@@ -330,15 +330,43 @@ export function WorkExperienceCard({
   );
 }
 
-export function ProjectsCard({ profile }: { profile: AdminCandidateProfile }) {
+// Plain shape for the Projects card so views with their own DTOs (the
+// business candidate page) can render the same block. Dates are "YYYY-MM-DD".
+export type ProjectCardItem = {
+  id: string;
+  name: string;
+  url: string | null;
+  startDate: string;
+  endDate: string;
+  ongoing: boolean;
+  description: string | null;
+  skills: string[];
+};
+
+export function projectCardItems(
+  profile: AdminCandidateProfile
+): ProjectCardItem[] {
+  return profile.projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    url: p.url,
+    startDate: dateToInput(p.startDate),
+    endDate: dateToInput(p.endDate),
+    ongoing: p.ongoing,
+    description: p.description,
+    skills: p.skills.map((ps) => ps.skill.name),
+  }));
+}
+
+export function ProjectsCard({ projects }: { projects: ProjectCardItem[] }) {
   return (
     <ProfileSectionCard>
       <SectionTitle>Projects</SectionTitle>
-      {profile.projects.length === 0 ? (
+      {projects.length === 0 ? (
         <p className="text-small text-brand-ink-secondary">No projects added.</p>
       ) : (
         <div className="space-y-4">
-          {profile.projects.map((p) => (
+          {projects.map((p) => (
             <div key={p.id} className={cn(INSET_PANEL, "bg-brand-surface p-5")}>
               <p className="text-body font-semibold text-brand-ink">{p.name}</p>
               {p.url ? (
@@ -355,11 +383,7 @@ export function ProjectsCard({ profile }: { profile: AdminCandidateProfile }) {
                 </p>
               ) : null}
               <p className="text-small text-brand-ink-secondary">
-                {displayDateRange(
-                  dateToInput(p.startDate),
-                  dateToInput(p.endDate),
-                  p.ongoing
-                )}
+                {displayDateRange(p.startDate, p.endDate, p.ongoing)}
               </p>
               {p.description ? (
                 <p className="mt-4 text-small whitespace-pre-line text-brand-ink">
@@ -368,12 +392,12 @@ export function ProjectsCard({ profile }: { profile: AdminCandidateProfile }) {
               ) : null}
               {p.skills.length > 0 ? (
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {p.skills.map((ps) => (
+                  {p.skills.map((name) => (
                     <span
-                      key={ps.skillId}
+                      key={name}
                       className="inline-flex h-[21px] items-center rounded-[6px] bg-tag-1 px-3 text-meta text-brand-ink"
                     >
-                      {ps.skill.name}
+                      {name}
                     </span>
                   ))}
                 </div>
@@ -402,7 +426,7 @@ export function CandidateProfileSections({
       <EducationCard profile={profile} />
       <SkillsCard profile={profile} />
       <WorkExperienceCard profile={profile} />
-      <ProjectsCard profile={profile} />
+      <ProjectsCard projects={projectCardItems(profile)} />
     </>
   );
 }

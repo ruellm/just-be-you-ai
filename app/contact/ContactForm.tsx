@@ -34,7 +34,7 @@ export function ContactForm() {
 
   const labelClass = "text-small font-semibold text-brand-ink";
   const inputClass =
-    "rounded-[8px] border-brand-border bg-brand-surface text-small placeholder:text-brand-ink-secondary";
+    "rounded-[8px] border-brand-border bg-brand-surface text-small";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">

@@ -10,8 +10,10 @@ import { extractResume } from "@/lib/resume-parse";
 import type { ResumeFlag } from "@/lib/resume-hidden-text";
 import { cleanResumeText } from "@/lib/ai/clean-resume";
 import {
+  RESUME_ALLOWED_EXTS,
   RESUME_ALLOWED_TYPES,
   RESUME_MAX_BYTES,
+  RESUME_TYPES_LABEL,
   type ActionResult,
 } from "../schemas";
 
@@ -30,7 +32,7 @@ function safeName(name: string): string {
 
 // Zod validates the derived file metadata; manual checks cover the File itself.
 const fileMetaSchema = z.object({
-  ext: z.enum(["pdf", "docx"]),
+  ext: z.enum(RESUME_ALLOWED_EXTS),
   size: z.number().int().positive().max(RESUME_MAX_BYTES, "File must be 5MB or smaller."),
 });
 
@@ -51,7 +53,7 @@ export async function uploadResume(formData: FormData): Promise<ActionResult> {
       success: false,
       error:
         issue?.path[0] === "ext"
-          ? "Only PDF or DOCX files are allowed."
+          ? `Only ${RESUME_TYPES_LABEL} files are allowed.`
           : (issue?.message ?? "Invalid file."),
     };
   }

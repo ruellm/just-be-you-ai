@@ -10,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ConfirmExitInterview } from "./ConfirmExitInterview";
+import { useMarkInterviewLive } from "./InterviewLiveContext";
 import { cn } from "@/lib/utils";
 
 // Shared, presentation-only pieces for the interview flow. Both tiers
@@ -170,8 +171,12 @@ function TileLabel({ children }: { children: ReactNode }) {
   );
 }
 
+// Brand Kit Mic / Cam / Settings: 61px (mic, cam) and 51px (settings) circles
+// on #3A3342, white icon; the muted mic turns Accent 2 with the mic-off icon.
 const CONTROL_BTN =
-  "flex size-[51px] items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 disabled:opacity-100";
+  "flex items-center justify-center rounded-full bg-[#3a3342] text-white transition-colors hover:bg-[#4a4254] disabled:opacity-100";
+const CONTROL_BTN_LG = cn(CONTROL_BTN, "size-[61px]");
+const CONTROL_BTN_SM = cn(CONTROL_BTN, "size-[51px]");
 
 // ── Live-stage layout ───────────────────────────────────────────────────────
 export function LiveStage({
@@ -198,6 +203,8 @@ export function LiveStage({
   // Shows the Recording badge. Display only.
   recording: boolean;
 }) {
+  useMarkInterviewLive();
+
   return (
     <div className="flex min-h-[calc(100vh-5rem)] flex-col bg-[#1e1e1e] font-body text-white">
       <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col px-6 pt-6 pb-10">
@@ -252,18 +259,21 @@ export function LiveStage({
               onClick={onToggleMic}
               aria-pressed={micMuted}
               aria-label={micMuted ? "Unmute microphone" : "Mute microphone"}
-              className={cn(CONTROL_BTN, micMuted && "bg-accent-2 hover:bg-accent-2/90")}
+              className={cn(
+                CONTROL_BTN_LG,
+                micMuted && "bg-accent-2 hover:bg-accent-2/90"
+              )}
             >
-              {micMuted ? <MicOff className="size-6" /> : <Mic className="size-6" />}
+              {micMuted ? <MicOff className="size-7" /> : <Mic className="size-7" />}
             </button>
             <Tooltip>
               <TooltipTrigger asChild>
                 <span
                   tabIndex={0}
                   aria-label="Camera on"
-                  className={cn(CONTROL_BTN, "cursor-default")}
+                  className={cn(CONTROL_BTN_LG, "cursor-default")}
                 >
-                  <Video className="size-6" />
+                  <Video className="size-7" />
                 </span>
               </TooltipTrigger>
               <TooltipContent>Your camera stays on during the interview.</TooltipContent>
@@ -272,7 +282,7 @@ export function LiveStage({
               type="button"
               aria-label="Settings"
               onClick={() => toast("Settings are not available yet.")}
-              className={CONTROL_BTN}
+              className={CONTROL_BTN_SM}
             >
               <Settings className="size-6" />
             </button>

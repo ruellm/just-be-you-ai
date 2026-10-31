@@ -16,7 +16,7 @@ import {
 import { FIELD_LIMITS } from "@/app/business/company/schemas";
 
 const LABEL = "text-small font-semibold text-brand-ink";
-const INPUT = cn(MODAL_INPUT, "h-9 placeholder:text-brand-ink-secondary/60");
+const INPUT = cn(MODAL_INPUT, "h-9");
 
 export type EditableCompany = {
   name: string;

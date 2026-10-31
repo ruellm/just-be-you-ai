@@ -143,6 +143,7 @@ export function UserRowActions({
         onOpenChange={setHideOpen}
         hidden={hidden}
         name={name}
+        subject="user"
         onConfirm={() => {
           setHidden((v) => !v);
           setHideOpen(false);

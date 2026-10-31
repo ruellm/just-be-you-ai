@@ -41,10 +41,9 @@ import {
   type JobValues,
 } from "./schemas";
 import { createJob, updateJob } from "./actions";
-import { analyzeJobDescription, improveJobField } from "./ai-actions";
+import { analyzeJobDescription } from "./ai-actions";
 import {
   NARRATIVE_FIELDS,
-  NARRATIVE_FIELD_LABELS,
   type ExtractedJobFields,
   type JobAiInput,
   type JobHints,
@@ -150,7 +149,7 @@ const PAGE_1_FIELDS: (keyof JobValues)[] = [
 ];
 
 const INPUT_CLASS =
-  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary";
+  "h-9 rounded-[8px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none";
 const LABEL_CLASS = "font-body text-small font-semibold text-brand-ink";
 const CARD_TITLE_CLASS =
   "font-body text-heading font-semibold tracking-[-0.5px] text-brand-primary";
@@ -229,8 +228,6 @@ export function JobForm({
   const [uploadOpen, setUploadOpen] = useState(false);
   const [replaceNeedsConfirm, setReplaceNeedsConfirm] = useState(false);
 
-  const setOpts = { shouldDirty: true, shouldValidate: true } as const;
-
   function aiInput(): JobAiInput {
     const v = form.getValues();
     return {
@@ -305,35 +302,11 @@ export function JobForm({
     setStep(1);
   }
 
-  async function runImprove(field: NarrativeField) {
-    const previous = form.getValues(field);
-    setImproving(field);
-    let result: Awaited<ReturnType<typeof improveJobField>>;
-    try {
-      result = await improveJobField(field, aiInput());
-    } catch {
-      result = {
-        success: false,
-        error: "We couldn't improve that section right now.",
-      };
-    } finally {
-      setImproving(null);
-    }
-    if (!result.success) {
-      toast.error(result.error);
-      return;
-    }
-    form.setValue(field, result.text, setOpts);
-    toast.success(`${NARRATIVE_FIELD_LABELS[field]} improved`, {
-      action: {
-        label: "Undo",
-        onClick: () => form.setValue(field, previous, setOpts),
-      },
-    });
-  }
-
-  async function runSkillHints() {
-    setImproving("skills");
+  // Every "Improve with AI" button runs the same hints analysis over the
+  // current form values and opens the panel. `source` only drives which
+  // button shows the spinner.
+  async function runHints(source: NarrativeField | "skills") {
+    setImproving(source);
     let result: Awaited<ReturnType<typeof analyzeJobDescription>>;
     try {
       result = await analyzeJobDescription({ values: aiInput() });
@@ -352,6 +325,18 @@ export function JobForm({
     setHintItems(hintItemsFrom(result.hints));
     setPanelOpen(true);
   }
+
+  // Enough to analyse: a title plus at least one of description, requirements
+  // or required skills.
+  const [watchedTitle, watchedDescription, watchedRequirements, watchedSkillIds] =
+    form.watch(["title", "description", "requirements", "skillIds"]);
+  const canAnalyze = Boolean(
+    watchedTitle.trim() &&
+      (watchedDescription.trim() ||
+        watchedRequirements.trim() ||
+        watchedSkillIds.length)
+  );
+  const hintsDisabled = improving !== null || !canAnalyze;
 
   const showPanel = aiEnabled && panelOpen && hintItems !== null;
 
@@ -592,9 +577,9 @@ export function JobForm({
                         </FormLabel>
                         {aiEnabled ? (
                           <ImproveWithAiButton
-                            onClick={runSkillHints}
+                            onClick={() => runHints("skills")}
                             pending={improving === "skills"}
-                            disabled={improving !== null}
+                            disabled={hintsDisabled}
                           />
                         ) : null}
                       </div>
@@ -622,11 +607,9 @@ export function JobForm({
                       <h2 className={CARD_TITLE_CLASS}>{sectionTitle}</h2>
                       {aiEnabled ? (
                         <ImproveWithAiButton
-                          onClick={() => runImprove(name)}
+                          onClick={() => runHints(name)}
                           pending={improving === name}
-                          disabled={
-                            improving !== null || !form.watch(name).trim()
-                          }
+                          disabled={hintsDisabled}
                         />
                       ) : null}
                     </div>
@@ -639,7 +622,7 @@ export function JobForm({
                             <Textarea
                               maxLength={JOB_TEXT_LIMITS[name]}
                               placeholder={placeholder}
-                              className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
+                              className="min-h-[97px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
                               {...field}
                             />
                           </FormControl>
@@ -726,7 +709,7 @@ export function JobForm({
                           <Textarea
                             maxLength={JOB_TEXT_LIMITS[name]}
                             placeholder={placeholder}
-                            className="min-h-[76px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none placeholder:text-brand-ink-secondary"
+                            className="min-h-[76px] resize-y rounded-[12px] border-brand-border bg-brand-surface font-body text-small text-brand-ink shadow-none"
                             {...field}
                           />
                         </FormControl>

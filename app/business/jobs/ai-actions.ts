@@ -4,22 +4,15 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { getCurrentCompany } from "@/lib/auth";
 import { extractDocument } from "@/lib/resume-parse";
-import {
-  analyzeJobDescription as runAnalysis,
-  improveJobField as runImprove,
-} from "@/lib/ai/job-description";
+import { analyzeJobDescription as runAnalysis } from "@/lib/ai/job-description";
 import {
   analyzeJobInputSchema,
-  jobAiInputSchema,
-  narrativeFieldSchema,
   JD_ALLOWED_EXTS,
   JD_MAX_BYTES,
   JD_TEXT_MAX_CHARS,
   type AnalyzeJobInput,
   type ExtractedJobFields,
-  type JobAiInput,
   type JobHints,
-  type NarrativeField,
   type SkillRef,
 } from "./ai-schemas";
 
@@ -104,8 +97,8 @@ export async function extractJobFileText(
   }
 }
 
-// Step 2 of the upload, and the "Improve with AI" on Required Skills: one
-// Claude call that returns the form fields (file only) and the hints.
+// Step 2 of the upload, and every "Improve with AI" button: one Claude call
+// that returns the form fields (file only) and the hints.
 export async function analyzeJobDescription(
   input: AnalyzeJobInput
 ): Promise<
@@ -135,43 +128,6 @@ export async function analyzeJobDescription(
     return {
       success: false,
       error: "We couldn't analyze the job details right now. Please try again.",
-    };
-  }
-}
-
-// "Improve with AI" on one narrative section.
-export async function improveJobField(
-  field: NarrativeField,
-  values: JobAiInput
-): Promise<{ success: true; text: string } | Failure> {
-  const company = await getCurrentCompany();
-  if (!company) return { success: false, error: "You are not signed in." };
-
-  const parsedField = narrativeFieldSchema.safeParse(field);
-  const parsedValues = jobAiInputSchema.safeParse(values);
-  if (!parsedField.success || !parsedValues.success) {
-    return { success: false, error: "Invalid input." };
-  }
-  if (!parsedValues.data[parsedField.data].trim()) {
-    return { success: false, error: "Write something first, then improve it." };
-  }
-
-  try {
-    const taxonomy = await loadTaxonomy();
-    const skillNames = selectedSkills(taxonomy, parsedValues.data.skillIds).map(
-      (s) => s.name
-    );
-    const text = await runImprove(
-      parsedField.data,
-      parsedValues.data,
-      skillNames
-    );
-    return { success: true, text };
-  } catch (error) {
-    console.error("[job-description] Improve failed:", error);
-    return {
-      success: false,
-      error: "We couldn't improve that section right now. Please try again.",
     };
   }
 }

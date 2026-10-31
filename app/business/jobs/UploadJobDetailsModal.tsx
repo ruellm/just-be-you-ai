@@ -1,26 +1,26 @@
 "use client";
 
-import { useRef, useState, type DragEvent } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import {
   CheckCircle2,
   FileText,
   Loader2,
   RefreshCw,
-  Trash2,
   UploadCloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose } from "@/components/ui/dialog";
+import { Dialog } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
   FormModalBody,
   FormModalContent,
 } from "@/components/profile/FormModal";
 import {
-  BTN_DANGER,
-  BTN_PRIMARY,
-} from "@/app/candidate/profile/ProfileSectionCard";
+  UploadFilePick,
+  UPLOAD_CONFIRM_BTN,
+} from "@/components/UploadFilePick";
+import { BTN_PRIMARY } from "@/app/candidate/profile/ProfileSectionCard";
 import { cn } from "@/lib/utils";
 import { analyzeJobDescription, extractJobFileText } from "./ai-actions";
 import {
@@ -33,9 +33,10 @@ import {
   type JobHints,
 } from "./ai-schemas";
 
-// "Upload Job Details" flow for Post New Job: pick a file, watch the two
-// server steps run, then review the result. The form values are written by
-// the parent through `onExtracted`; this modal only owns the upload.
+// "Upload Job Details" flow for Post New Job: pick a file (the shared
+// UploadFilePick step), watch the two server steps run, then review the
+// result. The form values are written by the parent through `onExtracted`;
+// this modal only owns the upload.
 
 type Phase = "pick" | "building" | "complete";
 
@@ -49,16 +50,6 @@ const PROGRESS_LINES = [
   "Reading requirements and skills",
   "Checking for missing details",
 ];
-
-function validate(file: File): string | null {
-  const ext = file.name.split(".").pop()?.toLowerCase() ?? "";
-  if (!(JD_ALLOWED_EXTS as readonly string[]).includes(ext)) {
-    return "Only PDF, TXT or DOCX files are allowed.";
-  }
-  if (file.size > JD_MAX_BYTES) return "File must be 5MB or smaller.";
-  if (file.size === 0) return "That file looks empty.";
-  return null;
-}
 
 export function UploadJobDetailsModal({
   open,
@@ -74,18 +65,13 @@ export function UploadJobDetailsModal({
   onExtracted: (fields: ExtractedJobFields, hints: JobHints) => void;
   onReviewHints: () => void;
 }) {
-  const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [dragOver, setDragOver] = useState(false);
   const [phase, setPhase] = useState<Phase>("pick");
   const [progress, setProgress] = useState<Progress>(0);
   const [summary, setSummary] = useState({ empty: 0, hints: 0 });
 
   function reset() {
     setFile(null);
-    setError(null);
-    setDragOver(false);
     setPhase("pick");
     setProgress(0);
   }
@@ -94,19 +80,6 @@ export function UploadJobDetailsModal({
     if (!next && phase === "building") return;
     if (!next) reset();
     onOpenChange(next);
-  }
-
-  function pick(candidate: File) {
-    const problem = validate(candidate);
-    setError(problem);
-    setFile(problem ? null : candidate);
-  }
-
-  function onDrop(e: DragEvent<HTMLDivElement>) {
-    e.preventDefault();
-    setDragOver(false);
-    const dropped = e.dataTransfer.files?.[0];
-    if (dropped) pick(dropped);
   }
 
   async function runUpload() {
@@ -150,8 +123,6 @@ export function UploadJobDetailsModal({
     setPhase("complete");
   }
 
-  const confirmClass = cn(BTN_PRIMARY, "h-10 px-5");
-
   const title =
     phase === "building"
       ? "Building your job post"
@@ -163,130 +134,35 @@ export function UploadJobDetailsModal({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <FormModalContent icon={UploadCloud} title={title}>
         {phase === "pick" ? (
-          <>
-            <FormModalBody>
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => inputRef.current?.click()}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    inputRef.current?.click();
-                  }
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  setDragOver(true);
-                }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                className={cn(
-                  "flex min-h-[214px] cursor-pointer flex-col items-center justify-center gap-2 rounded-[12px] border border-dashed p-6 text-center transition-colors",
-                  dragOver
-                    ? "border-brand-secondary bg-brand-secondary/10"
-                    : "border-brand-secondary/60 bg-brand-secondary/5"
-                )}
-              >
-                <FileText
-                  className="size-10 text-brand-ink-sidebar"
-                  strokeWidth={1.5}
-                />
-                {file ? (
-                  <>
-                    <p className="text-small font-semibold text-brand-ink">
-                      {file.name}
-                    </p>
-                    <div className="mt-1 flex gap-2">
-                      <Button
-                        type="button"
-                        className={BTN_PRIMARY}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          inputRef.current?.click();
-                        }}
-                      >
-                        <RefreshCw /> Replace
-                      </Button>
-                      <Button
-                        type="button"
-                        className={BTN_DANGER}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFile(null);
-                          setError(null);
-                        }}
-                      >
-                        <Trash2 /> Delete
-                      </Button>
-                    </div>
-                  </>
-                ) : (
-                  <>
-                    <p className="text-small font-semibold text-brand-ink-sidebar">
-                      Drag or drop your file here
-                    </p>
-                    <p className="text-meta text-brand-ink-sidebar">
-                      PDF, TXT, or DOCX, up to 5MB
-                    </p>
-                  </>
-                )}
-                <input
-                  ref={inputRef}
-                  type="file"
-                  accept={JD_ACCEPT}
-                  className="hidden"
-                  onChange={(e) => {
-                    const chosen = e.target.files?.[0];
-                    if (chosen) pick(chosen);
-                    e.target.value = "";
-                  }}
-                />
-              </div>
-              {error ? (
-                <p role="alert" className="text-small text-accent-2">
-                  {error}
-                </p>
-              ) : null}
-            </FormModalBody>
-            <div className="px-6 pb-6">
-              <div className="flex justify-end gap-3">
-                <DialogClose asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="h-10 rounded-[8px] border-brand-border bg-brand-surface px-5 font-body text-small font-medium text-brand-ink shadow-none hover:bg-brand-container"
-                  >
-                    Cancel
-                  </Button>
-                </DialogClose>
-                {hasValues && file ? (
-                  <ConfirmDialog
-                    trigger={
-                      <Button type="button" className={confirmClass}>
-                        Confirm Upload
-                      </Button>
-                    }
-                    icon={RefreshCw}
-                    tone="info"
-                    title="Replace the current job details?"
-                    description="Replace the current job details with the uploaded file? Everything typed so far on this page will be overwritten."
-                    confirmLabel="Replace details"
-                    onConfirm={runUpload}
-                  />
-                ) : (
-                  <Button
-                    type="button"
-                    disabled={!file}
-                    onClick={runUpload}
-                    className={confirmClass}
-                  >
-                    Confirm Upload
-                  </Button>
-                )}
-              </div>
-            </div>
-          </>
+          <UploadFilePick
+            file={file}
+            onFileChange={setFile}
+            accept={JD_ACCEPT}
+            allowedExts={JD_ALLOWED_EXTS}
+            maxBytes={JD_MAX_BYTES}
+            typesLabel="PDF, TXT or DOCX"
+            helperText="PDF, TXT, or DOCX, up to 5MB"
+            onConfirm={runUpload}
+            renderConfirm={
+              hasValues
+                ? (_, run) => (
+                    <ConfirmDialog
+                      trigger={
+                        <Button type="button" className={UPLOAD_CONFIRM_BTN}>
+                          Confirm Upload
+                        </Button>
+                      }
+                      icon={RefreshCw}
+                      tone="info"
+                      title="Replace the current job details?"
+                      description="Replace the current job details with the uploaded file? Everything typed so far on this page will be overwritten."
+                      confirmLabel="Replace details"
+                      onConfirm={run}
+                    />
+                  )
+                : undefined
+            }
+          />
         ) : phase === "building" ? (
           <FormModalBody className="pb-8">
             <div className="flex items-center gap-3 rounded-[8px] border border-brand-border bg-brand-container px-4 py-3">

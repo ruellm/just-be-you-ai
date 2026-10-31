@@ -12,6 +12,7 @@ import {
   FileText,
   Info,
   Lock,
+  SquareArrowOutUpRight,
   XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -26,6 +27,7 @@ import {
 } from "@/components/ui/dialog";
 import { StatusBadge } from "@/components/applications/Badges";
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
+import { ProjectsCard } from "@/components/admin/CandidateProfileSections";
 import {
   ScoreSummary,
   StatRow,
@@ -69,10 +71,10 @@ export type InterviewResultDTO = {
   rubricScoresJson: unknown;
   compositeScore: number | null;
   verdict: string | null;
-  gatesFiredJson: unknown;
   manipulationAttemptsJson: unknown;
   durationSeconds: number | null;
-  transcriptUnlocked: boolean;
+  // Transcript and generated questions open with the profile unlock.
+  unlocked: boolean;
   completedAt: string;
 };
 
@@ -126,6 +128,7 @@ export type ProfileDTO = {
   projects: {
     id: string;
     name: string;
+    url: string | null;
     description: string | null;
     startDate: string | null;
     endDate: string | null;
@@ -174,16 +177,24 @@ const CARD_TITLE_CLASS =
 
 function Card({
   title,
+  action,
   children,
   className,
 }: {
   title?: string;
+  // Sits at the right of the title.
+  action?: ReactNode;
   children: ReactNode;
   className?: string;
 }) {
   return (
     <section className={cn(CARD_CLASS, "space-y-4", className)}>
-      {title ? <h3 className={CARD_TITLE_CLASS}>{title}</h3> : null}
+      {title ? (
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <h3 className={CARD_TITLE_CLASS}>{title}</h3>
+          {action}
+        </div>
+      ) : null}
       {children}
     </section>
   );
@@ -375,7 +386,7 @@ function TranscriptCard({
   app: ApplicationDTO;
 }) {
   const r = app.interviewResult;
-  if (!r || !r.transcriptUnlocked) return null;
+  if (!r || !r.unlocked) return null;
   const base = `/business/candidates/${candidateProfileId}/applications/${app.id}/transcript`;
   return (
     <Card title="Interview Transcript">
@@ -416,7 +427,13 @@ function TranscriptCard({
   );
 }
 
-function ApplicationResults({ app }: { app: ApplicationDTO }) {
+function ApplicationResults({
+  candidateProfileId,
+  app,
+}: {
+  candidateProfileId: string;
+  app: ApplicationDTO;
+}) {
   const r = app.interviewResult;
   if (!r) {
     return (
@@ -490,12 +507,25 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
       />
 
       {breakdown ? (
-        <Card title="Rubric Breakdown">
+        <Card
+          title="Rubric Breakdown"
+          action={
+            r.unlocked ? (
+              <Button asChild className={BTN_PRIMARY}>
+                <Link
+                  href={`/business/candidates/${candidateProfileId}/applications/${app.id}/questions`}
+                >
+                  <SquareArrowOutUpRight className="size-4" /> View Generated
+                  Questions
+                </Link>
+              </Button>
+            ) : null
+          }
+        >
           <RubricBreakdown
             rubricScoresJson={r.rubricScoresJson}
             compositeScore={r.compositeScore}
             verdict={r.verdict}
-            gatesFiredJson={r.gatesFiredJson}
             manipulationAttemptsJson={r.manipulationAttemptsJson}
           />
         </Card>
@@ -551,7 +581,7 @@ export function CandidateProfileView({
         <ArrowLeft className="size-5" /> Back to Previous
       </Link>
 
-      <div className="flex items-center gap-4">
+      <div className="flex flex-wrap items-center gap-4">
         {!profile ? (
           <div className="flex size-[60px] shrink-0 items-center justify-center rounded-[8px] bg-brand-secondary/10">
             <Building2 className="size-9 text-brand-secondary" strokeWidth={1.5} />
@@ -576,12 +606,25 @@ export function CandidateProfileView({
             {!profile ? "Anonymous Email" : profile.email}
           </p>
         </div>
+        {!profile ? (
+          <Button
+            type="button"
+            onClick={openModal}
+            className="ml-auto h-[41px] rounded-[12px] bg-brand-secondary px-6 text-body font-semibold text-white hover:bg-brand-secondary/90"
+          >
+            Unlock Profile
+          </Button>
+        ) : null}
       </div>
 
       <section className="space-y-4">
         <h2 className={CARD_TITLE_CLASS}>Interview Results</h2>
         {applications.map((app) => (
-          <ApplicationResults key={app.id} app={app} />
+          <ApplicationResults
+            key={app.id}
+            candidateProfileId={candidateProfileId}
+            app={app}
+          />
         ))}
         <ResumeCard profile={profile} onUnlock={openModal} />
         {applications.map((app) => (
@@ -657,6 +700,49 @@ export function CandidateProfileView({
               </Card>
             ) : null}
 
+            {profile.educations.length ? (
+              <Card title="Education">
+                <div className="space-y-4">
+                  {profile.educations.map((e) => (
+                    <div
+                      key={e.id}
+                      className="rounded-[12px] border border-brand-border p-4"
+                    >
+                      <p className="text-body font-semibold text-brand-ink">
+                        {e.school}
+                      </p>
+                      <p className="text-small text-brand-ink-secondary">
+                        {[e.degree, e.fieldOfStudy].filter(Boolean).join(", ")}
+                      </p>
+                      <p className="text-small text-brand-ink-secondary">
+                        {[
+                          e.country,
+                          dateRange(e.startDate, e.endDate, e.currentlyStudying),
+                        ]
+                          .filter(Boolean)
+                          .join(" • ")}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
+            {profile.skills.length ? (
+              <Card title="Skills">
+                <div className="flex flex-wrap gap-2">
+                  {profile.skills.map((s) => (
+                    <span
+                      key={s.id}
+                      className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink"
+                    >
+                      {s.name} • {s.years}y
+                    </span>
+                  ))}
+                </div>
+              </Card>
+            ) : null}
+
             {profile.workExperiences.length ? (
               <Card title="Work Experience">
                 <div className="space-y-4">
@@ -687,86 +773,14 @@ export function CandidateProfileView({
               </Card>
             ) : null}
 
-            {profile.skills.length ? (
-              <Card title="Skills">
-                <div className="flex flex-wrap gap-2">
-                  {profile.skills.map((s) => (
-                    <span
-                      key={s.id}
-                      className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink"
-                    >
-                      {s.name} • {s.years}y
-                    </span>
-                  ))}
-                </div>
-              </Card>
-            ) : null}
-
-            {profile.educations.length ? (
-              <Card title="Education">
-                <div className="space-y-4">
-                  {profile.educations.map((e) => (
-                    <div
-                      key={e.id}
-                      className="rounded-[12px] border border-brand-border p-4"
-                    >
-                      <p className="text-body font-semibold text-brand-ink">
-                        {e.school}
-                      </p>
-                      <p className="text-small text-brand-ink-secondary">
-                        {[e.degree, e.fieldOfStudy].filter(Boolean).join(", ")}
-                      </p>
-                      <p className="text-small text-brand-ink-secondary">
-                        {[
-                          e.country,
-                          dateRange(e.startDate, e.endDate, e.currentlyStudying),
-                        ]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            ) : null}
-
             {profile.projects.length ? (
-              <Card title="Projects">
-                <div className="space-y-4">
-                  {profile.projects.map((p) => (
-                    <div
-                      key={p.id}
-                      className="space-y-2 rounded-[12px] border border-brand-border p-4"
-                    >
-                      <div>
-                        <p className="text-body font-semibold text-brand-ink">
-                          {p.name}
-                        </p>
-                        <p className="text-small text-brand-ink-secondary">
-                          {dateRange(p.startDate, p.endDate, p.ongoing)}
-                        </p>
-                      </div>
-                      {p.description ? (
-                        <p className="text-small whitespace-pre-line text-brand-ink">
-                          {p.description}
-                        </p>
-                      ) : null}
-                      {p.skills.length ? (
-                        <div className="flex flex-wrap gap-2">
-                          {p.skills.map((name) => (
-                            <span
-                              key={name}
-                              className="inline-flex h-6 items-center rounded-[6px] bg-tag-1 px-2.5 text-meta text-brand-ink"
-                            >
-                              {name}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </Card>
+              <ProjectsCard
+                projects={profile.projects.map((p) => ({
+                  ...p,
+                  startDate: p.startDate?.slice(0, 10) ?? "",
+                  endDate: p.endDate?.slice(0, 10) ?? "",
+                }))}
+              />
             ) : null}
           </div>
         )}

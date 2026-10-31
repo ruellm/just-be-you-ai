@@ -178,7 +178,7 @@ export default async function ProfilePage() {
       <ProfileSectionCard
         id="resume"
         title="Resume"
-        subtitle="Upload your resume as a PDF or DOCX file (up to 5MB)."
+        subtitle="Upload your resume as a PDF, TXT, or DOCX file (up to 5MB)."
       >
         <ResumeSection
           filename={resumeMeta?.filename ?? null}
