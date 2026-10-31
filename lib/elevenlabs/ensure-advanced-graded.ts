@@ -46,7 +46,7 @@ export async function ensureAdvancedGraded(rawApplicationId: string): Promise<vo
     throw new Error("Application not found");
   }
 
-  if (application.job.voiceAgentType !== "advanced") return;
+  if (application.job?.voiceAgentType !== "advanced") return;
   if (application.status !== "interview_completed") return;
   if (application.interviewResult) return;
 

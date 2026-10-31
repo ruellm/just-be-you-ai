@@ -48,6 +48,7 @@ from .prompts import (
     untrusted_notice,
     wrap_untrusted,
 )
+from .prescreen import prescreen_greeting
 
 logger = logging.getLogger("jbu-voice-agent.flow")
 
@@ -445,11 +446,17 @@ class InterviewFlow:
         # loop takes over from here — the LLM drives the rest via the rules in
         # the system prompt and its two tools.
         greet_name = f" {self.first_name}" if self.first_name else ""
+        if job.is_prescreen:
+            intro = prescreen_greeting()
+        else:
+            intro = (
+                f"introduce yourself as the AI interviewer for the {job.title} role "
+                f"at {job.company_name}, and ask if they're ready to begin."
+            )
         await self.session.generate_reply(
             instructions=(
                 f"Greet the candidate warmly{greet_name}. In one or two sentences, "
-                f"introduce yourself as the AI interviewer for the {job.title} role "
-                f"at {job.company_name}, and ask if they're ready to begin."
+                f"{intro}"
             )
         )
 

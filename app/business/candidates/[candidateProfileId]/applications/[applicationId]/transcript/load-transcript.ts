@@ -35,7 +35,7 @@ export async function loadUnlockedTranscript(
   if (!unlock) return null;
 
   return {
-    jobTitle: application.job.title,
+    jobTitle: application.job?.title ?? "",
     firstName: application.candidateProfile.firstName,
     lastName: application.candidateProfile.lastName,
     transcript: application.interviewResult.transcript,

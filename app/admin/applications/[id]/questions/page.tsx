@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { applicationDisplayTitle } from "@/lib/prescreen";
 import { notFound } from "next/navigation";
 import type { QuestionCategory } from "@prisma/client";
 import { ArrowLeft } from "lucide-react";
@@ -66,8 +67,8 @@ export default async function GeneratedQuestionsPage({
             Generated Questions
           </h1>
           <p className="text-small text-brand-ink-secondary">
-            {candidateName} · {application.job.title} ·{" "}
-            {application.job.company.name}
+            {candidateName} · {applicationDisplayTitle(application)}
+            {application.job ? ` · ${application.job.company.name}` : ""}
           </p>
           {generatedAt ? (
             <p className="text-meta text-brand-ink-secondary">

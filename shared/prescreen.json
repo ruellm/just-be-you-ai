@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "notes": [
+    "Single source for the pre-screening interview defaults shared by the Next.js app (lib/prescreen.ts) and the Python voice agent (voice-agent/lib/prescreen.py). Do not copy these values into either codebase.",
+    "A pre-screen is an Application with kind = prescreen and no job. Wherever the pipeline needs job fields, both sides build the same stand-in job from these values plus the candidate's own profile.",
+    "jobTitle: the candidate's Preferred Role, else the position of their most recent work experience, else titleFallback. {title} in idealCandidateProfile is replaced with that value."
+  ],
+  "displayTitle": "Pre-screening Interview",
+  "titleFallback": "General role",
+  "companyName": "Just Be You",
+  "durationMinutes": 10,
+  "level": "not specified",
+  "description": "Pre-screening interview with no specific job attached. Assess the candidate's readiness for the role they are targeting.",
+  "idealCandidateProfile": "A capable {title} with the skills and experience shown in the candidate's own profile.",
+  "greeting": "introduce yourself as the AI interviewer for their pre-screening interview on Just Be You, and ask if they're ready to begin."
+}

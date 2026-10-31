@@ -44,8 +44,10 @@ export function formatSeatsLeft(remaining: number, total: number): string {
 export function interviewSeatsUsedWhere(
   candidateProfileId: string
 ): Prisma.ApplicationWhereInput {
+  // Pre-screens never use a seat.
   return {
     candidateProfileId,
+    kind: "job",
     NOT: {
       status: { in: ["draft", "submitted"] },
       interviewResult: null,

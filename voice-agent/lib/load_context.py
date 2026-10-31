@@ -32,6 +32,7 @@ from .context import (
     Skill,
     WorkExperience,
 )
+from .prescreen import build_prescreen_job
 from .supabase_client import supabase
 
 # Embedded select tree. Keys before ":" are the aliases we read back below.
@@ -116,13 +117,11 @@ def load_interview_context(application_id: str) -> InterviewContext:
             f"Application {application_id!r} has no candidate profile attached."
         )
 
-    job_row = row.get("job")
-    if not job_row:
-        raise ValueError(f"Application {application_id!r} has no job attached.")
-
     candidate = _build_candidate(candidate_row)
     _resolve_resume(row, candidate)
-    job = _build_job(job_row)
+    job_row = row.get("job")
+    # A pre-screening interview has no job: use the shared stand-in instead.
+    job = _build_job(job_row) if job_row else build_prescreen_job(candidate)
     questions = _build_questions(row.get("questions") or [])
 
     return InterviewContext(

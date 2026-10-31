@@ -48,14 +48,17 @@ export function ProfileSectionCard({
   subtitle,
   children,
   className,
+  id,
 }: {
   title?: string;
   subtitle?: string;
   children: ReactNode;
   className?: string;
+  id?: string;
 }) {
   return (
     <section
+      id={id}
       className={cn(
         "space-y-6 rounded-[12px] border border-brand-border bg-brand-surface p-6 sm:p-8",
         className

@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
 import { untrustedNotice, wrapUntrusted } from "@/lib/ai/interview-prompts";
 import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
+import { resolveInterviewJob } from "@/lib/prescreen";
 
 const RESUME_CHAR_LIMIT = 8000;
 
@@ -93,8 +94,11 @@ function loadApplication(applicationId: string) {
 }
 
 function buildUserPrompt(application: ApplicationForGeneration): string {
-  const { job, candidateProfile: cp } = application;
-  const skillNames = job.skills.map((s) => s.skill.name);
+  // A pre-screen has no job row; the stand-in comes from the candidate's own
+  // profile (see lib/prescreen.ts).
+  const job = resolveInterviewJob(application);
+  const cp = application.candidateProfile;
+  const skillNames = job.skillNames;
   const lines: string[] = [];
 
   lines.push("# JOB");

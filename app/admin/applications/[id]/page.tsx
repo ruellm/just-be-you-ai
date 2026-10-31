@@ -26,6 +26,7 @@ import {
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
 import { MatchBanner } from "@/components/applications/MatchBanner";
 import { parseMatchSummary } from "@/lib/match/match-display";
+import { applicationDisplayTitle } from "@/lib/prescreen";
 import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
 import { parseResumeFlags, RESUME_FLAG_LABELS } from "@/lib/integrity-flags";
 import {
@@ -151,7 +152,7 @@ export default async function AdminApplicationResultPage({
 
       {!result ? (
         <ProfileSectionCard>
-          <SectionTitle>{application.job.title}</SectionTitle>
+          <SectionTitle>{applicationDisplayTitle(application)}</SectionTitle>
           <p className="text-small text-brand-ink-secondary">
             No interview result yet for this application (status:{" "}
             {application.status}).
@@ -161,7 +162,7 @@ export default async function AdminApplicationResultPage({
         <>
           {/* Score ring + stat chips */}
           <ProfileSectionCard>
-            <SectionTitle>{application.job.title}</SectionTitle>
+            <SectionTitle>{applicationDisplayTitle(application)}</SectionTitle>
             <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center">
               <ScoreRing percent={scorePercent} passed={passed} />
               <div className="grid w-full min-w-0 gap-5 text-center sm:grid-cols-2 sm:text-left xl:grid-cols-3">

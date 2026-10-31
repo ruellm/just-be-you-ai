@@ -66,6 +66,13 @@ enum ApplicationStatus {
   archived
 }
 
+// job = a normal application to a posted job. prescreen = the one-time
+// pre-screening interview with no job attached (jobId is null).
+enum ApplicationKind {
+  job
+  prescreen
+}
+
 enum JobStatus {
   open
   closed
@@ -393,7 +400,10 @@ model JobSkill {
 model Application {
   id                 String            @id @default(cuid())
   candidateProfileId String
-  jobId              String
+  // Null only for kind = prescreen. Migration 20261031000000 adds a partial
+  // unique index so a candidate has at most one prescreen row.
+  jobId              String?
+  kind               ApplicationKind   @default(job)
   status             ApplicationStatus @default(draft)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -424,7 +434,7 @@ model Application {
   matchedAt    DateTime?
 
   candidateProfile CandidateProfile    @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
-  job              Job                 @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job              Job?                @relation(fields: [jobId], references: [id], onDelete: Cascade)
   interviewResult  InterviewResult?
   questions        GeneratedQuestion[]
   recordings       InterviewRecording[]

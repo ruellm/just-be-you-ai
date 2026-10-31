@@ -38,6 +38,7 @@ import {
   wrapUntrusted,
 } from "@/lib/ai/interview-prompts";
 import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
+import { resolveInterviewJob } from "@/lib/prescreen";
 
 // Caps mirrored from interview_flow.py.
 const SECTION_CHAR_LIMIT = 2000;
@@ -81,8 +82,9 @@ function resolveFullName(app: InterviewApplication): string {
 }
 
 export function assembleInterviewPrompt(app: InterviewApplication): string {
-  const { job, candidateProfile: cp } = app;
-  const companyName = job.company.name || "the company";
+  const job = resolveInterviewJob(app);
+  const cp = app.candidateProfile;
+  const companyName = job.companyName;
   const fullName = resolveFullName(app);
   const firstName = resolveFirstName(fullName);
 

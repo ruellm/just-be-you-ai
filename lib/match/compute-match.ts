@@ -104,7 +104,11 @@ function hasResumeText(application: ApplicationForMatch): boolean {
   return Boolean((resume.cleanedText ?? resume.parsedText)?.trim());
 }
 
-function buildUserPrompt(application: ApplicationForMatch): string {
+type ApplicationWithJob = ApplicationForMatch & {
+  job: NonNullable<ApplicationForMatch["job"]>;
+};
+
+function buildUserPrompt(application: ApplicationWithJob): string {
   const { job, candidateProfile: cp } = application;
   const lines: string[] = [];
 
@@ -209,7 +213,8 @@ export function scoreMatch(requirements: MatchRequirement[]): {
 export type ComputeMatchOutcome =
   | "computed"
   | "skipped_existing"
-  | "skipped_no_resume";
+  | "skipped_no_resume"
+  | "skipped_no_job";
 
 // Computes and stores the match for one application. Skips when it was already
 // computed or the candidate has no resume text. Throws on a hard failure; the
@@ -220,9 +225,11 @@ export async function computeApplicationMatch(
   const application = await loadApplication(applicationId);
   if (!application) throw new Error(`Application ${applicationId} not found.`);
   if (application.matchedAt != null) return "skipped_existing";
+  // Pre-screens have no job to match against.
+  if (!application.job) return "skipped_no_job";
   if (!hasResumeText(application)) return "skipped_no_resume";
 
-  const userPrompt = buildUserPrompt(application);
+  const userPrompt = buildUserPrompt({ ...application, job: application.job });
 
   let parsed: z.infer<typeof outputSchema> | null = null;
   let lastError: unknown = null;

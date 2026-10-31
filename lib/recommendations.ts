@@ -49,7 +49,7 @@ export async function getRecommendedJobs(
       select: { skillId: true },
     }),
     prisma.application.findMany({
-      where: { candidateProfileId },
+      where: { candidateProfileId, kind: "job" },
       // interviewResult rides along on this ONE query — no per-card lookup.
       select: {
         jobId: true,

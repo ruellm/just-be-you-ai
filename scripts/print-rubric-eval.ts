@@ -45,6 +45,7 @@ async function main() {
     "../lib/ai/load-interview-context"
   );
   const { evaluateInterview } = await import("../lib/ai/evaluate-interview");
+  const { resolveInterviewJob } = await import("../lib/prescreen");
   const { RUBRIC, resolveMustHaveKeys, resolvePassingBar } = await import(
     "../lib/ai/rubric"
   );
@@ -71,10 +72,11 @@ async function main() {
       ? (result.fitSignalsJson as Array<Record<string, unknown>>)
       : [];
 
+    const job = resolveInterviewJob(application);
     console.error(
-      `[job: "${application.job.title}" @ ${application.job.company.name} | ` +
-        `bar=${resolvePassingBar(application.job.passingBar)} | ` +
-        `must-have=${resolveMustHaveKeys(application.job.mustHaveCriteriaJson).join(", ")} | ` +
+      `[job: "${job.title}" @ ${job.companyName} | ` +
+        `bar=${resolvePassingBar(job.passingBar)} | ` +
+        `must-have=${resolveMustHaveKeys(job.mustHaveCriteriaJson).join(", ")} | ` +
         `transcript ${result.transcript.length} chars, ${fitSignals.length} fit signals]`
     );
     console.error("[grading via Claude — this is a live call…]");

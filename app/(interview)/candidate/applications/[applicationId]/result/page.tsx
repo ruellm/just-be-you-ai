@@ -15,6 +15,7 @@ import {
 } from "@/lib/applications";
 import { cn } from "@/lib/utils";
 import { ensureAdvancedGraded } from "@/lib/elevenlabs/ensure-advanced-graded";
+import { PRESCREEN_COMPLETE_PATH } from "@/lib/prescreen";
 import { ResultPending } from "./ResultPending";
 import {
   ImpressionGrid,
@@ -53,6 +54,7 @@ export default async function ResultPage({
       id: true,
       candidateProfileId: true,
       status: true,
+      kind: true,
       // Company name is no longer rendered anywhere on this page (U4 #20).
       job: { select: { title: true } },
       interviewResult: true,
@@ -61,6 +63,11 @@ export default async function ResultPage({
 
   if (!application || application.candidateProfileId !== profile.id) {
     notFound();
+  }
+
+  // A pre-screen has no candidate-facing result, graded or not.
+  if (application.kind === "prescreen") {
+    redirect(PRESCREEN_COMPLETE_PATH);
   }
 
   // Guard priority (see the Phase 2.3 interview→result loop fix):
@@ -190,7 +197,7 @@ export default async function ResultPage({
       >
         <ResultCard>
           <h2 className="text-heading font-semibold text-brand-primary">
-            {application.job.title}
+            {application.job?.title}
           </h2>
           <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
             <ScoreRing percent={scorePercent} passed={passed} />

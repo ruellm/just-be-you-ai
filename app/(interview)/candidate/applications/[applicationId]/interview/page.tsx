@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { PRESCREEN_DURATION_MINUTES } from "@/lib/prescreen";
 import { InterviewExperience } from "./InterviewExperience";
 import { AdvancedInterviewExperience } from "./AdvancedInterviewExperience";
 
@@ -30,6 +31,7 @@ export default async function InterviewPage({
       id: true,
       candidateProfileId: true,
       status: true,
+      kind: true,
       job: {
         select: {
           title: true,
@@ -49,12 +51,15 @@ export default async function InterviewPage({
   }
 
   const candidateName = profile.firstName?.trim() || "You";
+  // A pre-screen has no job: fixed length, always the basic tier.
   const durationMinutes =
-    application.job.interviewMaxMinutes ?? DEFAULT_INTERVIEW_MINUTES;
+    application.kind === "prescreen"
+      ? PRESCREEN_DURATION_MINUTES
+      : (application.job?.interviewMaxMinutes ?? DEFAULT_INTERVIEW_MINUTES);
 
   // Phase 3.3 — branch on the job's voice engine: "advanced" runs the
   // ElevenLabs path; everything else runs the existing basic (LiveKit) path.
-  if (application.job.voiceAgentType === "advanced") {
+  if (application.job?.voiceAgentType === "advanced") {
     return (
       <AdvancedInterviewExperience
         applicationId={application.id}

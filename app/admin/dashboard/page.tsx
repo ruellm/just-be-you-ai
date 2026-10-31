@@ -79,8 +79,9 @@ export default async function AdminDashboardPage() {
     prisma.user.count({ where: { role: "candidate" } }),
     prisma.company.count(),
     prisma.job.count(),
-    prisma.application.count(),
-    prisma.application.count({ where: { status: "passed" } }),
+    // Pre-screening interviews are not applications to jobs.
+    prisma.application.count({ where: { kind: "job" } }),
+    prisma.application.count({ where: { kind: "job", status: "passed" } }),
     prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 5,

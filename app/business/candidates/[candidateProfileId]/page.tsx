@@ -160,7 +160,7 @@ export default async function CandidateDetailPage({
   const applicationDtos: ApplicationDTO[] = applications.map((app) => ({
     id: app.id,
     status: app.status,
-    jobTitle: app.job.title,
+    jobTitle: app.job?.title ?? "",
     match: parseMatchSummary(app.matchPercent, app.matchJson),
     interviewResult: app.interviewResult
       ? {

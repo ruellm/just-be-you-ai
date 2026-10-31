@@ -13,6 +13,7 @@ import {
   type WorkExperienceDTO,
 } from "./work-experience/WorkExperienceSection";
 import { ProjectsSection, type ProjectDTO } from "./projects/ProjectsSection";
+import { PrescreenBanner } from "@/components/profile/PrescreenBanner";
 
 function initialsOf(first: string, last: string, email: string): string {
   const letters = [first, last]
@@ -30,6 +31,19 @@ export default async function ProfilePage() {
   const profile = user
     ? await prisma.candidateProfile.findUnique({ where: { userId: user.id } })
     : null;
+
+  // A pre-screen counts as done once it has a result or has left the
+  // interviewable statuses (grading in flight included).
+  const prescreen = profile
+    ? await prisma.application.findFirst({
+        where: { candidateProfileId: profile.id, kind: "prescreen" },
+        select: { status: true, interviewResult: { select: { id: true } } },
+      })
+    : null;
+  const prescreenDone =
+    prescreen != null &&
+    (prescreen.interviewResult != null ||
+      (prescreen.status !== "submitted" && prescreen.status !== "draft"));
 
   const [educationRows, candidateSkillRows, workRows, projectRows, allSkills] =
     await Promise.all([
@@ -143,6 +157,11 @@ export default async function ProfilePage() {
         </p>
       </div>
 
+      <PrescreenBanner
+        hasResume={profile?.resumeUrl != null}
+        prescreenDone={prescreenDone}
+      />
+
       {/* 1 + 2: Basic Information + Profile Summary (one form + save bar) */}
       <ProfileForm
         defaultValues={defaults}
@@ -157,6 +176,7 @@ export default async function ProfilePage() {
 
       {/* 3–7: Resume / Education / Skills / Work Experience / Projects */}
       <ProfileSectionCard
+        id="resume"
         title="Resume"
         subtitle="Upload your resume as a PDF or DOCX file (up to 5MB)."
       >

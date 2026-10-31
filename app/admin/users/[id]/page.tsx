@@ -24,6 +24,7 @@ import {
   SectionTitle,
 } from "@/components/admin/CandidateProfileSections";
 import { UserHeaderActions } from "./UserHeaderActions";
+import { applicationDisplayTitle } from "@/lib/prescreen";
 
 function Field({
   label,
@@ -243,7 +244,7 @@ export default async function AdminUserDetailPage({
                   >
                     <div className="min-w-0">
                       <p className="truncate text-body font-semibold text-brand-ink">
-                        {app.job.title}
+                        {applicationDisplayTitle(app)}
                       </p>
                       <p className="text-small text-brand-ink-secondary">
                         Applied on {formatLongDate(app.createdAt)}

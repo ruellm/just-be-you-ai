@@ -39,7 +39,8 @@ async function main() {
 
   try {
     const applications = await prisma.application.findMany({
-      where: { matchPercent: null },
+      // Pre-screens have no job and never get a match.
+      where: { matchPercent: null, kind: "job" },
       orderBy: { createdAt: "asc" },
       select: {
         id: true,
@@ -57,7 +58,7 @@ async function main() {
         [app.candidateProfile.firstName, app.candidateProfile.lastName]
           .filter(Boolean)
           .join(" ") || "(no name)";
-      const label = `[${index}/${applications.length}] ${app.id} ${who} -> ${app.job.title}`;
+      const label = `[${index}/${applications.length}] ${app.id} ${who} -> ${app.job?.title ?? "(no job)"}`;
       try {
         const outcome = await computeApplicationMatch(app.id);
         if (outcome === "computed") {

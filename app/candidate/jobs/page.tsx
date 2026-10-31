@@ -99,7 +99,7 @@ export default async function JobsPage({
     // card's disabled "Apply Now" + "Applied" state). No per-card lookups.
     user
       ? prisma.application.findMany({
-          where: { candidateProfile: { userId: user.id } },
+          where: { candidateProfile: { userId: user.id }, kind: "job" },
           // interviewResult rides along on this ONE query — the reveal gate
           // needs it per job, and a per-card lookup would be 9 round trips.
           select: {

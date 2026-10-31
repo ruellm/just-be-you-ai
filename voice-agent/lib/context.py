@@ -67,6 +67,8 @@ class JobContext(BaseModel):
     passing_bar: Optional[str] = None
     must_have_criteria: Optional[List[str]] = None
     company_name: str
+    # True for the stand-in job of a pre-screening interview (no job row).
+    is_prescreen: bool = False
 
 
 class GeneratedQuestion(BaseModel):

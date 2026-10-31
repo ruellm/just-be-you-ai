@@ -282,7 +282,7 @@ export default async function BusinessDashboardPage({
                         {formatDate(app.createdAt)}
                       </TableCell>
                       <TableCell className={cn(TD_CLASS, "max-w-[220px] truncate")}>
-                        {app.job.title}
+                        {app.job?.title}
                       </TableCell>
                       <TableCell className={TD_CLASS}>
                         {r ? TIER_LABELS[r.tier] : "—"}

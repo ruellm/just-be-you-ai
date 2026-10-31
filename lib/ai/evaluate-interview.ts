@@ -48,6 +48,7 @@ import {
   type ManipulationAttempt,
 } from "@/lib/ai/interview-prompts";
 import { resolveApplicationResume } from "@/lib/ai/resume-snapshot";
+import { resolveInterviewJob } from "@/lib/prescreen";
 import {
   ALL_SUB_CRITERION_KEYS,
   buildRubricPromptBlock,
@@ -263,7 +264,8 @@ function buildUserContent(
   transcript: string,
   fitSignals: EvidenceItem[] | Array<Record<string, unknown>>
 ): { content: string; candidateText: string } {
-  const { job, candidateProfile: cp } = app;
+  const job = resolveInterviewJob(app);
+  const cp = app.candidateProfile;
 
   const skills =
     cp.skills
@@ -327,7 +329,7 @@ function buildUserContent(
   const content =
     "# JOB\n" +
     `Title: ${job.title}\n` +
-    `Company: ${job.company.name}\n` +
+    `Company: ${job.companyName}\n` +
     `Level required: ${job.level || "unspecified"}\n` +
     `Description: ${truncate(job.description, 2000) || "N/A"}\n` +
     `Role overview: ${truncate(job.roleOverview, 1500) || "N/A"}\n` +
@@ -376,8 +378,9 @@ export async function evaluateInterview(
     transcript,
     fitSignals
   );
-  const passingBar = resolvePassingBar(context.job.passingBar);
-  const mustHaveKeys = resolveMustHaveKeys(context.job.mustHaveCriteriaJson);
+  const job = resolveInterviewJob(context);
+  const passingBar = resolvePassingBar(job.passingBar);
+  const mustHaveKeys = resolveMustHaveKeys(job.mustHaveCriteriaJson);
 
   let lastError: unknown = null;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt += 1) {

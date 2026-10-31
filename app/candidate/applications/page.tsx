@@ -60,6 +60,8 @@ export default async function ApplicationsPage({
     ? await prisma.application.findMany({
         where: {
           candidateProfileId: profile.id,
+          // The pre-screening interview is not an application to a job.
+          kind: "job",
           ...(active.status ? { status: active.status } : {}),
         },
         orderBy: { createdAt: "desc" },
@@ -75,17 +77,24 @@ export default async function ApplicationsPage({
 
   // One pass over the rows already fetched — no per-row query. `company` is
   // destructured off so the withheld name never reaches the RSC payload.
-  const rows = applications.map(({ job: { company, ...job }, ...app }) => ({
-    app,
-    job,
-    companyName: hiringCompanyName(
-      company.name,
-      canSeeHiringCompany({
-        tier: profile?.tier ?? null,
-        passedThisJob: hasPassedApplication(app),
-      })
-    ),
-  }));
+  const rows = applications.flatMap(({ job: jobRow, ...app }) => {
+    // The query excludes pre-screens, so job is always present here.
+    if (!jobRow) return [];
+    const { company, ...job } = jobRow;
+    return [
+      {
+        app,
+        job,
+        companyName: hiringCompanyName(
+          company.name,
+          canSeeHiringCompany({
+            tier: profile?.tier ?? null,
+            passedThisJob: hasPassedApplication(app),
+          })
+        ),
+      },
+    ];
+  });
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-6 py-10 font-body lg:px-14 lg:py-14">
