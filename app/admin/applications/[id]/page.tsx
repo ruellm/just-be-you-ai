@@ -6,9 +6,7 @@ import { userDisplayName } from "@/lib/admin";
 import { formatLongDate } from "@/lib/dates";
 import { displayAvatarUrl } from "@/lib/profile-format";
 import {
-  BUSINESS_RECOMMENDATION_LABELS,
   formatDuration,
-  isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
   RECOMMENDATION_TEXT_CLASS,
@@ -38,9 +36,13 @@ import {
 // Reused from the candidate result page (U4) rather than building a second
 // ring / stat chip. That page is NOT modified — this is an import only.
 import {
-  ScoreRing,
+  ScoreSummary,
   StatRow,
 } from "@/app/(interview)/candidate/applications/[applicationId]/result/ResultCards";
+import {
+  displayedRecommendation,
+  recommendationLabel,
+} from "@/lib/recommendation";
 import { cn } from "@/lib/utils";
 
 // S9 Part 2 — the admin "User Profile Revealed" view, opened from an
@@ -123,16 +125,14 @@ export default async function AdminApplicationResultPage({
       ? Math.round(result.compositeScore)
       : scoreToPercent(result.score)
     : 0;
-  // Admin reads the recruiter-side label ("Pass"), like the business views.
-  const recommendationLabel =
-    result && isRecommendation(result.recommendation)
-      ? BUSINESS_RECOMMENDATION_LABELS[result.recommendation]
-      : "—";
-  // Coloured by VALUE, not outcome: Hire green / Consider amber / Pass red.
-  const recommendationClass =
-    result && isRecommendation(result.recommendation)
-      ? RECOMMENDATION_TEXT_CLASS[result.recommendation]
-      : "text-brand-ink";
+  // The shown value follows the pass/fail outcome, not the stored one alone.
+  const recommendation = result
+    ? displayedRecommendation(result.recommendation, passed)
+    : null;
+  // Coloured by VALUE: Hire green / Consider amber / Decline red.
+  const recommendationClass = recommendation
+    ? RECOMMENDATION_TEXT_CLASS[recommendation]
+    : "text-brand-ink";
   const averageScore = rubricAverageScore(breakdown);
 
   return (
@@ -163,31 +163,28 @@ export default async function AdminApplicationResultPage({
           {/* Score ring + stat chips */}
           <ProfileSectionCard>
             <SectionTitle>{applicationDisplayTitle(application)}</SectionTitle>
-            <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center">
-              <ScoreRing percent={scorePercent} passed={passed} />
-              <div className="grid w-full min-w-0 gap-5 text-center sm:grid-cols-2 sm:text-left xl:grid-cols-3">
-                <StatRow label="Role Tier" value={TIER_LABELS[result.tier]} />
+            <ScoreSummary percent={scorePercent} passed={passed} columns="wide">
+              <StatRow label="Role Tier" value={TIER_LABELS[result.tier]} />
+              <StatRow
+                label="Recommendation"
+                value={recommendationLabel(recommendation)}
+                valueClassName={recommendationClass}
+              />
+              <StatRow
+                label="Time Elapsed"
+                value={formatDuration(result.durationSeconds)}
+              />
+              <StatRow
+                label="Completed Date"
+                value={formatLongDate(result.completedAt)}
+              />
+              {averageScore ? (
                 <StatRow
-                  label="Recommendation"
-                  value={recommendationLabel}
-                  valueClassName={recommendationClass}
+                  label="Average Score"
+                  value={`${averageScore} out of 5`}
                 />
-                <StatRow
-                  label="Time Elapsed"
-                  value={formatDuration(result.durationSeconds)}
-                />
-                <StatRow
-                  label="Completed Date"
-                  value={formatLongDate(result.completedAt)}
-                />
-                {averageScore ? (
-                  <StatRow
-                    label="Average Score"
-                    value={`${averageScore} out of 5`}
-                  />
-                ) : null}
-              </div>
-            </div>
+              ) : null}
+            </ScoreSummary>
           </ProfileSectionCard>
 
           {fitSummary || match ? (

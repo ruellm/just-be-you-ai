@@ -6,13 +6,13 @@ import {
   APPLICATION_STATUS_LABELS,
   isRecommendation,
   isRubricVerdict,
-  BUSINESS_RECOMMENDATION_LABELS,
   RECOMMENDATION_BADGE_CLASS,
   TIER_BADGE_CLASS,
   TIER_LABELS,
   VERDICT_BADGE_CLASS,
   VERDICT_LABELS,
 } from "@/lib/applications";
+import { recommendationLabel } from "@/lib/recommendation";
 
 export function StatusBadge({ status }: { status: ApplicationStatus }) {
   return (
@@ -80,7 +80,7 @@ export function RecommendationBadge({
         className
       )}
     >
-      {BUSINESS_RECOMMENDATION_LABELS[recommendation]}
+      {recommendationLabel(recommendation)}
     </Badge>
   );
 }

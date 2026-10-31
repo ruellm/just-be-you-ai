@@ -170,12 +170,13 @@ def build_system_prompt(ctx: InterviewContext) -> str:
         ]
     )
 
+    # The hiring company is withheld from the candidate, so it is not in the
+    # prompt at all: a model that never sees the name cannot say it.
     parts = [
-        render_agent_rules("basic", job.company_name),
+        render_agent_rules("basic"),
         f"\n\n{untrusted_notice('agent')}",
         "\n\n=== THE ROLE ===\n",
         f"Job title: {job.title}\n",
-        f"Company: {job.company_name}\n",
         _section("Level", job.level, limit=50),
         _section("Description", job.description),
         _section("Role overview", job.role_overview),
@@ -450,8 +451,8 @@ class InterviewFlow:
             intro = prescreen_greeting()
         else:
             intro = (
-                f"introduce yourself as the AI interviewer for the {job.title} role "
-                f"at {job.company_name}, and ask if they're ready to begin."
+                f"introduce yourself as the AI interviewer for the {job.title} role, "
+                "without naming the company, and ask if they're ready to begin."
             )
         await self.session.generate_reply(
             instructions=(

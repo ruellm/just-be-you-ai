@@ -37,9 +37,9 @@ export function isPlausibleFirstName(name: string): boolean {
   return name.length <= FIRST_NAME_MAX_CHARS && FIRST_NAME_PATTERN.test(name);
 }
 
-/** The interviewer's conversation rules for one tier, {company} filled in. */
-export function renderAgentRules(tier: VoiceTier, company: string): string {
-  const vars: Record<string, string> = { ...AGENT.tierVars[tier], company };
+/** The interviewer's conversation rules for one tier. */
+export function renderAgentRules(tier: VoiceTier): string {
+  const vars: Record<string, string> = { ...AGENT.tierVars[tier] };
   const applies = (tiers?: string[]) => !tiers || tiers.includes(tier);
   return AGENT.blocks
     .filter((block) => applies(block.tiers))
@@ -87,6 +87,11 @@ export interface ManipulationAttempt {
   quote: string;
   classification: string;
   source: string;
+}
+
+/** How the evaluator refers to the candidate and the employer in its text. */
+export function evaluatorNamingRule(): string {
+  return EVALUATOR.namingRule;
 }
 
 /** The MANIPULATION ATTEMPTS block of the evaluator system prompt. */

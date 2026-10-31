@@ -89,13 +89,46 @@ export function ScoreRing({
   );
 }
 
+// Score ring with the stat rows beside it, or under it when the card is too
+// narrow for both. Measured against the card itself (container query), not
+// the viewport, because the same card sits in page grids of very different
+// widths. `columns` lets wide cards split the stats into two or three columns
+// once there is room for them.
+export function ScoreSummary({
+  percent,
+  passed,
+  columns = "single",
+  children,
+}: {
+  percent: number;
+  passed: boolean;
+  columns?: "single" | "wide";
+  children: ReactNode;
+}) {
+  return (
+    <div className="@container">
+      <div className="flex flex-col items-center gap-6 @sm:flex-row @sm:items-center">
+        <ScoreRing percent={percent} passed={passed} />
+        <div
+          className={cn(
+            "grid w-full min-w-0 gap-4 text-center @sm:text-left",
+            columns === "wide" && "@xl:grid-cols-2 @3xl:grid-cols-3"
+          )}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // One "PILL LABEL" + value stat row from the role card.
 //
-// The pill sizes to its label (min 176px so short labels stay uniform, no max
-// so RECOMMENDATION is never clipped) and may wrap. Callers place StatRows in
-// a `grid`; each row spans two subgrid tracks (pill, value), so pills that
-// share a track line up in height even when one wraps. The pill is a block
-// wrapper's inline child so the caller's text-align still positions it.
+// The pill fills its column up to the design width (176px) and shrinks with
+// it, so it never runs past the card. Callers place StatRows in a `grid`;
+// each row spans two subgrid tracks (pill, value), so pills that share a
+// track line up in height even when one wraps. The pill is a block wrapper's
+// inline child so the caller's text-align still positions it.
 export function StatRow({
   label,
   value,
@@ -108,7 +141,7 @@ export function StatRow({
   return (
     <div className="row-span-2 grid min-w-0 grid-rows-subgrid gap-1.5">
       <div className="min-w-0">
-        <span className="font-display inline-flex h-full min-h-7 max-w-full min-w-[176px] items-center justify-center rounded-[8px] bg-tag-1 px-3 py-1 text-center text-meta leading-tight font-medium tracking-[1.2px] [overflow-wrap:anywhere] text-brand-ink-secondary uppercase">
+        <span className="font-display inline-flex h-full min-h-7 w-full max-w-[176px] min-w-0 items-center justify-center rounded-[8px] bg-tag-1 px-3 py-1 text-center text-meta leading-tight font-medium tracking-[1.2px] [overflow-wrap:anywhere] text-brand-ink-secondary uppercase">
           {label}
         </span>
       </div>

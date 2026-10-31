@@ -27,9 +27,13 @@ import {
 import { StatusBadge } from "@/components/applications/Badges";
 import { RubricBreakdown } from "@/components/applications/RubricBreakdown";
 import {
-  ScoreRing,
+  ScoreSummary,
   StatRow,
 } from "@/app/(interview)/candidate/applications/[applicationId]/result/ResultCards";
+import {
+  displayedRecommendation,
+  recommendationLabel,
+} from "@/lib/recommendation";
 import {
   BTN_INK,
   BTN_PRIMARY,
@@ -39,10 +43,8 @@ import { MatchBanner } from "@/components/applications/MatchBanner";
 import type { MatchSummary } from "@/lib/match/match-display";
 import type { ApplicationStatus, Level } from "@prisma/client";
 import {
-  BUSINESS_RECOMMENDATION_LABELS,
   formatDuration,
   humanizeDimension,
-  isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
   RECOMMENDATION_TEXT_CLASS,
@@ -59,6 +61,7 @@ import { COMPANY_SEAT_INFO, formatSeatsLeft } from "@/lib/interview-seats";
 export type InterviewResultDTO = {
   score: number;
   tier: Level;
+  passed: boolean;
   recommendation: string | null;
   fitSummary: string;
   strengthsJson: unknown;
@@ -429,7 +432,7 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
     );
   }
   const breakdown = parseRubricBreakdown(r.rubricScoresJson);
-  const passed = app.status === "passed";
+  const passed = r.passed;
   const strengths = parseEvidence(r.strengthsJson);
   const concerns = parseEvidence(r.concernsJson);
   const summary = r.fitSummary.trim();
@@ -437,11 +440,9 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
     breakdown && r.compositeScore != null
       ? Math.round(r.compositeScore)
       : scoreToPercent(r.score);
-  const recommendationLabel = isRecommendation(r.recommendation)
-    ? BUSINESS_RECOMMENDATION_LABELS[r.recommendation]
-    : "—";
-  const recommendationClass = isRecommendation(r.recommendation)
-    ? RECOMMENDATION_TEXT_CLASS[r.recommendation]
+  const recommendation = displayedRecommendation(r.recommendation, passed);
+  const recommendationClass = recommendation
+    ? RECOMMENDATION_TEXT_CLASS[recommendation]
     : "text-brand-ink";
   const averageScore = rubricAverageScore(breakdown);
 
@@ -452,28 +453,25 @@ function ApplicationResults({ app }: { app: ApplicationDTO }) {
           <h3 className={CARD_TITLE_CLASS}>{app.jobTitle}</h3>
           <StatusBadge status={app.status} />
         </div>
-        <div className="flex flex-col items-center gap-8 lg:flex-row lg:items-center">
-          <ScoreRing percent={scorePercent} passed={passed} />
-          <div className="grid w-full min-w-0 gap-5 text-center sm:grid-cols-2 sm:text-left xl:grid-cols-3">
-            <StatRow label="Role Tier" value={TIER_LABELS[r.tier]} />
-            <StatRow
-              label="Recommendation"
-              value={recommendationLabel}
-              valueClassName={recommendationClass}
-            />
-            <StatRow
-              label="Time Elapsed"
-              value={formatDuration(r.durationSeconds)}
-            />
-            <StatRow
-              label="Completed Date"
-              value={formatLongDate(new Date(r.completedAt))}
-            />
-            {averageScore ? (
-              <StatRow label="Average Score" value={`${averageScore} out of 5`} />
-            ) : null}
-          </div>
-        </div>
+        <ScoreSummary percent={scorePercent} passed={passed} columns="wide">
+          <StatRow label="Role Tier" value={TIER_LABELS[r.tier]} />
+          <StatRow
+            label="Recommendation"
+            value={recommendationLabel(recommendation)}
+            valueClassName={recommendationClass}
+          />
+          <StatRow
+            label="Time Elapsed"
+            value={formatDuration(r.durationSeconds)}
+          />
+          <StatRow
+            label="Completed Date"
+            value={formatLongDate(new Date(r.completedAt))}
+          />
+          {averageScore ? (
+            <StatRow label="Average Score" value={`${averageScore} out of 5`} />
+          ) : null}
+        </ScoreSummary>
       </Card>
 
       <Card title="Fit Summary">

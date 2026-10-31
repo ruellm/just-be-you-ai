@@ -11,6 +11,7 @@ import {
   RefreshCw,
   Trash2,
   UploadCloud,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -201,8 +202,21 @@ export function ResumeSection({
             <Button className={BTN_INK} onClick={handleView}>
               <ExternalLink /> View
             </Button>
-            <Button className={BTN_INK} onClick={() => setReplacing((v) => !v)}>
-              <RefreshCw /> Replace
+            {/* The same button opens the upload area and closes it again. */}
+            <Button
+              className={BTN_INK}
+              disabled={uploading}
+              onClick={() => setReplacing((v) => !v)}
+            >
+              {replacing ? (
+                <>
+                  <X /> Cancel
+                </>
+              ) : (
+                <>
+                  <RefreshCw /> Replace
+                </>
+              )}
             </Button>
             <ConfirmDelete
               onConfirm={deleteResume}
@@ -301,17 +315,6 @@ export function ResumeSection({
             }}
           />
         </div>
-      ) : null}
-
-      {hasResume && replacing && !uploading ? (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setReplacing(false)}
-          className="text-brand-ink-secondary hover:text-brand-primary"
-        >
-          Cancel
-        </Button>
       ) : null}
     </div>
   );

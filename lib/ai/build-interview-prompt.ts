@@ -84,7 +84,6 @@ function resolveFullName(app: InterviewApplication): string {
 export function assembleInterviewPrompt(app: InterviewApplication): string {
   const job = resolveInterviewJob(app);
   const cp = app.candidateProfile;
-  const companyName = job.companyName;
   const fullName = resolveFullName(app);
   const firstName = resolveFirstName(fullName);
 
@@ -143,12 +142,13 @@ export function assembleInterviewPrompt(app: InterviewApplication): string {
     ),
   ].join("");
 
+  // The hiring company is withheld from the candidate, so it is not in the
+  // prompt at all: a model that never sees the name cannot say it.
   const parts = [
-    renderAgentRules("advanced", companyName),
+    renderAgentRules("advanced"),
     `\n\n${untrustedNotice("agent")}`,
     "\n\n=== THE ROLE ===\n",
     `Job title: ${job.title}\n`,
-    `Company: ${companyName}\n`,
     section("Level", job.level, LEVEL_CHAR_LIMIT),
     section("Description", job.description),
     section("Role overview", job.roleOverview),

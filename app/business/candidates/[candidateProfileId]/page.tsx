@@ -7,29 +7,16 @@ import { parseEvidence } from "@/lib/applications";
 import { parseManipulationAttempts } from "@/lib/integrity-flags";
 import { parseMatchSummary } from "@/lib/match/match-display";
 import { displayAvatarUrl } from "@/lib/profile-format";
+import { hasPassedApplication } from "@/lib/company-visibility";
+import {
+  buildCandidateNameRedactor,
+  redactRubricEvidence,
+} from "@/lib/redact-candidate-name";
 import {
   CandidateProfileView,
   type ApplicationDTO,
   type ProfileDTO,
 } from "./CandidateProfileView";
-
-const REDACTED_NAME = "This candidate";
-
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function buildNameRedactor(...names: (string | null | undefined)[]) {
-  const parts = names
-    .map((n) => (n ?? "").trim())
-    .filter((n) => n.length >= 2);
-  if (parts.length === 0) return (text: string) => text;
-  const patterns = [parts.join(" "), ...parts]
-    .filter((p, i, arr) => p && arr.indexOf(p) === i)
-    .map((p) => new RegExp(`(?<!\\w)${escapeRegExp(p)}(?!\\w)`, "gi"));
-  return (text: string) =>
-    patterns.reduce((acc, re) => acc.replace(re, REDACTED_NAME), text);
-}
 
 function initialsOf(first: string | null, last: string | null, email: string) {
   const letters = [first, last]
@@ -99,8 +86,15 @@ export default async function CandidateDetailPage({
     typeof from === "string" && from.startsWith("job:") ? from.slice(4) : null;
   const backHref = fromJob ? `/business/jobs/${fromJob}` : "/business/jobs";
 
+  // A locked profile hides the candidate's identity, so every piece of
+  // evaluator-written text is scrubbed here, before it leaves the server.
   const redact = locked
-    ? buildNameRedactor(profile.firstName, profile.lastName)
+    ? buildCandidateNameRedactor({
+        firstName: profile.firstName,
+        middleName: profile.middleName,
+        lastName: profile.lastName,
+        email: profile.user.email,
+      })
     : (text: string) => text;
 
   const profileDto: ProfileDTO | null = locked ? null : {
@@ -166,6 +160,7 @@ export default async function CandidateDetailPage({
       ? {
           score: app.interviewResult.score,
           tier: app.interviewResult.tier,
+          passed: hasPassedApplication(app),
           recommendation: app.interviewResult.recommendation,
           fitSummary: redact(app.interviewResult.fitSummary),
           strengthsJson: parseEvidence(app.interviewResult.strengthsJson).map(
@@ -174,7 +169,10 @@ export default async function CandidateDetailPage({
           concernsJson: parseEvidence(app.interviewResult.concernsJson).map(
             (item) => ({ ...item, evidence: redact(item.evidence) })
           ),
-          rubricScoresJson: app.interviewResult.rubricScoresJson,
+          rubricScoresJson: redactRubricEvidence(
+            app.interviewResult.rubricScoresJson,
+            redact
+          ),
           compositeScore: app.interviewResult.compositeScore,
           verdict: app.interviewResult.verdict,
           gatesFiredJson: app.interviewResult.gatesFiredJson,

@@ -5,6 +5,8 @@ import { ArrowLeft, Pencil, Users } from "lucide-react";
 import { getCurrentCompany } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { recommendationRank, scoreToPercent } from "@/lib/applications";
+import { hasPassedApplication } from "@/lib/company-visibility";
+import { displayedRecommendation } from "@/lib/recommendation";
 import {
   LEVEL_LABELS,
   WORK_MODE_LABELS,
@@ -127,14 +129,23 @@ export default async function JobApplicantsPage({
         },
       },
       interviewResult: {
-        select: { score: true, tier: true, recommendation: true },
+        select: { score: true, tier: true, recommendation: true, passed: true },
       },
     },
   });
+  // Ordered by the recommendation as shown, which follows the pass/fail
+  // outcome, so a failed candidate never sorts above a passed one.
+  const shownRank = (app: (typeof applications)[number]) =>
+    app.interviewResult
+      ? recommendationRank(
+          displayedRecommendation(
+            app.interviewResult.recommendation,
+            hasPassedApplication(app)
+          )
+        )
+      : -1;
   applications.sort((a, b) => {
-    const rankDiff =
-      recommendationRank(b.interviewResult?.recommendation) -
-      recommendationRank(a.interviewResult?.recommendation);
+    const rankDiff = shownRank(b) - shownRank(a);
     if (rankDiff !== 0) return rankDiff;
     return (b.interviewResult?.score ?? -1) - (a.interviewResult?.score ?? -1);
   });

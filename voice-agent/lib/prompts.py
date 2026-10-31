@@ -47,10 +47,9 @@ def _applies(tiers: Optional[List[str]], tier: str) -> bool:
     return not tiers or tier in tiers
 
 
-def render_agent_rules(tier: str, company: str) -> str:
-    """The interviewer's conversation rules for one tier, {company} filled in."""
+def render_agent_rules(tier: str) -> str:
+    """The interviewer's conversation rules for one tier."""
     variables = dict(_AGENT["tierVars"][tier])
-    variables["company"] = company
     blocks: List[str] = []
     for block in _AGENT["blocks"]:
         if not _applies(block.get("tiers"), tier):
@@ -98,6 +97,11 @@ MANIPULATION_MAX_ATTEMPTS = 10
 MANIPULATION_QUOTE_MAX_CHARS = 500
 # A quote this short matches almost anything, so it proves nothing.
 MANIPULATION_QUOTE_MIN_CHARS = 8
+
+
+def evaluator_naming_rule() -> str:
+    """How the evaluator refers to the candidate and the employer in its text."""
+    return str(_EVALUATOR["namingRule"])
 
 
 def manipulation_prompt_section() -> str:

@@ -1,4 +1,8 @@
 import type { ApplicationStatus, CandidateTier } from "@prisma/client";
+import {
+  buildPhraseRedactor,
+  type TextRedactor,
+} from "@/lib/redact-candidate-name";
 
 // Hiring-company anonymization (U5).
 //
@@ -59,4 +63,21 @@ export function hiringCompanyName(
   visible: boolean
 ): string {
   return visible ? realName : ANONYMOUS_COMPANY_NAME;
+}
+
+/** What free text calls the employer while the gate is closed. */
+export const HIRING_COMPANY_PLACEHOLDER = "the hiring company";
+
+/**
+ * Scrubs the employer's name out of free text shown to the candidate while
+ * the gate is closed. Older results were written by an evaluator that still
+ * knew the company name, so stored text can carry it. Case-insensitive,
+ * whole words. Returns the text unchanged when the gate is open.
+ */
+export function buildHiringCompanyRedactor(
+  realName: string,
+  visible: boolean
+): TextRedactor {
+  if (visible) return (text) => text;
+  return buildPhraseRedactor([realName], HIRING_COMPANY_PLACEHOLDER);
 }

@@ -42,6 +42,7 @@ from pydantic import BaseModel, Field, ValidationError
 from .context import InterviewContext
 from .prompts import (
     build_manipulation_tool_schema,
+    evaluator_naming_rule,
     keep_verbatim_attempts,
     manipulation_prompt_section,
     untrusted_notice,
@@ -167,7 +168,9 @@ _SYSTEM_PROMPT = (
     "nationality, and every other personal attribute. Grade only what was "
     "demonstrated: the content of the answers and how clearly the ideas were "
     "communicated. Imperfect grammar or a non-native accent is NOT a "
-    "communication weakness — clarity of ideas is what counts.\n\n"
+    "communication weakness — clarity of ideas is what counts.\n"
+    + evaluator_naming_rule()
+    + "\n\n"
     "Alongside the rubric scores, also produce the human-readable summary: "
     "fit_summary (one paragraph, 3-5 sentences, on overall fit for THIS role), "
     "strengths (2-5 positive evidence items), concerns (0-5 negative evidence "
@@ -299,7 +302,6 @@ def _build_user_content(
     content = (
         "# JOB\n"
         f"Title: {job.title}\n"
-        f"Company: {job.company_name}\n"
         f"Level required: {job.level or 'unspecified'}\n"
         f"Description: {_truncate(job.description, 2000) or 'N/A'}\n"
         f"Role overview: {_truncate(job.role_overview, 1500) or 'N/A'}\n"

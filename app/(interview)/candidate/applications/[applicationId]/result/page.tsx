@@ -4,15 +4,21 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { Button } from "@/components/ui/button";
 import {
-  CANDIDATE_RECOMMENDATION_LABELS,
   formatDuration,
-  isRecommendation,
   parseEvidence,
   parseRubricBreakdown,
   RECOMMENDATION_TEXT_CLASS,
   scoreToPercent,
   TIER_LABELS,
 } from "@/lib/applications";
+import {
+  displayedRecommendation,
+  recommendationLabel,
+} from "@/lib/recommendation";
+import {
+  buildHiringCompanyRedactor,
+  canSeeHiringCompany,
+} from "@/lib/company-visibility";
 import { cn } from "@/lib/utils";
 import { ensureAdvancedGraded } from "@/lib/elevenlabs/ensure-advanced-graded";
 import { PRESCREEN_COMPLETE_PATH } from "@/lib/prescreen";
@@ -21,7 +27,7 @@ import {
   ImpressionGrid,
   LockedFeedbackPanel,
   ResultCard,
-  ScoreRing,
+  ScoreSummary,
   StatRow,
   StrengthsList,
 } from "./ResultCards";
@@ -44,7 +50,7 @@ export default async function ResultPage({
 
   const profile = await prisma.candidateProfile.findUnique({
     where: { userId: user.id },
-    select: { id: true },
+    select: { id: true, tier: true },
   });
   if (!profile) redirect("/candidate/profile");
 
@@ -55,8 +61,10 @@ export default async function ResultPage({
       candidateProfileId: true,
       status: true,
       kind: true,
-      // Company name is no longer rendered anywhere on this page (U4 #20).
-      job: { select: { title: true } },
+      // The company name is never rendered here (U4 #20). It is loaded only
+      // to scrub it out of stored evaluator text while the reveal gate is
+      // closed, and company.name is the only company field selected.
+      job: { select: { title: true, company: { select: { name: true } } } },
       interviewResult: true,
     },
   });
@@ -104,8 +112,23 @@ export default async function ResultPage({
   // recommendation. Per-criterion 1-5 values, evidence quotes and gate
   // mechanics stay business-only.
   const breakdown = parseRubricBreakdown(result.rubricScoresJson);
-  const fitSummary = (result.fitSummary ?? "").trim();
-  const strengths = parseEvidence(result.strengthsJson);
+
+  // While the reveal gate is closed, the employer's name is scrubbed from
+  // every piece of free text on this page before it leaves the server.
+  const companyVisible = canSeeHiringCompany({
+    tier: profile.tier,
+    passedThisJob: passed,
+  });
+  const hideCompany = buildHiringCompanyRedactor(
+    application.job?.company.name ?? "",
+    companyVisible
+  );
+  const fitSummary = hideCompany((result.fitSummary ?? "").trim());
+  const strengths = parseEvidence(result.strengthsJson).map((item) => ({
+    ...item,
+    evidence: hideCompany(item.evidence),
+  }));
+  const transcript = hideCompany(result.transcript);
   // Concerns are intentionally NOT shown to the candidate (any row type);
   // business views still render them in full.
 
@@ -115,15 +138,11 @@ export default async function ResultPage({
     result.compositeScore != null
       ? Math.round(result.compositeScore)
       : scoreToPercent(result.score);
-  // Label and colour both key off the VALUE, not the pass/fail outcome. The
-  // candidate map renders "pass" as "Not Selected" (the employer passes ON
-  // the candidate), and it stays red even though a borderline result can
-  // still carry it.
-  const recommendationLabel = isRecommendation(result.recommendation)
-    ? CANDIDATE_RECOMMENDATION_LABELS[result.recommendation]
-    : "—";
-  const recommendationClass = isRecommendation(result.recommendation)
-    ? RECOMMENDATION_TEXT_CLASS[result.recommendation]
+  // The shown recommendation follows the pass/fail outcome (a failed result
+  // never shows a positive one). Label and colour key off that value.
+  const recommendation = displayedRecommendation(result.recommendation, passed);
+  const recommendationClass = recommendation
+    ? RECOMMENDATION_TEXT_CLASS[recommendation]
     : "text-brand-ink";
 
   return (
@@ -199,21 +218,18 @@ export default async function ResultPage({
           <h2 className="text-heading font-semibold text-brand-primary">
             {application.job?.title}
           </h2>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center sm:gap-8">
-            <ScoreRing percent={scorePercent} passed={passed} />
-            <div className="grid w-full min-w-0 gap-4 text-center sm:text-left">
-              <StatRow label="Role Tier" value={TIER_LABELS[result.tier]} />
-              <StatRow
-                label="Recommendation"
-                value={recommendationLabel}
-                valueClassName={recommendationClass}
-              />
-              <StatRow
-                label="Time Elapsed"
-                value={formatDuration(result.durationSeconds)}
-              />
-            </div>
-          </div>
+          <ScoreSummary percent={scorePercent} passed={passed}>
+            <StatRow label="Role Tier" value={TIER_LABELS[result.tier]} />
+            <StatRow
+              label="Recommendation"
+              value={recommendationLabel(recommendation)}
+              valueClassName={recommendationClass}
+            />
+            <StatRow
+              label="Time Elapsed"
+              value={formatDuration(result.durationSeconds)}
+            />
+          </ScoreSummary>
         </ResultCard>
 
         {breakdown ? (
@@ -249,7 +265,7 @@ export default async function ResultPage({
           View transcript
         </summary>
         <p className="border-t border-brand-border px-5 py-4 text-small whitespace-pre-line text-brand-ink-secondary">
-          {result.transcript}
+          {transcript}
         </p>
       </details>
     </div>

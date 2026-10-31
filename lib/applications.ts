@@ -77,21 +77,7 @@ export function formatDuration(seconds: number | null | undefined): string {
 
 export type Recommendation = "hire" | "consider" | "pass";
 
-// Two label maps for one enum. Recruiters read "pass" as jargon (the employer
-// passes on the candidate) and asked to keep it; a candidate reads the same
-// word as "I passed", so their result page says "Not Selected" instead. The
-// stored value is unchanged either way.
-export const BUSINESS_RECOMMENDATION_LABELS: Record<Recommendation, string> = {
-  hire: "Hire",
-  consider: "Consider",
-  pass: "Pass",
-};
-
-export const CANDIDATE_RECOMMENDATION_LABELS: Record<Recommendation, string> = {
-  hire: "Hire",
-  consider: "Consider",
-  pass: "Not Selected",
-};
+// Labels live in lib/recommendation.ts (one mapping for every audience).
 
 export const RECOMMENDATION_BADGE_CLASS: Record<Recommendation, string> = {
   hire: "bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300",

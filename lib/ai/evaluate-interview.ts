@@ -41,6 +41,7 @@ import { getAnthropicClient, QUESTION_MODEL } from "@/lib/ai/anthropic";
 import type { InterviewApplication } from "@/lib/ai/load-interview-context";
 import {
   buildManipulationToolSchema,
+  evaluatorNamingRule,
   keepVerbatimAttempts,
   manipulationPromptSection,
   untrustedNotice,
@@ -168,7 +169,9 @@ const SYSTEM_PROMPT =
   "nationality, and every other personal attribute. Grade only what was " +
   "demonstrated: the content of the answers and how clearly the ideas were " +
   "communicated. Imperfect grammar or a non-native accent is NOT a " +
-  "communication weakness — clarity of ideas is what counts.\n\n" +
+  "communication weakness — clarity of ideas is what counts.\n" +
+  evaluatorNamingRule() +
+  "\n\n" +
   "Alongside the rubric scores, also produce the human-readable summary: " +
   "fit_summary (one paragraph, 3-5 sentences, on overall fit for THIS role), " +
   "strengths (2-5 positive evidence items), concerns (0-5 negative evidence " +
@@ -329,7 +332,6 @@ function buildUserContent(
   const content =
     "# JOB\n" +
     `Title: ${job.title}\n` +
-    `Company: ${job.companyName}\n` +
     `Level required: ${job.level || "unspecified"}\n` +
     `Description: ${truncate(job.description, 2000) || "N/A"}\n` +
     `Role overview: ${truncate(job.roleOverview, 1500) || "N/A"}\n` +
