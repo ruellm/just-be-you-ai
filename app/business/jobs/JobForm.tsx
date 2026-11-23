@@ -76,7 +76,7 @@ export const EMPTY_JOB: JobValues = {
   idealCandidateProfile: "",
   passingCriteria: "",
   interviewMaxMinutes: "",
-  voiceAgentType: "basic",
+  voiceAgentType: "advanced",
   passingBar: "selective",
   // Pre-check the rubric's default must-have set for new jobs.
   mustHaveCriteria: [...RUBRIC.defaultMustHave],
