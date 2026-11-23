@@ -68,6 +68,7 @@ def _build_session() -> AgentSession:
         tts=elevenlabs.TTS(
             voice_id=os.environ["ELEVENLABS_VOICE_ID"],
             model="eleven_turbo_v2_5",
+            language="fil",
         ),
         allow_interruptions=True,
     )
