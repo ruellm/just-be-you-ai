@@ -369,7 +369,7 @@ model Job {
 
   // Which voice agent this job's interviews use: "basic" (LiveKit + Python)
   // or "advanced" (ElevenLabs). The interview page branches on it.
-  voiceAgentType String @default("advanced")
+  voiceAgentType String @default("basic")
 
   // Rubric must-have sub-criterion keys for this job (see
   // shared/interview-rubric.json). null = use the rubric's defaultMustHave set.
